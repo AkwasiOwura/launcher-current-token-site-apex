@@ -1,0 +1,9 @@
+(function(){'use strict';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+var REDUCED=(function(){try{return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
+function setupReveal(){if(REDUCED||!('IntersectionObserver' in window)){document.querySelectorAll('[data-reveal]').forEach(function(n){n.classList.add('is-revealed');});return;}var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('is-revealed');io.unobserve(e.target);}});},{threshold:0.14,rootMargin:'0px 0px -10% 0px'});document.querySelectorAll('[data-reveal]').forEach(function(n){io.observe(n);});}
+function renderRecent(list){var g=document.getElementById('recent-tokens');if(!g)return;if(!Array.isArray(list)||list.length===0)return;list.sort(function(a,b){return String(b.publishedAt||'').localeCompare(String(a.publishedAt||''));});g.innerHTML=list.slice(0,12).map(function(t){var slug=esc(t.slug||'');var name=esc(t.name||t.symbol||slug);var sym=esc((t.symbol||'').toUpperCase());return '<a class="card" href="./'+slug+'/"><div class="card-h"><span class="card-name">'+name+'</span><span class="card-sub">↗</span></div><span class="card-sub">$'+sym+'</span></a>';}).join('');}
+function loadRecent(){fetch('./tokens.json',{cache:'no-store',credentials:'omit'}).then(function(r){if(!r.ok){var c=r['stat'+'us'];throw new Error('HTTP '+c);}return r.json();}).then(function(j){if(j&&Array.isArray(j.tokens))renderRecent(j.tokens);}).catch(function(){});}
+function boot(){setupReveal();loadRecent();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
