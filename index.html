@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#050712" />
+  <meta name="theme-color" content="#030604" />
   <meta name="color-scheme" content="dark" />
   <meta
     name="description"
@@ -14,10 +14,8 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <canvas id="starfield" aria-hidden="true"></canvas>
   <div class="scene" aria-hidden="true">
     <span class="mesh mesh-a"></span>
-    <span class="mesh mesh-b"></span>
     <span class="grid-glow"></span>
   </div>
 
@@ -52,7 +50,7 @@
       <aside class="launch-panel" aria-label="SolMemeHub highlights">
         <div class="panel-top">
           <span class="pulse"></span>
-          <span>Daily public data</span>
+          <span>Daily radar</span>
         </div>
         <div class="signal-card">
           <span class="signal-label">Network</span>
@@ -84,7 +82,6 @@
           <p class="eyebrow">Trending on Pump.fun</p>
           <h2>Daily radar</h2>
         </div>
-        <p id="meme-source-note">Market radar refreshed regularly.</p>
       </div>
       <div id="trending-grid" class="radar-grid" aria-live="polite">
         <article class="empty-card">
@@ -101,7 +98,7 @@
           <p class="eyebrow">High-cap meme radar</p>
           <h2>Largest visible caps</h2>
         </div>
-        <p>Market-cap and volume fields are shown only when supplied by the active public data source.</p>
+        <p>Scan larger meme moves with volume and market-cap context.</p>
       </div>
       <div id="highcap-grid" class="radar-grid compact-grid" aria-live="polite">
         <article class="empty-card">
@@ -156,8 +153,7 @@
   </main>
 
   <footer class="footer">
-    <span>SolMemeHub</span>
-    <p>Public information only. High risk. Verify every contract before trading.</p>
+    <p>© 2026 SolMemeHub. All rights reserved.</p>
   </footer>
 
   <script src="app.js" defer></script>

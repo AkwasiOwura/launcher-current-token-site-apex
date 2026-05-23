@@ -81,17 +81,6 @@
     }).format(n) + '%';
   }
 
-  function formatUpdated(value) {
-    var time = Date.parse(value || '');
-    if (!Number.isFinite(time)) return 'Updated daily';
-    return 'Updated ' + new Date(time).toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
   function tokenDate(token) {
     var raw = token.publishedAt || token.updatedAt || token.createdAt || token.date || '';
     var time = Date.parse(raw);
@@ -129,7 +118,7 @@
     var image = safeAssetUrl(coin.imageUrl || coin.image || coin.icon || coin.logo || '');
     var marketCap = compactNumber(coin.marketCapUsd, '$');
     var volume = compactNumber(coin.volume24hUsd, '$');
-    var delay = Math.min(index * 60, 540);
+    var delay = Math.min(index * 28, 360);
     var meta = [];
 
     if (rank) meta.push(rank);
@@ -229,18 +218,14 @@
       grid.innerHTML = emptyMarkup(title, message);
       return;
     }
-    grid.innerHTML = coins.slice(0, 12).map(function (coin, index) {
+    grid.innerHTML = coins.slice(0, 18).map(function (coin, index) {
       return coinCard(coin, index, mode);
     }).join('');
   }
 
   function renderMemeData(data) {
-    var note = document.getElementById('meme-source-note');
     var trending = data && Array.isArray(data.trending) ? data.trending : [];
     var highCap = data && Array.isArray(data.highCap) ? data.highCap : [];
-    if (note) {
-      note.textContent = 'Market radar refreshed regularly · ' + formatUpdated(data && data.updatedAt);
-    }
     renderTicker(data);
 
     renderCoinGrid(
@@ -357,66 +342,8 @@
     items.forEach(function (node) { observer.observe(node); });
   }
 
-  function setupStarfield() {
-    if (reducedMotion) return;
-    var canvas = document.getElementById('starfield');
-    if (!canvas) return;
-
-    var context = canvas.getContext('2d');
-    if (!context) return;
-
-    var width = 0;
-    var height = 0;
-    var stars = [];
-    var raf = 0;
-
-    function resize() {
-      var ratio = 1;
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = Math.floor(width * ratio);
-      canvas.height = Math.floor(height * ratio);
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      var count = Math.min(130, Math.max(48, Math.floor((width * height) / 13500)));
-      stars = Array.from({ length: count }, function () {
-        return {
-          x: Math.random() * width,
-          y: Math.random() * height,
-          r: Math.random() * 1.5 + 0.25,
-          v: Math.random() * 0.18 + 0.04,
-          a: Math.random() * 0.5 + 0.25
-        };
-      });
-    }
-
-    function draw() {
-      context.clearRect(0, 0, width, height);
-      for (var i = 0; i < stars.length; i += 1) {
-        var star = stars[i];
-        star.y += star.v;
-        if (star.y > height + 8) {
-          star.y = -8;
-          star.x = Math.random() * width;
-        }
-        context.beginPath();
-        context.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-        context.fillStyle = 'rgba(246,248,255,' + star.a + ')';
-        context.fill();
-      }
-      raf = window.requestAnimationFrame(draw);
-    }
-
-    resize();
-    draw();
-    window.addEventListener('resize', resize, { passive: true });
-    window.addEventListener('pagehide', function () { window.cancelAnimationFrame(raf); }, { once: true });
-  }
-
   function boot() {
     setupReveal();
-    setupStarfield();
     loadData();
   }
 
