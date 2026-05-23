@@ -297,65 +297,6 @@
     setupCoinImages();
   }
 
-  function metricValue(value) {
-    if (value == null || value === '') return '—';
-    if (typeof value === 'number') return compactNumber(value, '$') || String(value);
-    return String(value);
-  }
-
-  function kolName(entry) {
-    return entry.name || entry.handle || entry.profile || 'Unknown profile';
-  }
-
-  function kolRow(entry, index) {
-    var rank = Number.isFinite(Number(entry.rank)) ? Number(entry.rank) : index + 1;
-    var name = escapeHtml(kolName(entry));
-    var handle = escapeHtml(entry.handle || entry.username || '');
-    var href = safeUrl(entry.profileUrl || entry.sourceUrl || entry.url, '#');
-    var address = escapeHtml(entry.address || entry.wallet || '');
-    var activity = escapeHtml(entry.activity || entry.lastActivity || entry.lastTrade || '—');
-    var pnl = escapeHtml(metricValue(entry.pnl || entry.realizedPnl || entry.totalPnl));
-    var winRate = escapeHtml(metricValue(entry.winRate || entry.winPercent));
-    var volume = escapeHtml(metricValue(entry.volume || entry.volumeUsd));
-    var tokens = Array.isArray(entry.tokens) ? entry.tokens.slice(0, 3).map(function (token) {
-      return '<span>' + escapeHtml(String(token).replace(/^\$/, '').toUpperCase()) + '</span>';
-    }).join('') : '';
-
-    return [
-      '<a class="kol-row" href="' + href + '" target="_blank" rel="noopener noreferrer">',
-      '<span class="kol-rank">#' + rank + '</span>',
-      '<span class="kol-profile"><strong>' + name + '</strong><small>' + (handle || (address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Public profile')) + '</small></span>',
-      '<span class="kol-metric"><small>PnL</small><strong>' + pnl + '</strong></span>',
-      '<span class="kol-metric"><small>Win rate</small><strong>' + winRate + '</strong></span>',
-      '<span class="kol-metric"><small>Volume</small><strong>' + volume + '</strong></span>',
-      '<span class="kol-tokens">' + (tokens || '<span>Watch</span>') + '</span>',
-      '<span class="kol-activity">' + activity + '</span>',
-      '</a>'
-    ].join('');
-  }
-
-  function renderKolRadar(data) {
-    var entries = data && Array.isArray(data.entries) ? data.entries : [];
-    var board = document.getElementById('kol-leaderboard');
-    setText('kol-stat-count', entries.length ? String(entries.length) : '—');
-    setText('kol-stat-active', data && data.activeToday != null ? String(data.activeToday) : '—');
-    setText('kol-stat-activity', data && data.topActivity ? String(data.topActivity) : '—');
-    if (!board) return;
-
-    if (!entries.length) {
-      board.innerHTML = [
-        '<article class="kol-empty">',
-        '<span class="empty-icon">◇</span>',
-        '<h3>KOL radar source pending</h3>',
-        '<p>Public wallet activity will appear once a verified source is connected.</p>',
-        '</article>'
-      ].join('');
-      return;
-    }
-
-    board.innerHTML = entries.slice(0, 20).map(kolRow).join('');
-  }
-
   function setupControls() {
     Array.prototype.slice.call(document.querySelectorAll('[data-radar-tab]')).forEach(function (button) {
       button.addEventListener('click', function () {
@@ -452,12 +393,6 @@
       })
       .catch(function () {
         renderTokenPages([]);
-      });
-
-    loadJson('./kol-radar.json')
-      .then(renderKolRadar)
-      .catch(function () {
-        renderKolRadar({ entries: [] });
       });
   }
 
