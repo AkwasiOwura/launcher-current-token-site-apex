@@ -34,6 +34,17 @@
     return fallback || '#';
   }
 
+  function safeAssetUrl(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return '';
+    try {
+      var url = new URL(raw, window.location.href);
+      return /^https?:$/.test(url.protocol) ? url.href : '';
+    } catch (_err) {
+      return '';
+    }
+  }
+
   function normalizeSlug(value) {
     return String(value == null ? '' : value)
       .trim()
@@ -50,6 +61,24 @@
       notation: 'compact',
       maximumFractionDigits: n >= 1000000 ? 1 : 0
     }).format(n);
+  }
+
+  function compactPrice(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    if (n < 0.01) return '$' + n.toPrecision(2);
+    return '$' + Intl.NumberFormat('en', {
+      minimumFractionDigits: n < 1 ? 4 : 2,
+      maximumFractionDigits: n < 1 ? 4 : 2
+    }).format(n);
+  }
+
+  function compactPercent(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n) || n === 0) return '';
+    return (n > 0 ? '+' : '') + Intl.NumberFormat('en', {
+      maximumFractionDigits: 1
+    }).format(n) + '%';
   }
 
   function formatUpdated(value) {
@@ -96,7 +125,8 @@
     var rank = Number.isFinite(Number(coin.rank)) ? '#' + Number(coin.rank) : '';
     var mint = escapeHtml(coin.mint || coin.contract || '');
     var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
-    var image = safeUrl(coin.imageUrl || coin.image || '', '');
+    var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
+    var image = safeAssetUrl(coin.imageUrl || coin.image || coin.icon || coin.logo || '');
     var marketCap = compactNumber(coin.marketCapUsd, '$');
     var volume = compactNumber(coin.volume24hUsd, '$');
     var delay = Math.min(index * 60, 540);
@@ -110,7 +140,8 @@
     return [
       '<a class="coin-card" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
       '<div class="coin-media">',
-      image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" />' : '<span>' + escapeHtml((symbol || name).slice(0, 2)) + '</span>',
+      image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-coin-image />' : '',
+      '<span class="coin-fallback">' + initials + '</span>',
       '</div>',
       '<div class="coin-body">',
       '<div class="coin-row"><span class="coin-rank">' + (rank || 'LIVE') + '</span><span class="coin-label">' + label + '</span></div>',
@@ -121,6 +152,74 @@
       '<div class="coin-footer"><span>' + (meta.length ? meta.join(' · ') : 'Open page') + '</span><strong>Open ↗</strong></div>',
       '</a>'
     ].join('');
+  }
+
+  function tickerText(coin) {
+    var symbol = String(coin && coin.symbol ? coin.symbol : coin && coin.name ? coin.name : 'MEME')
+      .replace(/^\$/, '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 14);
+    var price = compactPrice(coin && (coin.priceUsd || coin.price));
+    var change = compactPercent(coin && (coin.priceChange24h || coin.change24h || coin.priceChange));
+    var marketCap = compactNumber(coin && coin.marketCapUsd, '$');
+    var volume = compactNumber(coin && coin.volume24hUsd, '$');
+
+    if (change) return '$' + symbol + ' ' + change;
+    if (price) return '$' + symbol + ' ' + price;
+    if (marketCap) return '$' + symbol + ' mcap ' + marketCap;
+    if (volume) return '$' + symbol + ' vol ' + volume;
+    return '$' + symbol + ' · Trending';
+  }
+
+  function renderTicker(data) {
+    var track = document.getElementById('meme-ticker-track');
+    if (!track) return;
+    var pool = []
+      .concat(data && Array.isArray(data.trending) ? data.trending : [])
+      .concat(data && Array.isArray(data.highCap) ? data.highCap : []);
+    var seen = {};
+    var coins = pool.filter(function (coin) {
+      var key = coin && (coin.mint || coin.symbol || coin.name);
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    }).slice(0, 14);
+
+    if (!coins.length) {
+      track.innerHTML = '<a href="#trending">$MEME · Radar loading</a><a href="#trending">$SOL · Updated regularly</a><a href="#trending">$PUMP · Trending</a><a href="#trending">$COIN · Meme radar</a>';
+      return;
+    }
+
+    var items = coins.map(function (coin) {
+      var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
+      var change = Number(coin.priceChange24h || coin.change24h || coin.priceChange);
+      var trendClass = Number.isFinite(change) && change !== 0 ? (change > 0 ? ' ticker-up' : ' ticker-down') : '';
+      return '<a class="' + trendClass.trim() + '" href="' + href + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(tickerText(coin)) + '</a>';
+    });
+    track.innerHTML = items.concat(items).join('');
+  }
+
+  function setupCoinImages() {
+    Array.prototype.slice.call(document.querySelectorAll('[data-coin-image]')).forEach(function (image) {
+      var media = image.closest ? image.closest('.coin-media') : image.parentNode;
+      function loaded() {
+        if (media) {
+          media.classList.add('image-loaded');
+          media.classList.remove('image-broken');
+        }
+      }
+      function broken() {
+        if (media) {
+          media.classList.add('image-broken');
+          media.classList.remove('image-loaded');
+        }
+      }
+      image.addEventListener('load', loaded, { once: true });
+      image.addEventListener('error', broken, { once: true });
+      if (image.complete && image.naturalWidth > 0) loaded();
+      if (image.complete && image.naturalWidth === 0) broken();
+    });
   }
 
   function renderCoinGrid(id, coins, title, message, mode) {
@@ -142,6 +241,7 @@
     if (note) {
       note.textContent = 'Market radar refreshed regularly · ' + formatUpdated(data && data.updatedAt);
     }
+    renderTicker(data);
 
     renderCoinGrid(
       'trending-grid',
@@ -157,6 +257,7 @@
       'No reliable public market-cap fields are available yet.',
       'highcap'
     );
+    setupCoinImages();
   }
 
   function renderTokenPages(tokens) {
