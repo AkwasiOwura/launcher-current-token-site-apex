@@ -247,46 +247,6 @@
     setText('hero-token-count', String(uniqueCoins(allCoins(data)).length || '—') + ' assets');
   }
 
-  function marketRow(coin) {
-    var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase());
-    var name = escapeHtml(coin.name || coin.symbol || 'Unnamed token');
-    var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
-    var image = safeAssetUrl(coin.imageUrl || coin.image || coin.icon || coin.logo || '');
-    var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
-    var price = compactPrice(coin.priceUsd || coin.price) || '—';
-    var change = compactPercent(coin.priceChange24h || coin.change24h || coin.priceChange);
-    var changeClass = change.indexOf('-') === 0 ? 'down' : change ? 'up' : '';
-    var marketCap = compactNumber(coin.marketCapUsd, '$') || '—';
-    var volume = compactNumber(coin.volume24hUsd, '$') || '—';
-
-    return [
-      '<tr>',
-      '<td><a class="table-token" href="' + href + '" target="_blank" rel="noopener noreferrer">',
-      '<span class="table-avatar">',
-      image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-coin-image />' : '',
-      '<span class="coin-fallback">' + initials + '</span>',
-      '</span>',
-      '<span><strong>' + (symbol ? '$' + symbol : name) + '</strong><small>' + name + '</small></span>',
-      '</a></td>',
-      '<td>' + price + '</td>',
-      '<td><span class="' + changeClass + '">' + (change || '—') + '</span></td>',
-      '<td>' + marketCap + '</td>',
-      '<td>' + volume + '</td>',
-      '<td><a class="table-open" href="' + href + '" target="_blank" rel="noopener noreferrer">Open</a></td>',
-      '</tr>'
-    ].join('');
-  }
-
-  function renderMarketTable(coins) {
-    var body = document.getElementById('market-table-body');
-    if (!body) return;
-    if (!coins.length) {
-      body.innerHTML = '<tr><td colspan="6">No matching tokens found.</td></tr>';
-      return;
-    }
-    body.innerHTML = coins.slice(0, 24).map(marketRow).join('');
-  }
-
   function setupCoinImages() {
     Array.prototype.slice.call(document.querySelectorAll('[data-coin-image]')).forEach(function (image) {
       var media = image.closest ? image.closest('.coin-media') : image.parentNode;
@@ -316,7 +276,7 @@
       grid.innerHTML = emptyMarkup(title, message);
       return;
     }
-    grid.innerHTML = coins.slice(0, 18).map(function (coin, index) {
+    grid.innerHTML = coins.slice(0, 30).map(function (coin, index) {
       return coinCard(coin, index, mode);
     }).join('');
   }
@@ -334,7 +294,6 @@
       'No matching Solana token radar entries are available yet.',
       memeState.tab
     );
-    renderMarketTable(coins);
     setupCoinImages();
   }
 
