@@ -46,10 +46,10 @@
     var href = safeUrl(entry.profileUrl || entry.sourceUrl || entry.url, '#');
     var activity = escapeHtml(entry.activity || entry.lastActivity || entry.lastTrade || '—');
     var pnl = escapeHtml(moneyPrecise(entry.pnl || entry.totalPnl));
-    var realized = escapeHtml(moneyPrecise(entry.realizedPnl || entry.pnl || entry.totalPnl));
+    var realized = escapeHtml(moneyPrecise(entry.realizedPnl));
     var winRate = escapeHtml(compactValue(entry.winRate || entry.winPercent));
     var roi = escapeHtml(compactValue(entry.roi));
-    var trades = escapeHtml(compactValue(entry.trades));
+    var trades = escapeHtml(entry.tradesDisplay || compactValue(entry.trades));
     var avatar = escapeHtml((name || 'KO').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase() || 'KO');
 
     return [

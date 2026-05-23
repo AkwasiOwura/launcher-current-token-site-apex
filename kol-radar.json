@@ -1,200 +1,901 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-05-23T23:20:00Z",
+  "updatedAt": "2026-05-23T22:27:00.078Z",
+  "dataMode": "live",
   "source": {
-    "name": "Operator seeded public leaderboard",
-    "url": "https://solmemehub.tech/kolscan/"
+    "name": "Kolscan public leaderboard",
+    "url": "https://kolscan.io/leaderboard"
   },
-  "todayPnl": 138320,
-  "monthPnl": 3690000,
-  "monthVolume": 94170000,
-  "activeToday": 226,
-  "topActivity": "23 profitable days",
+  "sourceTimeframe": "daily",
+  "todayPnl": 118676.60000000002,
+  "monthPnl": null,
+  "monthVolume": null,
+  "activeToday": 49,
+  "topActivity": "49 public leaderboard entries",
   "activityDays": [
     {
       "day": 1,
       "level": 3,
-      "value": "150.5K"
+      "value": "17.7K"
     },
     {
       "day": 2,
       "level": 3,
-      "value": "177.0K"
+      "value": "14.3K"
     },
     {
       "day": 3,
-      "level": 2,
-      "value": "105.3K"
+      "level": 3,
+      "value": "12.0K"
     },
     {
       "day": 4,
-      "level": 2,
-      "value": "91.7K"
+      "level": 3,
+      "value": "10.2K"
     },
     {
       "day": 5,
       "level": 2,
-      "value": "138.5K"
+      "value": "9.2K"
     },
     {
       "day": 6,
-      "level": 1,
-      "value": "49.9K"
+      "level": 2,
+      "value": "4.8K"
     },
     {
       "day": 7,
-      "level": 3,
-      "value": "295.5K"
+      "level": 2,
+      "value": "4.6K"
     },
     {
       "day": 8,
-      "level": 3,
-      "value": "275.3K"
+      "level": 2,
+      "value": "3.2K"
     },
     {
       "day": 9,
       "level": 2,
-      "value": "184.3K"
+      "value": "3.2K"
     },
     {
       "day": 10,
       "level": 2,
-      "value": "160.2K"
+      "value": "3.1K"
     },
     {
       "day": 11,
-      "level": 3,
-      "value": "110.4K"
+      "level": 2,
+      "value": "3.1K"
     },
     {
       "day": 12,
-      "level": 3,
-      "value": "189.4K"
+      "level": 2,
+      "value": "2.6K"
     },
     {
       "day": 13,
-      "level": 3,
-      "value": "268.0K"
+      "level": 2,
+      "value": "2.6K"
     },
     {
       "day": 14,
-      "level": 2,
-      "value": "110.1K"
+      "level": 1,
+      "value": "2.5K"
     },
     {
       "day": 15,
-      "level": 2,
-      "value": "93.1K"
+      "level": 1,
+      "value": "2.0K"
     },
     {
       "day": 16,
-      "level": 3,
-      "value": "297.4K"
+      "level": 1,
+      "value": "1.8K"
     },
     {
       "day": 17,
       "level": 1,
-      "value": "67.1K"
+      "value": "1.4K"
     },
     {
       "day": 18,
-      "level": 2,
-      "value": "138.5K"
+      "level": 1,
+      "value": "1.4K"
     },
     {
       "day": 19,
-      "level": 2,
-      "value": "102.8K"
+      "level": 1,
+      "value": "1.4K"
     },
     {
       "day": 20,
-      "level": 2,
-      "value": "127.4K"
+      "level": 1,
+      "value": "1.1K"
     },
     {
       "day": 21,
-      "level": 3,
-      "value": "222.1K"
+      "level": 1,
+      "value": "1.1K"
     },
     {
       "day": 22,
-      "level": 2,
-      "value": "199.5K"
+      "level": 1,
+      "value": "1.1K"
     },
     {
       "day": 23,
-      "level": 2,
-      "value": "137.8K"
+      "level": 1,
+      "value": "925"
+    },
+    {
+      "day": 24,
+      "level": 0
+    },
+    {
+      "day": 25,
+      "level": 0
+    },
+    {
+      "day": 26,
+      "level": 0
+    },
+    {
+      "day": 27,
+      "level": 0
+    },
+    {
+      "day": 28,
+      "level": 0
+    },
+    {
+      "day": 29,
+      "level": 0
+    },
+    {
+      "day": 30,
+      "level": 0
+    },
+    {
+      "day": 31,
+      "level": 0
     }
   ],
   "entries": [
     {
       "rank": 1,
-      "name": "Cupsey",
-      "handle": "suqh...HQtK",
-      "profileUrl": "https://solscan.io/",
-      "pnl": 31610000,
-      "realizedPnl": 34100000,
-      "winRate": "0.0%",
-      "roi": "+28.8%",
-      "trades": 452900,
-      "lastTrade": "23h ago",
-      "activity": "23h ago"
+      "name": "Cented",
+      "handle": "CyaE1V",
+      "profileUrl": "https://kolscan.io/account/CyaE1VxvBrahnPWkqm5VsdCvyS2QmNht2UFrKJHga54o?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/CyaE1VxvBrahnPWkqm5VsdCvyS2QmNht2UFrKJHga54o.png",
+      "pnlSol": 205.48,
+      "pnl": 17673,
+      "winRate": "",
+      "roi": "",
+      "trades": 176,
+      "tradesDisplay": "105 / 71",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
     },
     {
       "rank": 2,
-      "name": "crypto...",
-      "handle": "515y...pNFp",
-      "profileUrl": "https://solscan.io/",
-      "pnl": 30650000,
-      "realizedPnl": 30650000,
-      "winRate": "0.0%",
-      "roi": "+471.9%",
-      "trades": 55600,
-      "lastTrade": "0m ago",
-      "activity": "0m ago"
+      "name": "Nyhrox",
+      "handle": "6S8Gez",
+      "profileUrl": "https://kolscan.io/account/6S8GezkxYUfZy9JPtYnanbcZTMB87Wjt1qx3c6ELajKC?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/6S8GezkxYUfZy9JPtYnanbcZTMB87Wjt1qx3c6ELajKC.png",
+      "pnlSol": 166.64,
+      "pnl": 14332.8,
+      "winRate": "",
+      "roi": "",
+      "trades": 18,
+      "tradesDisplay": "6 / 12",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
     },
     {
       "rank": 3,
-      "name": "CWvd...C8ou",
-      "handle": "public profile",
-      "profileUrl": "https://solscan.io/",
-      "pnl": 26950000,
-      "realizedPnl": 26950000,
-      "winRate": "0.0%",
-      "roi": "+324.5%",
-      "trades": 7000,
-      "lastTrade": "142d ago",
-      "activity": "142d ago"
+      "name": "theo",
+      "handle": "Bi4rd5",
+      "profileUrl": "https://kolscan.io/account/Bi4rd5FH5bYEN8scZ7wevxNZyNmKHdaBcvewdPFxYdLt?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/Bi4rd5FH5bYEN8scZ7wevxNZyNmKHdaBcvewdPFxYdLt.png",
+      "pnlSol": 139.75,
+      "pnl": 12020.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 96,
+      "tradesDisplay": "51 / 45",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
     },
     {
       "rank": 4,
-      "name": "Profit - ...",
-      "handle": "G5nx...7w...",
-      "profileUrl": "https://solscan.io/",
-      "pnl": 19570000,
-      "realizedPnl": 21450000,
-      "winRate": "0.0%",
-      "roi": "+51.8%",
-      "trades": 21600,
-      "lastTrade": "2d ago",
-      "activity": "2d ago"
+      "name": "decu",
+      "handle": "4vw54B",
+      "profileUrl": "https://kolscan.io/account/4vw54BmAogeRV3vPKWyFet5yf8DTLcREzdSzx4rw9Ud9?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/4vw54BmAogeRV3vPKWyFet5yf8DTLcREzdSzx4rw9Ud9.png",
+      "pnlSol": 118.82,
+      "pnl": 10219.3,
+      "winRate": "",
+      "roi": "",
+      "trades": 138,
+      "tradesDisplay": "78 / 60",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
     },
     {
       "rank": 5,
+      "name": "Creator Finance",
+      "handle": "G4q7d1",
+      "profileUrl": "https://kolscan.io/account/G4q7d1fckiQ4uXxtQpEfgddzBVrXs28yr7VEP2xdRi4p?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/G4q7d1fckiQ4uXxtQpEfgddzBVrXs28yr7VEP2xdRi4p.png",
+      "pnlSol": 107.07,
+      "pnl": 9209.4,
+      "winRate": "",
+      "roi": "",
+      "trades": 2,
+      "tradesDisplay": "1 / 1",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 6,
+      "name": "Daumen",
+      "handle": "8MaVa9",
+      "profileUrl": "https://kolscan.io/account/8MaVa9kdt3NW4Q5HyNAm1X5LbR8PQRVDc1W8NMVK88D5?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/8MaVa9kdt3NW4Q5HyNAm1X5LbR8PQRVDc1W8NMVK88D5.png",
+      "pnlSol": 55.45,
+      "pnl": 4769,
+      "winRate": "",
+      "roi": "",
+      "trades": 18,
+      "tradesDisplay": "9 / 9",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 7,
+      "name": "xander",
+      "handle": "B3wagQ",
+      "profileUrl": "https://kolscan.io/account/B3wagQZiZU2hKa5pUCj6rrdhWsX3Q6WfTTnki9PjwzMh?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/B3wagQZiZU2hKa5pUCj6rrdhWsX3Q6WfTTnki9PjwzMh.png",
+      "pnlSol": 53.69,
+      "pnl": 4617.9,
+      "winRate": "",
+      "roi": "",
+      "trades": 11,
+      "tradesDisplay": "5 / 6",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 8,
+      "name": "Sheep",
+      "handle": "78N177",
+      "profileUrl": "https://kolscan.io/account/78N177fzNJpp8pG49xDv1efYcTMSzo9tPTKEA9mAVkh2?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/78N177fzNJpp8pG49xDv1efYcTMSzo9tPTKEA9mAVkh2.png",
+      "pnlSol": 37.18,
+      "pnl": 3198.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 80,
+      "tradesDisplay": "31 / 49",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 9,
+      "name": "Reljoo",
+      "handle": "FsG3Ba",
+      "profileUrl": "https://kolscan.io/account/FsG3BaPmRTdSrPaivbgJsFNCCa8cPfkUtk8VLWXkHpHP?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/FsG3BaPmRTdSrPaivbgJsFNCCa8cPfkUtk8VLWXkHpHP.png",
+      "pnlSol": 37.08,
+      "pnl": 3189.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 6,
+      "tradesDisplay": "2 / 4",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 10,
+      "name": "Meechie",
+      "handle": "9iaawV",
+      "profileUrl": "https://kolscan.io/account/9iaawVBEsFG35PSwd4PahwT8fYNQe9XYuRdWm872dUqY?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/9iaawVBEsFG35PSwd4PahwT8fYNQe9XYuRdWm872dUqY.png",
+      "pnlSol": 36.12,
+      "pnl": 3106.7,
+      "winRate": "",
+      "roi": "",
+      "trades": 6,
+      "tradesDisplay": "2 / 4",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 11,
+      "name": "chester",
+      "handle": "PMJA8U",
+      "profileUrl": "https://kolscan.io/account/PMJA8UQDyWTFw2Smhyp9jGA6aTaP7jKHR7BPudrgyYN?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/PMJA8UQDyWTFw2Smhyp9jGA6aTaP7jKHR7BPudrgyYN.png",
+      "pnlSol": 35.81,
+      "pnl": 3079.9,
+      "winRate": "",
+      "roi": "",
+      "trades": 102,
+      "tradesDisplay": "44 / 58",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 12,
+      "name": "Doji",
+      "handle": "5ZuV8e",
+      "profileUrl": "https://kolscan.io/account/5ZuV8eqkvzYFVEKbLvGBdexL2tFv7E5BCd2HZpjqbdg?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/5ZuV8eqkvzYFVEKbLvGBdexL2tFv7E5BCd2HZpjqbdg.png",
+      "pnlSol": 29.83,
+      "pnl": 2565.7,
+      "winRate": "",
+      "roi": "",
+      "trades": 18,
+      "tradesDisplay": "6 / 12",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 13,
+      "name": "Absol",
+      "handle": "BXNiM7",
+      "profileUrl": "https://kolscan.io/account/BXNiM7pqt9Ld3b2Hc8iT3mA5bSwoe9CRrtkSUs15SLWN?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/BXNiM7pqt9Ld3b2Hc8iT3mA5bSwoe9CRrtkSUs15SLWN.png",
+      "pnlSol": 29.79,
+      "pnl": 2562,
+      "winRate": "",
+      "roi": "",
+      "trades": 55,
+      "tradesDisplay": "24 / 31",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 14,
+      "name": "Tom",
+      "handle": "CEUA7z",
+      "profileUrl": "https://kolscan.io/account/CEUA7zVoDRqRYoeHTP58UHU6TR8yvtVbeLrX1dppqoXJ?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/CEUA7zVoDRqRYoeHTP58UHU6TR8yvtVbeLrX1dppqoXJ.png",
+      "pnlSol": 29.05,
+      "pnl": 2498.2,
+      "winRate": "",
+      "roi": "",
+      "trades": 87,
+      "tradesDisplay": "28 / 59",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 15,
+      "name": "The Doc",
+      "handle": "DYAn4X",
+      "profileUrl": "https://kolscan.io/account/DYAn4XpAkN5mhiXkRB7dGq4Jadnx6XYgu8L5b3WGhbrt?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/DYAn4XpAkN5mhiXkRB7dGq4Jadnx6XYgu8L5b3WGhbrt.png",
+      "pnlSol": 22.69,
+      "pnl": 1951.6,
+      "winRate": "",
+      "roi": "",
+      "trades": 12,
+      "tradesDisplay": "9 / 3",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 16,
+      "name": "Gfree",
+      "handle": "4yo9CU",
+      "profileUrl": "https://kolscan.io/account/4yo9CUuTBbds9NFhZd4MzPiZZkUvveXdTnAH8qMsE8ku?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/4yo9CUuTBbds9NFhZd4MzPiZZkUvveXdTnAH8qMsE8ku.png",
+      "pnlSol": 21.42,
+      "pnl": 1842.3,
+      "winRate": "",
+      "roi": "",
+      "trades": 33,
+      "tradesDisplay": "15 / 18",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 17,
+      "name": "Nikolas (aura arc)",
+      "handle": "iPUp3q",
+      "profileUrl": "https://kolscan.io/account/iPUp3qkm39ycMGbywWFMUyvaDhiiPGXeWXaDtmHNe6C?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/iPUp3qkm39ycMGbywWFMUyvaDhiiPGXeWXaDtmHNe6C.png",
+      "pnlSol": 16.78,
+      "pnl": 1443.6,
+      "winRate": "",
+      "roi": "",
+      "trades": 9,
+      "tradesDisplay": "4 / 5",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 18,
+      "name": "Jijo",
+      "handle": "4BdKax",
+      "profileUrl": "https://kolscan.io/account/4BdKaxN8G6ka4GYtQQWk4G4dZRUTX2vQH9GcXdBREFUk?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/4BdKaxN8G6ka4GYtQQWk4G4dZRUTX2vQH9GcXdBREFUk.png",
+      "pnlSol": 16.55,
+      "pnl": 1423.5,
+      "winRate": "",
+      "roi": "",
+      "trades": 12,
+      "tradesDisplay": "6 / 6",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 19,
+      "name": "Niners",
+      "handle": "2RyUYq",
+      "profileUrl": "https://kolscan.io/account/2RyUYqX1VFoGdDSKm3brWV5c2bY4thXx1Wctz22uYS1p?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/2RyUYqX1VFoGdDSKm3brWV5c2bY4thXx1Wctz22uYS1p.png",
+      "pnlSol": 16.36,
+      "pnl": 1407.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 4,
+      "tradesDisplay": "2 / 2",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 20,
+      "name": "Kadenox",
+      "handle": "B32Qbb",
+      "profileUrl": "https://kolscan.io/account/B32QbbdDAyhvUQzjcaM5j6ZVKwjCxAwGH5Xgvb9SJqnC?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/B32QbbdDAyhvUQzjcaM5j6ZVKwjCxAwGH5Xgvb9SJqnC.png",
+      "pnlSol": 13.15,
+      "pnl": 1130.6,
+      "winRate": "",
+      "roi": "",
+      "trades": 28,
+      "tradesDisplay": "18 / 10",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 21,
+      "name": "Dooms",
+      "handle": "EA9Tna",
+      "profileUrl": "https://kolscan.io/account/EA9TnaqEZXq5VNGHuyV8169ydLWvJq5uAJiv43boLBBf?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/EA9TnaqEZXq5VNGHuyV8169ydLWvJq5uAJiv43boLBBf.png",
+      "pnlSol": 13.13,
+      "pnl": 1129.3,
+      "winRate": "",
+      "roi": "",
+      "trades": 1,
+      "tradesDisplay": "1 / 0",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 22,
+      "name": "Apex 屮",
+      "handle": "HYSq1K",
+      "profileUrl": "https://kolscan.io/account/HYSq1KBAvqWpEv1pCbV31muKM1za5A1WSHGdiVLUoNhb?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/HYSq1KBAvqWpEv1pCbV31muKM1za5A1WSHGdiVLUoNhb.png",
+      "pnlSol": 12.79,
+      "pnl": 1100,
+      "winRate": "",
+      "roi": "",
+      "trades": 18,
+      "tradesDisplay": "9 / 9",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 23,
+      "name": "Naruza",
+      "handle": "ASVzak",
+      "profileUrl": "https://kolscan.io/account/ASVzakePP6GNg9r95d4LPZHJDMXun6L6E4um4pu5ybJk?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/ASVzakePP6GNg9r95d4LPZHJDMXun6L6E4um4pu5ybJk.png",
+      "pnlSol": 10.75,
+      "pnl": 924.5,
+      "winRate": "",
+      "roi": "",
+      "trades": 7,
+      "tradesDisplay": "4 / 3",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 24,
+      "name": "tech",
+      "handle": "5d3jQc",
+      "profileUrl": "https://kolscan.io/account/5d3jQcuUvsuHyZkhdp78FFqc7WogrzZpTtec1X9VNkuE?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/5d3jQcuUvsuHyZkhdp78FFqc7WogrzZpTtec1X9VNkuE.png",
+      "pnlSol": 10.24,
+      "pnl": 881.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 3,
+      "tradesDisplay": "1 / 2",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 25,
+      "name": "Cope",
+      "handle": "23wQ7b",
+      "profileUrl": "https://kolscan.io/account/23wQ7bodYreW3qhnh2YrW8dMkTYSkHHJqGcsiYEJS3Pr?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/23wQ7bodYreW3qhnh2YrW8dMkTYSkHHJqGcsiYEJS3Pr.png",
+      "pnlSol": 10.09,
+      "pnl": 867.8,
+      "winRate": "",
+      "roi": "",
+      "trades": 55,
+      "tradesDisplay": "20 / 35",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 26,
+      "name": "SKX 🔶",
+      "handle": "C4eZg1",
+      "profileUrl": "https://kolscan.io/account/C4eZg1rJX6v1u7LzqermPrA1pDNNxQe6g3vyY5cHHoWq?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/C4eZg1rJX6v1u7LzqermPrA1pDNNxQe6g3vyY5cHHoWq.png",
+      "pnlSol": 8.95,
+      "pnl": 769.5,
+      "winRate": "",
+      "roi": "",
+      "trades": 21,
+      "tradesDisplay": "4 / 17",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 27,
+      "name": "Yakuza Daddy",
+      "handle": "2me9wC",
+      "profileUrl": "https://kolscan.io/account/2me9wCkJYNbDSnvVrcS9pqdczinUpZ3V7PfSWrPxCvad?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/2me9wCkJYNbDSnvVrcS9pqdczinUpZ3V7PfSWrPxCvad.png",
+      "pnlSol": 7.89,
+      "pnl": 678.8,
+      "winRate": "",
+      "roi": "",
+      "trades": 10,
+      "tradesDisplay": "8 / 2",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 28,
+      "name": "Smokez",
+      "handle": "5t9xBN",
+      "profileUrl": "https://kolscan.io/account/5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/5t9xBNuDdGTGpjaPTx6hKd7sdRJbvtKS8Mhq6qVbo8Qz.png",
+      "pnlSol": 7.73,
+      "pnl": 664.8,
+      "winRate": "",
+      "roi": "",
+      "trades": 1,
+      "tradesDisplay": "1 / 0",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 29,
+      "name": "Putrick",
+      "handle": "AVjEtg",
+      "profileUrl": "https://kolscan.io/account/AVjEtg2ECYKXYeqdRQXvaaAZBjfTjYuSMTR4WLhKoeQN?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/AVjEtg2ECYKXYeqdRQXvaaAZBjfTjYuSMTR4WLhKoeQN.png",
+      "pnlSol": 7.5,
+      "pnl": 645.4,
+      "winRate": "",
+      "roi": "",
+      "trades": 32,
+      "tradesDisplay": "12 / 20",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 30,
+      "name": "Numer0 (trench/arc)",
+      "handle": "A3W8ps",
+      "profileUrl": "https://kolscan.io/account/A3W8psibkTUvjxs4LRscbnjux6TFDXdvD4m4GsGpQ2KJ?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/A3W8psibkTUvjxs4LRscbnjux6TFDXdvD4m4GsGpQ2KJ.png",
+      "pnlSol": 7.26,
+      "pnl": 624.8,
+      "winRate": "",
+      "roi": "",
+      "trades": 7,
+      "tradesDisplay": "2 / 5",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 31,
+      "name": "Goyim",
+      "handle": "G3gZWq",
+      "profileUrl": "https://kolscan.io/account/G3gZWqrYkNmYFKYCyfRCNtGuxdyuE2wiYKkZpiZn4WSS?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/G3gZWqrYkNmYFKYCyfRCNtGuxdyuE2wiYKkZpiZn4WSS.png",
+      "pnlSol": 7.19,
+      "pnl": 618.7,
+      "winRate": "",
+      "roi": "",
+      "trades": 4,
+      "tradesDisplay": "2 / 2",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 32,
+      "name": "Mel",
+      "handle": "36A6mE",
+      "profileUrl": "https://kolscan.io/account/36A6mEN5rYJdVTb6fMqVvG6ez8g2mTYdr1omWcQ1kDKG?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/36A6mEN5rYJdVTb6fMqVvG6ez8g2mTYdr1omWcQ1kDKG.png",
+      "pnlSol": 6.94,
+      "pnl": 596.9,
+      "winRate": "",
+      "roi": "",
+      "trades": 17,
+      "tradesDisplay": "12 / 5",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 33,
+      "name": "Ochouso 🦈",
+      "handle": "ECa6q9",
+      "profileUrl": "https://kolscan.io/account/ECa6q9uC9LaYYBekJ7ApD2EoKy3VKy7WZv863cg5pqM8?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/ECa6q9uC9LaYYBekJ7ApD2EoKy3VKy7WZv863cg5pqM8.png",
+      "pnlSol": 6.84,
+      "pnl": 588,
+      "winRate": "",
+      "roi": "",
+      "trades": 71,
+      "tradesDisplay": "29 / 42",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 34,
+      "name": "LUKEY ✣",
+      "handle": "DjM7Tu",
+      "profileUrl": "https://kolscan.io/account/DjM7Tu7whh6P3pGVBfDzwXAx2zaw51GJWrJE3PwtuN7s?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/DjM7Tu7whh6P3pGVBfDzwXAx2zaw51GJWrJE3PwtuN7s.png",
+      "pnlSol": 6.63,
+      "pnl": 570.2,
+      "winRate": "",
+      "roi": "",
+      "trades": 1,
+      "tradesDisplay": "1 / 0",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 35,
+      "name": "clukz",
+      "handle": "G6fUXj",
+      "profileUrl": "https://kolscan.io/account/G6fUXjMKPJzCY1rveAE6Qm7wy5U3vZgKDJmN1VPAdiZC?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/G6fUXjMKPJzCY1rveAE6Qm7wy5U3vZgKDJmN1VPAdiZC.png",
+      "pnlSol": 5.69,
+      "pnl": 489,
+      "winRate": "",
+      "roi": "",
+      "trades": 6,
+      "tradesDisplay": "3 / 3",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 36,
+      "name": "Advyth",
+      "handle": "GEKZWL",
+      "profileUrl": "https://kolscan.io/account/GEKZWL474tFAyYDUoTgKEgYuMxT3Se7HzKDDptrnXnvS?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/GEKZWL474tFAyYDUoTgKEgYuMxT3Se7HzKDDptrnXnvS.png",
+      "pnlSol": 5.45,
+      "pnl": 468.4,
+      "winRate": "",
+      "roi": "",
+      "trades": 25,
+      "tradesDisplay": "15 / 10",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 37,
+      "name": "Zef",
+      "handle": "EjtQrP",
+      "profileUrl": "https://kolscan.io/account/EjtQrPTbcMevStBkpnjsH23NfUCMhGHusTYsHuGVQZp2?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/EjtQrPTbcMevStBkpnjsH23NfUCMhGHusTYsHuGVQZp2.png",
+      "pnlSol": 5.17,
+      "pnl": 444.7,
+      "winRate": "",
+      "roi": "",
+      "trades": 2,
+      "tradesDisplay": "1 / 1",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 38,
+      "name": "Henn",
+      "handle": "FRbUNv",
+      "profileUrl": "https://kolscan.io/account/FRbUNvGxYNC1eFngpn7AD3f14aKKTJVC6zSMtvj2dyCS?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/FRbUNvGxYNC1eFngpn7AD3f14aKKTJVC6zSMtvj2dyCS.png",
+      "pnlSol": 4.96,
+      "pnl": 426.8,
+      "winRate": "",
+      "roi": "",
+      "trades": 64,
+      "tradesDisplay": "21 / 43",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 39,
+      "name": "Red",
+      "handle": "7ABz8q",
+      "profileUrl": "https://kolscan.io/account/7ABz8qEFZTHPkovMDsmQkm64DZWN5wRtU7LEtD2ShkQ6?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/7ABz8qEFZTHPkovMDsmQkm64DZWN5wRtU7LEtD2ShkQ6.png",
+      "pnlSol": 4.68,
+      "pnl": 402.4,
+      "winRate": "",
+      "roi": "",
+      "trades": 66,
+      "tradesDisplay": "28 / 38",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 40,
+      "name": "radiance",
+      "handle": "FAicXN",
+      "profileUrl": "https://kolscan.io/account/FAicXNV5FVqtfbpn4Zccs71XcfGeyxBSGbqLDyDJZjke?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/FAicXNV5FVqtfbpn4Zccs71XcfGeyxBSGbqLDyDJZjke.png",
+      "pnlSol": 4.65,
+      "pnl": 399.9,
+      "winRate": "",
+      "roi": "",
+      "trades": 39,
+      "tradesDisplay": "21 / 18",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 41,
+      "name": "unprofitable",
+      "handle": "DYmsQu",
+      "profileUrl": "https://kolscan.io/account/DYmsQudNqJyyDvq86XmzAvrU9T7xwfQEwh6gPQw9TPNF?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/DYmsQudNqJyyDvq86XmzAvrU9T7xwfQEwh6gPQw9TPNF.png",
+      "pnlSol": 4.62,
+      "pnl": 397.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 57,
+      "tradesDisplay": "18 / 39",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 42,
+      "name": "kreo",
+      "handle": "BCnqsP",
+      "profileUrl": "https://kolscan.io/account/BCnqsPEtA1TkgednYEebRpkmwFRJDCjMQcKZMMtEdArc?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/BCnqsPEtA1TkgednYEebRpkmwFRJDCjMQcKZMMtEdArc.png",
+      "pnlSol": 4.55,
+      "pnl": 391.5,
+      "winRate": "",
+      "roi": "",
+      "trades": 17,
+      "tradesDisplay": "5 / 12",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 43,
+      "name": "Veloce",
+      "handle": "2W14ah",
+      "profileUrl": "https://kolscan.io/account/2W14ahXD3XBfWJchQ4K5NLXmguWWcTTUTuHDhEzeuvP3?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/2W14ahXD3XBfWJchQ4K5NLXmguWWcTTUTuHDhEzeuvP3.png",
+      "pnlSol": 4.41,
+      "pnl": 379.3,
+      "winRate": "",
+      "roi": "",
+      "trades": 17,
+      "tradesDisplay": "10 / 7",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 44,
+      "name": "zeropnl",
+      "handle": "4xY9T1",
+      "profileUrl": "https://kolscan.io/account/4xY9T1Q7foJzJsJ6YZDSsfp9zkzeZsXnxd45SixduMmr?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/4xY9T1Q7foJzJsJ6YZDSsfp9zkzeZsXnxd45SixduMmr.png",
+      "pnlSol": 4.17,
+      "pnl": 358.4,
+      "winRate": "",
+      "roi": "",
+      "trades": 10,
+      "tradesDisplay": "5 / 5",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 45,
+      "name": "Leck",
+      "handle": "98T65w",
+      "profileUrl": "https://kolscan.io/account/98T65wcMEjoNLDTJszBHGZEX75QRe8QaANXokv4yw3Mp?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/98T65wcMEjoNLDTJszBHGZEX75QRe8QaANXokv4yw3Mp.png",
+      "pnlSol": 3.98,
+      "pnl": 342.7,
+      "winRate": "",
+      "roi": "",
+      "trades": 75,
+      "tradesDisplay": "31 / 44",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 46,
+      "name": "dv",
+      "handle": "BCagck",
+      "profileUrl": "https://kolscan.io/account/BCagckXeMChUKrHEd6fKFA1uiWDtcmCXMsqaheLiUPJd?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/BCagckXeMChUKrHEd6fKFA1uiWDtcmCXMsqaheLiUPJd.png",
+      "pnlSol": 3.79,
+      "pnl": 326.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 101,
+      "tradesDisplay": "33 / 68",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 47,
+      "name": "Monki",
+      "handle": "53BnNc",
+      "profileUrl": "https://kolscan.io/account/53BnNc49Ajgstciq3CRoyxuBpkkW1r8pgPyvr7JGYnsh?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/53BnNc49Ajgstciq3CRoyxuBpkkW1r8pgPyvr7JGYnsh.png",
+      "pnlSol": 3.75,
+      "pnl": 322.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 13,
+      "tradesDisplay": "7 / 6",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 48,
       "name": "Gake",
-      "handle": "DNfu...eB...",
-      "profileUrl": "https://solscan.io/",
-      "pnl": 7520000,
-      "realizedPnl": 18580000,
-      "winRate": "0.0%",
-      "roi": "+72.3%",
-      "trades": 26700,
-      "lastTrade": "8h ago",
-      "activity": "8h ago"
+      "handle": "DNfuF1",
+      "profileUrl": "https://kolscan.io/account/DNfuF1L62WWyW3pNakVkyGGFzVVhj4Yr52jSmdTyeBHm?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/DNfuF1L62WWyW3pNakVkyGGFzVVhj4Yr52jSmdTyeBHm.png",
+      "pnlSol": 3.69,
+      "pnl": 317.1,
+      "winRate": "",
+      "roi": "",
+      "trades": 1,
+      "tradesDisplay": "1 / 0",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
+    },
+    {
+      "rank": 49,
+      "name": "MoneyMike",
+      "handle": "7s98K3",
+      "profileUrl": "https://kolscan.io/account/7s98K37yqAc22rxNJK5YwaDkcDsHFKMqNH1EnG8fJBVW?timeframe=1",
+      "avatarUrl": "https://cdn.kolscan.io/profiles/7s98K37yqAc22rxNJK5YwaDkcDsHFKMqNH1EnG8fJBVW.png",
+      "pnlSol": 3.62,
+      "pnl": 311.4,
+      "winRate": "",
+      "roi": "",
+      "trades": 16,
+      "tradesDisplay": "10 / 6",
+      "activity": "",
+      "sourceName": "Kolscan public leaderboard"
     }
-  ],
-  "dataMode": "preview",
-  "tradingDays": 23,
-  "todayVolume": 2310000
+  ]
 }
