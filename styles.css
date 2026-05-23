@@ -172,6 +172,7 @@ h2{
 }
 .button.ghost{background:rgba(255,255,255,.05);color:var(--text)}
 .button.ghost:hover{background:rgba(255,255,255,.09)}
+.compact-button{min-height:40px;padding:0 14px;font-size:13px}
 
 .launch-panel{
   position:relative;
@@ -586,12 +587,25 @@ h2{
 .kol-empty{
   display:grid;
   place-items:center;
+  gap:10px;
   min-height:240px;
   padding:42px 20px;
   text-align:center;
 }
 .kol-empty h3{margin:14px 0 8px;font-size:26px}
 .kol-empty p{max-width:520px;margin:0;color:var(--muted)}
+.kol-page-hero{padding-bottom:38px}
+.back-link{
+  display:inline-flex;
+  align-items:center;
+  min-height:38px;
+  padding:0 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--muted);
+  font-weight:900;
+}
+.back-link:hover{border-color:rgba(22,242,139,.42);color:var(--text);background:rgba(22,242,139,.08)}
 
 .verify{
   display:grid;
