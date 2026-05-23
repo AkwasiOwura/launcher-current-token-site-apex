@@ -27,23 +27,24 @@
       <span>SolMemeHub</span>
     </a>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="#tokens">Token pages</a>
+      <a href="#trending">Pump.fun radar</a>
+      <a href="#pages">Token pages</a>
       <a href="#verify">Verify</a>
-      <a href="#about">About</a>
     </nav>
   </header>
 
   <main>
     <section class="hero" data-reveal>
       <div class="hero-copy">
-        <p class="eyebrow">Solana meme-token launch hub</p>
-        <h1>Discover the newest meme pages before the crowd does.</h1>
+        <p class="eyebrow">Daily meme-coin radar</p>
+        <h1>Track the loudest Pump.fun moves from one premium hub.</h1>
         <p class="lead">
-          SolMemeHub collects public pages for fresh Solana meme-token concepts in one polished index,
-          built for quick scanning, cleaner discovery, and careful verification.
+          SolMemeHub combines a daily-updating meme-coin radar with dedicated SolMemeHub token pages,
+          built for fast scanning, cleaner discovery, and careful verification.
         </p>
         <div class="hero-actions" aria-label="Primary actions">
-          <a class="button primary" href="#tokens">View current pages</a>
+          <a class="button primary" href="#trending">View Pump.fun radar</a>
+          <a class="button ghost" href="#pages">Explore live token pages</a>
           <a class="button ghost" href="#verify">Verify before trading</a>
         </div>
       </div>
@@ -51,7 +52,7 @@
       <aside class="launch-panel" aria-label="SolMemeHub highlights">
         <div class="panel-top">
           <span class="pulse"></span>
-          <span>Live page index</span>
+          <span>Daily public data</span>
         </div>
         <div class="signal-card">
           <span class="signal-label">Network</span>
@@ -59,7 +60,7 @@
         </div>
         <div class="signal-card">
           <span class="signal-label">Focus</span>
-          <strong>Meme launches</strong>
+          <strong>Pump.fun radar</strong>
         </div>
         <div class="signal-card wide">
           <span class="signal-label">Rule</span>
@@ -70,24 +71,58 @@
 
     <section class="ticker" aria-label="Safety reminders" data-reveal>
       <div class="ticker-track">
-        <span>Explore live token pages</span>
+        <span>Trending on Pump.fun</span>
         <span>Verify contracts before trading</span>
-        <span>Memecoins are high risk</span>
+        <span>High-cap meme radar</span>
         <span>Use public sources and confirm addresses</span>
-        <span>Explore live token pages</span>
+        <span>Trending on Pump.fun</span>
         <span>Verify contracts before trading</span>
-        <span>Memecoins are high risk</span>
+        <span>High-cap meme radar</span>
         <span>Use public sources and confirm addresses</span>
       </div>
     </section>
 
-    <section id="tokens" class="section" data-reveal>
+    <section id="trending" class="section" data-reveal>
       <div class="section-head">
         <div>
-          <p class="eyebrow">Current index</p>
-          <h2>Token pages</h2>
+          <p class="eyebrow">Trending on Pump.fun</p>
+          <h2>Daily radar</h2>
         </div>
-        <p>Cards are loaded from the public token index and link directly to each token page.</p>
+        <p id="meme-source-note">Loading the latest public meme-coin data.</p>
+      </div>
+      <div id="trending-grid" class="radar-grid" aria-live="polite">
+        <article class="empty-card">
+          <span class="empty-icon">◇</span>
+          <h3>Loading Pump.fun radar</h3>
+          <p>Checking the public meme-coin index.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="highcap" class="section compact-section" data-reveal>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">High-cap meme radar</p>
+          <h2>Largest visible caps</h2>
+        </div>
+        <p>Market-cap and volume fields are shown only when supplied by the active public data source.</p>
+      </div>
+      <div id="highcap-grid" class="radar-grid compact-grid" aria-live="polite">
+        <article class="empty-card">
+          <span class="empty-icon">◇</span>
+          <h3>High-cap data pending</h3>
+          <p>Waiting for reliable public market-cap fields.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="pages" class="section" data-reveal>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">SolMemeHub pages</p>
+          <h2>Planned and live token pages</h2>
+        </div>
+        <p>This section stays separate from the Pump.fun radar and links only to SolMemeHub token pages.</p>
       </div>
       <div id="token-grid" class="token-grid" aria-live="polite">
         <article class="empty-card">

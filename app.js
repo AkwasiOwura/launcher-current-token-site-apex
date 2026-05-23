@@ -20,6 +20,20 @@
     });
   }
 
+  function safeUrl(value, fallback) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return fallback || '#';
+    try {
+      var url = new URL(raw, window.location.href);
+      if (url.protocol === 'https:' || url.protocol === 'http:' || url.protocol === window.location.protocol) {
+        return url.href;
+      }
+    } catch (_err) {
+      return fallback || '#';
+    }
+    return fallback || '#';
+  }
+
   function normalizeSlug(value) {
     return String(value == null ? '' : value)
       .trim()
@@ -27,6 +41,26 @@
       .replace(/\/+$/, '')
       .replace(/[^a-z0-9-]/gi, '')
       .toLowerCase();
+  }
+
+  function compactNumber(value, prefix) {
+    var n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    return (prefix || '') + Intl.NumberFormat('en', {
+      notation: 'compact',
+      maximumFractionDigits: n >= 1000000 ? 1 : 0
+    }).format(n);
+  }
+
+  function formatUpdated(value) {
+    var time = Date.parse(value || '');
+    if (!Number.isFinite(time)) return 'Updated daily';
+    return 'Updated ' + new Date(time).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   function tokenDate(token) {
@@ -39,24 +73,106 @@
     return token.description || token.tagline || token.summary || 'A public Solana meme-token page indexed by SolMemeHub.';
   }
 
-  function renderEmpty(message) {
-    var grid = document.getElementById('token-grid');
-    if (!grid) return;
-    grid.innerHTML = [
+  function emptyMarkup(title, message) {
+    return [
       '<article class="empty-card">',
       '<span class="empty-icon">◇</span>',
-      '<h3>Token pages are being prepared</h3>',
-      '<p>' + escapeHtml(message || 'No public token pages are listed yet. Check back soon for the next Solana meme-token page.') + '</p>',
+      '<h3>' + escapeHtml(title) + '</h3>',
+      '<p>' + escapeHtml(message) + '</p>',
       '</article>'
     ].join('');
   }
 
-  function renderTokens(tokens) {
+  function renderEmpty(id, title, message) {
+    var grid = document.getElementById(id);
+    if (!grid) return;
+    grid.innerHTML = emptyMarkup(title, message);
+  }
+
+  function coinCard(coin, index, mode) {
+    var name = escapeHtml(coin.name || coin.symbol || 'Unnamed coin');
+    var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase());
+    var label = escapeHtml(coin.label || coin.category || coin.sourceName || 'Public source');
+    var rank = Number.isFinite(Number(coin.rank)) ? '#' + Number(coin.rank) : '';
+    var mint = escapeHtml(coin.mint || coin.contract || '');
+    var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
+    var image = safeUrl(coin.imageUrl || coin.image || '', '');
+    var marketCap = compactNumber(coin.marketCapUsd, '$');
+    var volume = compactNumber(coin.volume24hUsd, '$');
+    var delay = Math.min(index * 60, 540);
+    var meta = [];
+
+    if (rank) meta.push(rank);
+    if (marketCap) meta.push('Cap ' + marketCap);
+    if (volume && mode !== 'highcap') meta.push('Vol ' + volume);
+    if (!marketCap && !volume && coin.sourceName) meta.push(escapeHtml(coin.sourceName));
+
+    return [
+      '<a class="coin-card" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
+      '<div class="coin-media">',
+      image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" />' : '<span>' + escapeHtml((symbol || name).slice(0, 2)) + '</span>',
+      '</div>',
+      '<div class="coin-body">',
+      '<div class="coin-row"><span class="coin-rank">' + (rank || 'LIVE') + '</span><span class="coin-label">' + label + '</span></div>',
+      '<h3>' + name + '</h3>',
+      '<p>' + (symbol ? '$' + symbol : 'Pump.fun coin') + '</p>',
+      mint ? '<code>' + mint.slice(0, 6) + '...' + mint.slice(-5) + '</code>' : '',
+      '</div>',
+      '<div class="coin-footer"><span>' + (meta.length ? meta.join(' · ') : 'Open page') + '</span><strong>Open ↗</strong></div>',
+      '</a>'
+    ].join('');
+  }
+
+  function renderCoinGrid(id, coins, title, message, mode) {
+    var grid = document.getElementById(id);
+    if (!grid) return;
+    if (!Array.isArray(coins) || coins.length === 0) {
+      grid.innerHTML = emptyMarkup(title, message);
+      return;
+    }
+    grid.innerHTML = coins.slice(0, 12).map(function (coin, index) {
+      return coinCard(coin, index, mode);
+    }).join('');
+  }
+
+  function renderMemeData(data) {
+    var note = document.getElementById('meme-source-note');
+    var trending = data && Array.isArray(data.trending) ? data.trending : [];
+    var highCap = data && Array.isArray(data.highCap) ? data.highCap : [];
+    var activeSource = data && data.source && data.source.active ? data.source.active : 'Public meme-coin data';
+    var sourceNote = data && data.source && data.source.blocker
+      ? activeSource + ' · Pump.fun direct fetch blocked'
+      : activeSource;
+
+    if (note) {
+      note.textContent = sourceNote + ' · ' + formatUpdated(data && data.updatedAt);
+    }
+
+    renderCoinGrid(
+      'trending-grid',
+      trending,
+      'Trending data unavailable',
+      'No reliable public Pump.fun radar data is available yet.',
+      'trending'
+    );
+    renderCoinGrid(
+      'highcap-grid',
+      highCap,
+      'High-cap data unavailable',
+      'No reliable public market-cap fields are available yet.',
+      'highcap'
+    );
+  }
+
+  function renderTokenPages(tokens) {
     var grid = document.getElementById('token-grid');
     if (!grid) return;
 
     if (!Array.isArray(tokens) || tokens.length === 0) {
-      renderEmpty();
+      grid.innerHTML = emptyMarkup(
+        'Token pages are being prepared',
+        'No SolMemeHub token pages are listed yet. Check back soon for the next public page.'
+      );
       return;
     }
 
@@ -91,24 +207,39 @@
       });
 
     if (cards.length === 0) {
-      renderEmpty('The token index loaded, but no valid token page slugs were found.');
+      grid.innerHTML = emptyMarkup('Token pages are being prepared', 'The token page index loaded, but no valid page slugs were found.');
       return;
     }
 
     grid.innerHTML = cards.join('');
   }
 
-  function loadTokens() {
-    fetch('./tokens.json', { cache: 'no-store', credentials: 'omit' })
+  function loadJson(path) {
+    return fetch(path, { cache: 'no-store', credentials: 'omit' })
       .then(function (response) {
-        if (!response.ok) throw new Error('Token index unavailable');
+        if (!response.ok) throw new Error(path + ' unavailable');
         return response.json();
-      })
+      });
+  }
+
+  function loadData() {
+    loadJson('./meme-coins.json')
+      .then(renderMemeData)
+      .catch(function () {
+        renderMemeData({
+          updatedAt: '',
+          source: { active: 'Public data unavailable', blocker: 'meme-coins.json unavailable' },
+          trending: [],
+          highCap: []
+        });
+      });
+
+    loadJson('./tokens.json')
       .then(function (data) {
-        renderTokens(data && Array.isArray(data.tokens) ? data.tokens : []);
+        renderTokenPages(data && Array.isArray(data.tokens) ? data.tokens : []);
       })
       .catch(function () {
-        renderEmpty('The public token index could not be loaded right now. Existing token pages may still be available directly.');
+        renderTokenPages([]);
       });
   }
 
@@ -190,7 +321,7 @@
   function boot() {
     setupReveal();
     setupStarfield();
-    loadTokens();
+    loadData();
   }
 
   if (document.readyState === 'loading') {

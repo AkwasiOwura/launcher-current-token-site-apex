@@ -274,19 +274,21 @@ h2{
   margin:0;
   color:var(--muted);
 }
-.token-grid{
+.token-grid,.radar-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
   gap:16px;
 }
-.token-card,.empty-card{
+.compact-section{padding-top:30px}
+.compact-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.token-card,.coin-card,.empty-card{
   min-height:230px;
   border:1px solid var(--border);
   border-radius:14px;
   background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.035));
   box-shadow:0 20px 60px rgba(0,0,0,.22);
 }
-.token-card{
+.token-card,.coin-card{
   position:relative;
   display:flex;
   flex-direction:column;
@@ -298,7 +300,7 @@ h2{
   animation:cardIn .7s var(--ease) forwards;
   transition:transform .24s var(--ease),border-color .24s var(--ease),background .24s var(--ease),box-shadow .24s var(--ease);
 }
-.token-card:hover{
+.token-card:hover,.coin-card:hover{
   transform:translateY(-5px);
   border-color:rgba(0,230,168,.42);
   background:linear-gradient(180deg,rgba(0,230,168,.105),rgba(255,255,255,.045));
@@ -341,6 +343,77 @@ h2{
   font-family:var(--mono);
   font-size:12px;
 }
+.coin-card{min-height:310px;padding:14px}
+.coin-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,rgba(0,230,168,.12),transparent 42%,rgba(255,207,90,.08));
+  opacity:.75;
+}
+.coin-media,.coin-body,.coin-footer{position:relative;z-index:1}
+.coin-media{
+  height:132px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;
+  background:rgba(0,0,0,.28);
+  overflow:hidden;
+}
+.coin-media img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transform:scale(1.02);
+  transition:transform .35s var(--ease),filter .35s var(--ease);
+}
+.coin-card:hover .coin-media img{transform:scale(1.08);filter:saturate(1.12)}
+.coin-media span{
+  display:grid;
+  place-items:center;
+  width:66px;
+  height:66px;
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(0,230,168,.2),rgba(77,201,255,.15));
+  color:var(--mint);
+  font-family:var(--mono);
+  font-weight:900;
+  font-size:20px;
+}
+.coin-row,.coin-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.coin-row{margin-top:14px}
+.coin-rank,.coin-label{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:0 9px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:999px;
+  color:var(--soft);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:900;
+}
+.coin-rank{color:var(--gold);background:rgba(255,207,90,.08)}
+.coin-card h3{margin:14px 0 4px;font-size:25px;line-height:1.05;letter-spacing:0}
+.coin-card p{margin:0;color:var(--mint);font-family:var(--mono);font-size:13px;font-weight:900}
+.coin-card code{
+  display:inline-block;
+  margin-top:10px;
+  color:var(--soft);
+  font-family:var(--mono);
+  font-size:12px;
+}
+.coin-footer{
+  margin-top:18px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.09);
+  color:var(--soft);
+  font-family:var(--mono);
+  font-size:11px;
+}
+.coin-footer strong{color:var(--text);font-family:var(--sans);font-size:13px}
 .empty-card{
   grid-column:1/-1;
   display:grid;
