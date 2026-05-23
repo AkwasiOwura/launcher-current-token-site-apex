@@ -139,13 +139,8 @@
     var note = document.getElementById('meme-source-note');
     var trending = data && Array.isArray(data.trending) ? data.trending : [];
     var highCap = data && Array.isArray(data.highCap) ? data.highCap : [];
-    var activeSource = data && data.source && data.source.active ? data.source.active : 'Public meme-coin data';
-    var sourceNote = data && data.source && data.source.blocker
-      ? activeSource + ' · Pump.fun direct fetch blocked'
-      : activeSource;
-
     if (note) {
-      note.textContent = sourceNote + ' · ' + formatUpdated(data && data.updatedAt);
+      note.textContent = 'Market radar refreshed regularly · ' + formatUpdated(data && data.updatedAt);
     }
 
     renderCoinGrid(
