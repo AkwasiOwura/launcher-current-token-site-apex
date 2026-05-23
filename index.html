@@ -25,7 +25,7 @@
       <span>SolMemeHub</span>
     </a>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="#trending">Pump.fun radar</a>
+      <a href="#trending">Market radar</a>
       <a href="#pages">Token pages</a>
       <a href="#verify">Verify</a>
     </nav>
@@ -37,11 +37,11 @@
         <p class="eyebrow">Daily meme-coin radar</p>
         <h1>Track Solana token momentum from one premium hub.</h1>
         <p class="lead">
-          SolMemeHub combines a daily-updating meme-coin radar with dedicated SolMemeHub token pages,
-          built for fast scanning, cleaner discovery, and careful verification.
+          Follow trending Solana meme assets, compare live radar signals, and open SolMemeHub token pages from
+          one clean market-style dashboard.
         </p>
         <div class="hero-actions" aria-label="Primary actions">
-          <a class="button primary" href="#trending">View Pump.fun radar</a>
+          <a class="button primary" href="#trending">View market radar</a>
           <a class="button ghost" href="#pages">Explore live token pages</a>
           <a class="button ghost" href="#verify">Verify before trading</a>
         </div>
@@ -57,14 +57,33 @@
           <strong>Solana</strong>
         </div>
         <div class="signal-card">
-          <span class="signal-label">Focus</span>
-          <strong>Pump.fun radar</strong>
+          <span class="signal-label">Radar</span>
+          <strong id="hero-token-count">Loading</strong>
         </div>
         <div class="signal-card wide">
           <span class="signal-label">Rule</span>
           <strong>Verify every contract</strong>
         </div>
       </aside>
+    </section>
+
+    <section class="market-strip" aria-label="Market radar summary" data-reveal>
+      <div class="metric">
+        <span>Trending assets</span>
+        <strong id="stat-trending">—</strong>
+      </div>
+      <div class="metric">
+        <span>High-cap entries</span>
+        <strong id="stat-highcap">—</strong>
+      </div>
+      <div class="metric">
+        <span>24h volume tracked</span>
+        <strong id="stat-volume">—</strong>
+      </div>
+      <div class="metric">
+        <span>Largest cap</span>
+        <strong id="stat-largest">—</strong>
+      </div>
     </section>
 
     <section class="ticker" aria-label="Trending meme radar ticker" data-reveal>
@@ -79,32 +98,41 @@
     <section id="trending" class="section" data-reveal>
       <div class="section-head">
         <div>
-          <p class="eyebrow">Trending on Pump.fun</p>
-          <h2>Daily radar</h2>
+          <p class="eyebrow">Solana market radar</p>
+          <h2>Trending tokens</h2>
+        </div>
+        <div class="radar-controls" aria-label="Radar controls">
+          <button class="tab is-active" type="button" data-radar-tab="trending">Trending</button>
+          <button class="tab" type="button" data-radar-tab="highcap">High-cap</button>
+          <label class="search">
+            <span>Search</span>
+            <input id="radar-search" type="search" placeholder="Symbol or name" autocomplete="off" />
+          </label>
         </div>
       </div>
       <div id="trending-grid" class="radar-grid" aria-live="polite">
         <article class="empty-card">
           <span class="empty-icon">◇</span>
-          <h3>Loading Pump.fun radar</h3>
+          <h3>Loading market radar</h3>
           <p>Checking the public meme-coin index.</p>
         </article>
       </div>
-    </section>
-
-    <section id="highcap" class="section compact-section" data-reveal>
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">High-cap meme radar</p>
-          <h2>Largest visible caps</h2>
-        </div>
-      </div>
-      <div id="highcap-grid" class="radar-grid compact-grid" aria-live="polite">
-        <article class="empty-card">
-          <span class="empty-icon">◇</span>
-          <h3>High-cap data pending</h3>
-          <p>Waiting for reliable public market-cap fields.</p>
-        </article>
+      <div class="market-table-wrap">
+        <table class="market-table">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Price</th>
+              <th>24h</th>
+              <th>Market cap</th>
+              <th>Volume</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="market-table-body">
+            <tr><td colspan="6">Loading market radar</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 

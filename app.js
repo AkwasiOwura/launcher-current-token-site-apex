@@ -2,6 +2,11 @@
   'use strict';
 
   var reducedMotion = false;
+  var memeState = {
+    data: null,
+    tab: 'trending',
+    query: ''
+  };
   try {
     reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch (_err) {
@@ -81,6 +86,11 @@
     }).format(n) + '%';
   }
 
+  function setText(id, value) {
+    var node = document.getElementById(id);
+    if (node) node.textContent = value;
+  }
+
   function tokenDate(token) {
     var raw = token.publishedAt || token.updatedAt || token.createdAt || token.date || '';
     var time = Date.parse(raw);
@@ -110,7 +120,7 @@
   function coinCard(coin, index, mode) {
     var name = escapeHtml(coin.name || coin.symbol || 'Unnamed coin');
     var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase());
-    var label = escapeHtml(coin.label || coin.category || coin.sourceName || 'Public source');
+    var label = escapeHtml(coin.label || coin.category || 'Market radar');
     var rank = Number.isFinite(Number(coin.rank)) ? '#' + Number(coin.rank) : '';
     var mint = escapeHtml(coin.mint || coin.contract || '');
     var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
@@ -124,7 +134,7 @@
     if (rank) meta.push(rank);
     if (marketCap) meta.push('Cap ' + marketCap);
     if (volume && mode !== 'highcap') meta.push('Vol ' + volume);
-    if (!marketCap && !volume && coin.sourceName) meta.push(escapeHtml(coin.sourceName));
+    if (!marketCap && !volume) meta.push('Market radar');
 
     return [
       '<a class="coin-card" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
@@ -189,6 +199,94 @@
     track.innerHTML = items.concat(items).join('');
   }
 
+  function allCoins(data) {
+    return []
+      .concat(data && Array.isArray(data.trending) ? data.trending : [])
+      .concat(data && Array.isArray(data.highCap) ? data.highCap : []);
+  }
+
+  function uniqueCoins(coins) {
+    var seen = {};
+    return (Array.isArray(coins) ? coins : []).filter(function (coin) {
+      var key = coin && (coin.mint || coin.symbol || coin.name);
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function currentCoins() {
+    var data = memeState.data || {};
+    var coins = memeState.tab === 'highcap' && Array.isArray(data.highCap) ? data.highCap : data.trending;
+    var query = memeState.query.trim().toLowerCase();
+    coins = uniqueCoins(coins || []);
+    if (!query) return coins;
+    return coins.filter(function (coin) {
+      return [coin.name, coin.symbol, coin.mint].some(function (value) {
+        return String(value || '').toLowerCase().indexOf(query) !== -1;
+      });
+    });
+  }
+
+  function renderStats(data) {
+    var trending = Array.isArray(data && data.trending) ? data.trending : [];
+    var highCap = Array.isArray(data && data.highCap) ? data.highCap : [];
+    var volume = uniqueCoins(allCoins(data)).reduce(function (sum, coin) {
+      var n = Number(coin && coin.volume24hUsd);
+      return Number.isFinite(n) && n > 0 ? sum + n : sum;
+    }, 0);
+    var largest = highCap.reduce(function (max, coin) {
+      var n = Number(coin && coin.marketCapUsd);
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+
+    setText('stat-trending', trending.length ? String(trending.length) : '—');
+    setText('stat-highcap', highCap.length ? String(highCap.length) : '—');
+    setText('stat-volume', compactNumber(volume, '$') || '—');
+    setText('stat-largest', compactNumber(largest, '$') || '—');
+    setText('hero-token-count', String(uniqueCoins(allCoins(data)).length || '—') + ' assets');
+  }
+
+  function marketRow(coin) {
+    var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase());
+    var name = escapeHtml(coin.name || coin.symbol || 'Unnamed token');
+    var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
+    var image = safeAssetUrl(coin.imageUrl || coin.image || coin.icon || coin.logo || '');
+    var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
+    var price = compactPrice(coin.priceUsd || coin.price) || '—';
+    var change = compactPercent(coin.priceChange24h || coin.change24h || coin.priceChange);
+    var changeClass = change.indexOf('-') === 0 ? 'down' : change ? 'up' : '';
+    var marketCap = compactNumber(coin.marketCapUsd, '$') || '—';
+    var volume = compactNumber(coin.volume24hUsd, '$') || '—';
+
+    return [
+      '<tr>',
+      '<td><a class="table-token" href="' + href + '" target="_blank" rel="noopener noreferrer">',
+      '<span class="table-avatar">',
+      image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-coin-image />' : '',
+      '<span class="coin-fallback">' + initials + '</span>',
+      '</span>',
+      '<span><strong>' + (symbol ? '$' + symbol : name) + '</strong><small>' + name + '</small></span>',
+      '</a></td>',
+      '<td>' + price + '</td>',
+      '<td><span class="' + changeClass + '">' + (change || '—') + '</span></td>',
+      '<td>' + marketCap + '</td>',
+      '<td>' + volume + '</td>',
+      '<td><a class="table-open" href="' + href + '" target="_blank" rel="noopener noreferrer">Open</a></td>',
+      '</tr>'
+    ].join('');
+  }
+
+  function renderMarketTable(coins) {
+    var body = document.getElementById('market-table-body');
+    if (!body) return;
+    if (!coins.length) {
+      body.innerHTML = '<tr><td colspan="6">No matching tokens found.</td></tr>';
+      return;
+    }
+    body.innerHTML = coins.slice(0, 24).map(marketRow).join('');
+  }
+
   function setupCoinImages() {
     Array.prototype.slice.call(document.querySelectorAll('[data-coin-image]')).forEach(function (image) {
       var media = image.closest ? image.closest('.coin-media') : image.parentNode;
@@ -224,25 +322,40 @@
   }
 
   function renderMemeData(data) {
-    var trending = data && Array.isArray(data.trending) ? data.trending : [];
-    var highCap = data && Array.isArray(data.highCap) ? data.highCap : [];
+    memeState.data = data || {};
+    var coins = currentCoins();
     renderTicker(data);
+    renderStats(data);
 
     renderCoinGrid(
       'trending-grid',
-      trending,
+      coins,
       'Trending data unavailable',
-      'No reliable public Pump.fun radar data is available yet.',
-      'trending'
+      'No matching Solana token radar entries are available yet.',
+      memeState.tab
     );
-    renderCoinGrid(
-      'highcap-grid',
-      highCap,
-      'High-cap data unavailable',
-      'No reliable public market-cap fields are available yet.',
-      'highcap'
-    );
+    renderMarketTable(coins);
     setupCoinImages();
+  }
+
+  function setupControls() {
+    Array.prototype.slice.call(document.querySelectorAll('[data-radar-tab]')).forEach(function (button) {
+      button.addEventListener('click', function () {
+        memeState.tab = button.getAttribute('data-radar-tab') || 'trending';
+        Array.prototype.slice.call(document.querySelectorAll('[data-radar-tab]')).forEach(function (item) {
+          item.classList.toggle('is-active', item === button);
+        });
+        renderMemeData(memeState.data || {});
+      });
+    });
+
+    var search = document.getElementById('radar-search');
+    if (search) {
+      search.addEventListener('input', function () {
+        memeState.query = search.value || '';
+        renderMemeData(memeState.data || {});
+      });
+    }
   }
 
   function renderTokenPages(tokens) {
@@ -344,6 +457,7 @@
 
   function boot() {
     setupReveal();
+    setupControls();
     loadData();
   }
 

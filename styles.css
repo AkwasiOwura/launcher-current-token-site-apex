@@ -255,7 +255,34 @@ h2{
 .ticker .ticker-up{color:var(--mint)}
 .ticker .ticker-down{color:var(--rose)}
 
-.section{padding:84px 0}
+.market-strip{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin:0 0 28px;
+}
+.metric{
+  min-height:104px;
+  padding:18px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
+}
+.metric span{
+  display:block;
+  color:var(--soft);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.metric strong{
+  display:block;
+  margin-top:10px;
+  font-size:clamp(24px,3.2vw,36px);
+  line-height:1;
+}
+.section{padding:78px 0}
 .section-head{
   display:flex;
   align-items:end;
@@ -268,6 +295,51 @@ h2{
   margin:0;
   color:var(--muted);
 }
+.radar-controls{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.tab,.search{
+  min-height:40px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:rgba(255,255,255,.035);
+  color:var(--muted);
+}
+.tab{
+  padding:0 13px;
+  cursor:pointer;
+  font-weight:900;
+}
+.tab.is-active{
+  border-color:rgba(22,242,139,.48);
+  background:rgba(22,242,139,.12);
+  color:var(--text);
+}
+.search{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 12px;
+}
+.search span{
+  color:var(--soft);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.search input{
+  width:170px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+}
+.search input::placeholder{color:rgba(244,255,249,.36)}
 .token-grid,.radar-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
@@ -419,6 +491,82 @@ h2{
   font-size:11px;
 }
 .coin-footer strong{color:var(--text);font-family:var(--sans);font-size:13px}
+.market-table-wrap{
+  margin-top:18px;
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:rgba(255,255,255,.025);
+}
+.market-table{
+  width:100%;
+  min-width:760px;
+  border-collapse:collapse;
+  font-size:14px;
+}
+.market-table th,.market-table td{
+  padding:13px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  text-align:left;
+  white-space:nowrap;
+}
+.market-table th{
+  color:var(--soft);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.market-table tr:last-child td{border-bottom:0}
+.table-token{
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+.table-avatar{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  overflow:hidden;
+  background:rgba(0,0,0,.35);
+}
+.table-avatar img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:0;
+}
+.table-avatar.image-loaded img{opacity:1}
+.table-avatar.image-loaded .coin-fallback{opacity:0}
+.table-avatar.image-broken img{display:none}
+.table-avatar .coin-fallback{
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  font-size:12px;
+}
+.table-token strong{display:block}
+.table-token small{display:block;color:var(--soft);font-size:12px}
+.up{color:var(--mint)}
+.down{color:var(--rose)}
+.table-open{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:30px;
+  padding:0 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  font-size:12px;
+  font-weight:900;
+}
+.table-open:hover{border-color:rgba(22,242,139,.42);background:rgba(22,242,139,.08)}
 .empty-card{
   grid-column:1/-1;
   display:grid;
@@ -485,6 +633,8 @@ h2{
   .section{padding:76px 0}
   .section-head{display:block}
   .section-head p{margin-top:12px}
+  .market-strip{grid-template-columns:repeat(2,1fr)}
+  .radar-controls{justify-content:flex-start;margin-top:16px}
   .footer{display:block}
   .footer p{text-align:center;margin-top:0}
 }
@@ -493,6 +643,9 @@ h2{
   h1{font-size:clamp(34px,10vw,48px);line-height:1.06}
   .hero-actions{display:grid}
   .button{width:100%}
+  .market-strip{grid-template-columns:1fr}
+  .search{width:100%}
+  .search input{width:100%}
   .launch-panel{grid-template-columns:1fr}
   .signal-card.wide{grid-column:auto}
 }
