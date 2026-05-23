@@ -54,11 +54,12 @@
     var winRate = escapeHtml(compactValue(entry.winRate || entry.winPercent));
     var roi = escapeHtml(compactValue(entry.roi));
     var trades = escapeHtml(compactValue(entry.trades));
+    var avatar = escapeHtml((name || 'KO').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase() || 'KO');
 
     return [
       '<a class="kol-row" href="' + href + '" target="_blank" rel="noopener noreferrer">',
       '<span class="kol-rank">#' + rank + '</span>',
-      '<span class="kol-profile"><strong>' + name + '</strong><small>' + (handle || (address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Public profile')) + '</small></span>',
+      '<span class="kol-profile"><i>' + avatar + '</i><span><strong>' + name + '</strong><small>' + (handle || (address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Public profile')) + '</small></span></span>',
       '<span class="kol-metric"><small>Total PnL</small><strong>' + pnl + '</strong></span>',
       '<span class="kol-metric"><small>Win rate</small><strong>' + winRate + '</strong></span>',
       '<span class="kol-metric"><small>ROI</small><strong>' + roi + '</strong></span>',

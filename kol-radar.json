@@ -1,11 +1,105 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "",
+  "updatedAt": "2026-05-23T23:20:00.000Z",
   "source": {
-    "name": "",
-    "url": ""
+    "name": "Operator seeded public leaderboard",
+    "url": "https://solmemehub.tech/kolscan/"
   },
-  "activeToday": null,
-  "topActivity": "",
-  "entries": []
+  "todayPnl": 138320,
+  "monthPnl": 3690000,
+  "monthVolume": 94170000,
+  "activeToday": 226,
+  "topActivity": "23 profitable days",
+  "activityDays": [
+    { "day": 1, "level": 3 },
+    { "day": 2, "level": 3 },
+    { "day": 3, "level": 2 },
+    { "day": 4, "level": 2 },
+    { "day": 5, "level": 2 },
+    { "day": 6, "level": 1 },
+    { "day": 7, "level": 3 },
+    { "day": 8, "level": 3 },
+    { "day": 9, "level": 2 },
+    { "day": 10, "level": 2 },
+    { "day": 11, "level": 3 },
+    { "day": 12, "level": 3 },
+    { "day": 13, "level": 3 },
+    { "day": 14, "level": 2 },
+    { "day": 15, "level": 2 },
+    { "day": 16, "level": 3 },
+    { "day": 17, "level": 1 },
+    { "day": 18, "level": 2 },
+    { "day": 19, "level": 2 },
+    { "day": 20, "level": 2 },
+    { "day": 21, "level": 3 },
+    { "day": 22, "level": 2 },
+    { "day": 23, "level": 2 }
+  ],
+  "entries": [
+    {
+      "rank": 1,
+      "name": "Cupsey",
+      "handle": "suqh...HQtK",
+      "profileUrl": "https://solscan.io/",
+      "pnl": 31610000,
+      "realizedPnl": 34100000,
+      "winRate": "0.0%",
+      "roi": "+28.8%",
+      "trades": 452900,
+      "lastTrade": "23h ago",
+      "activity": "23h ago"
+    },
+    {
+      "rank": 2,
+      "name": "crypto...",
+      "handle": "515y...pNFp",
+      "profileUrl": "https://solscan.io/",
+      "pnl": 30650000,
+      "realizedPnl": 30650000,
+      "winRate": "0.0%",
+      "roi": "+471.9%",
+      "trades": 55600,
+      "lastTrade": "0m ago",
+      "activity": "0m ago"
+    },
+    {
+      "rank": 3,
+      "name": "CWvd...C8ou",
+      "handle": "public profile",
+      "profileUrl": "https://solscan.io/",
+      "pnl": 26950000,
+      "realizedPnl": 26950000,
+      "winRate": "0.0%",
+      "roi": "+324.5%",
+      "trades": 7000,
+      "lastTrade": "142d ago",
+      "activity": "142d ago"
+    },
+    {
+      "rank": 4,
+      "name": "Profit - ...",
+      "handle": "G5nx...7w...",
+      "profileUrl": "https://solscan.io/",
+      "pnl": 19570000,
+      "realizedPnl": 21450000,
+      "winRate": "0.0%",
+      "roi": "+51.8%",
+      "trades": 21600,
+      "lastTrade": "2d ago",
+      "activity": "2d ago"
+    },
+    {
+      "rank": 5,
+      "name": "Gake",
+      "handle": "DNfu...eB...",
+      "profileUrl": "https://solscan.io/",
+      "pnl": 7520000,
+      "realizedPnl": 18580000,
+      "winRate": "0.0%",
+      "roi": "+72.3%",
+      "trades": 26700,
+      "lastTrade": "8h ago",
+      "activity": "8h ago"
+    }
+  ]
 }

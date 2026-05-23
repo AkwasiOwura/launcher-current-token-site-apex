@@ -33,6 +33,9 @@ body{
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
+body.kolscan-page{
+  background:#030303;
+}
 a{color:inherit;text-decoration:none}
 button,input,textarea,select{font:inherit}
 
@@ -113,6 +116,7 @@ button,input,textarea,select{font:inherit}
 .nav a:hover{background:rgba(255,255,255,.08);color:var(--text)}
 
 main{width:min(1180px,calc(100% - 32px));margin:0 auto}
+body.kolscan-page main{width:min(1440px,calc(100% - 48px))}
 .hero{
   min-height:auto;
   display:grid;
@@ -537,7 +541,7 @@ h2{
 .kol-leaderboard{display:grid}
 .kol-row{
   display:grid;
-  grid-template-columns:64px minmax(170px,1.4fr) repeat(3,minmax(90px,.75fr)) minmax(120px,.9fr) minmax(120px,1fr);
+  grid-template-columns:64px minmax(170px,1.35fr) repeat(4,minmax(90px,.75fr)) minmax(120px,1fr);
   gap:12px;
   align-items:center;
   padding:14px 16px;
@@ -559,6 +563,25 @@ h2{
   font-weight:900;
 }
 .kol-profile strong,.kol-metric strong{display:block}
+.kol-profile{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.kol-profile i{
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:linear-gradient(135deg,rgba(22,242,139,.28),rgba(255,255,255,.1));
+  border:1px solid rgba(255,255,255,.14);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:10px;
+  font-style:normal;
+  font-weight:900;
+}
 .kol-profile small,.kol-metric small,.kol-activity{
   color:var(--soft);
   font-size:12px;
@@ -607,6 +630,7 @@ h2{
 }
 .back-link:hover{border-color:rgba(22,242,139,.42);color:var(--text);background:rgba(22,242,139,.08)}
 .kolscan-shell{padding:34px 0 86px}
+body.kolscan-page .kolscan-shell{padding-top:18px}
 .breadcrumb{
   display:flex;
   align-items:center;
@@ -636,7 +660,7 @@ h2{
   padding:18px;
   border:1px solid var(--border);
   border-radius:12px;
-  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.022));
+  background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
 }
 .kol-kpi span,.kol-kpi small{
   color:var(--soft);
@@ -651,6 +675,9 @@ h2{
   font-size:clamp(28px,4vw,42px);
   line-height:1;
 }
+body.kolscan-page .section-head h1{font-size:24px}
+body.kolscan-page .section-head{align-items:flex-start}
+body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .kol-activity-card,.kol-board-card{
   margin-top:14px;
   border:1px solid var(--border);
