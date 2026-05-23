@@ -3,38 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#06070a" />
+  <meta name="theme-color" content="#050712" />
   <meta name="color-scheme" content="dark" />
-  <title>solmemehub</title>
-  <link rel="icon" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%2308090d'/&gt;&lt;circle cx='32' cy='32' r='13' fill='%239d7bff'/&gt;&lt;circle cx='32' cy='32' r='13' fill='none' stroke='%2300e6a8' stroke-width='1.4'/&gt;&lt;/svg&gt;" />
+  <meta
+    name="description"
+    content="SolMemeHub is a polished public index for Solana meme-token pages. Explore current pages, verify contracts, and trade carefully."
+  />
+  <title>SolMemeHub | Solana Meme Launch Hub</title>
+  <link rel="icon" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='15' fill='%23050712'/&gt;&lt;path d='M14 39h36l-8-18-8 11-7-8-13 15Z' fill='%2300e6a8'/&gt;&lt;circle cx='44' cy='18' r='5' fill='%23ffcf5a'/&gt;&lt;/svg&gt;" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
-      <span class="kicker">A meme hub on Solana</span>
-      <h1>solmemehub</h1>
-      <p class="tagline">Each meme that passes through gets its own page here. Pure culture, on chain.</p>
-      <p class="desc">Visit any token's page by appending its slug to this URL.</p>
-      <div class="cta">
-        <a class="chip" target="_blank" rel="noopener noreferrer" href="https://pump.fun/">Pump.fun ↗</a>
-        <a class="chip" target="_blank" rel="noopener noreferrer" href="https://solscan.io/">Solscan ↗</a>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="scene" aria-hidden="true">
+    <span class="mesh mesh-a"></span>
+    <span class="mesh mesh-b"></span>
+    <span class="grid-glow"></span>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="SolMemeHub home">
+      <span class="brand-mark">SMH</span>
+      <span>SolMemeHub</span>
+    </a>
+    <nav class="nav" aria-label="Primary navigation">
+      <a href="#tokens">Token pages</a>
+      <a href="#verify">Verify</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" data-reveal>
+      <div class="hero-copy">
+        <p class="eyebrow">Solana meme-token launch hub</p>
+        <h1>Discover the newest meme pages before the crowd does.</h1>
+        <p class="lead">
+          SolMemeHub collects public pages for fresh Solana meme-token concepts in one polished index,
+          built for quick scanning, cleaner discovery, and careful verification.
+        </p>
+        <div class="hero-actions" aria-label="Primary actions">
+          <a class="button primary" href="#tokens">View current pages</a>
+          <a class="button ghost" href="#verify">Verify before trading</a>
+        </div>
+      </div>
+
+      <aside class="launch-panel" aria-label="SolMemeHub highlights">
+        <div class="panel-top">
+          <span class="pulse"></span>
+          <span>Live page index</span>
+        </div>
+        <div class="signal-card">
+          <span class="signal-label">Network</span>
+          <strong>Solana</strong>
+        </div>
+        <div class="signal-card">
+          <span class="signal-label">Focus</span>
+          <strong>Meme launches</strong>
+        </div>
+        <div class="signal-card wide">
+          <span class="signal-label">Rule</span>
+          <strong>Verify every contract</strong>
+        </div>
+      </aside>
+    </section>
+
+    <section class="ticker" aria-label="Safety reminders" data-reveal>
+      <div class="ticker-track">
+        <span>Explore live token pages</span>
+        <span>Verify contracts before trading</span>
+        <span>Memecoins are high risk</span>
+        <span>Use public sources and confirm addresses</span>
+        <span>Explore live token pages</span>
+        <span>Verify contracts before trading</span>
+        <span>Memecoins are high risk</span>
+        <span>Use public sources and confirm addresses</span>
       </div>
     </section>
 
-    <section class="latest" data-reveal>
-      <h2>Recent</h2>
-      <div id="recent-tokens" class="grid">
-        <p class="hint">No tokens indexed yet on this page. Each new meme appears here as it lands.</p>
+    <section id="tokens" class="section" data-reveal>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Current index</p>
+          <h2>Token pages</h2>
+        </div>
+        <p>Cards are loaded from the public token index and link directly to each token page.</p>
+      </div>
+      <div id="token-grid" class="token-grid" aria-live="polite">
+        <article class="empty-card">
+          <span class="empty-icon">◇</span>
+          <h3>Loading token pages</h3>
+          <p>Checking the public token index.</p>
+        </article>
       </div>
     </section>
 
-    <footer class="foot">
-      <p>This page is community-published information about Solana memecoins. Always verify the contract on Solscan before trading. Memecoins are highly volatile and may go to zero. Nothing here is financial advice.</p>
-      <span class="mark">SOLMEMEHUB · APEX</span>
-    </footer>
+    <section id="verify" class="verify section" data-reveal>
+      <div class="verify-copy">
+        <p class="eyebrow">Trade carefully</p>
+        <h2>Verify contracts before trading.</h2>
+        <p>
+          Token pages are public information surfaces. Always confirm the contract address through trusted explorers,
+          review liquidity and holders, and understand that meme-token markets can move sharply.
+        </p>
+      </div>
+      <div class="verify-steps">
+        <div><span>01</span><strong>Open the token page</strong><p>Start from the page linked in the SolMemeHub index.</p></div>
+        <div><span>02</span><strong>Check the contract</strong><p>Compare the address against trusted public explorers.</p></div>
+        <div><span>03</span><strong>Decide independently</strong><p>Nothing on this site is financial advice.</p></div>
+      </div>
+    </section>
+
+    <section id="about" class="about section" data-reveal>
+      <p class="eyebrow">About SolMemeHub</p>
+      <h2>A cleaner front door for fast-moving Solana meme culture.</h2>
+      <p>
+        Built as a static public landing page for browsing token pages quickly. No accounts, no forms,
+        no connect prompts, and no external scripts.
+      </p>
+    </section>
   </main>
+
+  <footer class="footer">
+    <span>SolMemeHub</span>
+    <p>Public information only. High risk. Verify every contract before trading.</p>
+  </footer>
+
   <script src="app.js" defer></script>
 </body>
 </html>
