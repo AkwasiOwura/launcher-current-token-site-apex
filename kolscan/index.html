@@ -29,67 +29,82 @@
   </header>
 
   <main>
-    <section class="hero kol-page-hero" data-reveal>
-      <div class="hero-copy">
-        <p class="eyebrow">Solana KOL watch</p>
-        <h1>KOL scanner for Solana token momentum.</h1>
-        <p class="lead">
-          A dedicated leaderboard-ready view for public KOL and top-wallet activity once a verified source is connected.
-        </p>
-        <div class="hero-actions">
-          <a class="button primary" href="#kol-leaderboard">View leaderboard</a>
-          <a class="button ghost" href="/">Back to SolMemeHub</a>
-        </div>
+    <section class="kolscan-shell" data-reveal>
+      <div class="breadcrumb">
+        <a href="/">SolMemeHub</a>
+        <span>/</span>
+        <span>KOL Scanner</span>
       </div>
 
-      <aside class="launch-panel" aria-label="KOL scanner highlights">
-        <div class="panel-top">
-          <span class="pulse"></span>
-          <span>KOL scanner</span>
-        </div>
-        <div class="signal-card">
-          <span class="signal-label">Profiles</span>
-          <strong id="kol-stat-count">—</strong>
-        </div>
-        <div class="signal-card">
-          <span class="signal-label">Active today</span>
-          <strong id="kol-stat-active">—</strong>
-        </div>
-        <div class="signal-card wide">
-          <span class="signal-label">Rule</span>
-          <strong>No fake metrics</strong>
-        </div>
-      </aside>
-    </section>
-
-    <section class="market-strip" aria-label="KOL scanner summary" data-reveal>
-      <div class="metric">
-        <span>Tracked profiles</span>
-        <strong id="kol-strip-count">—</strong>
-      </div>
-      <div class="metric">
-        <span>Active today</span>
-        <strong id="kol-strip-active">—</strong>
-      </div>
-      <div class="metric">
-        <span>Top activity</span>
-        <strong id="kol-stat-activity">—</strong>
-      </div>
-      <div class="metric">
-        <span>Data status</span>
-        <strong id="kol-data-status">Pending</strong>
-      </div>
-    </section>
-
-    <section class="section kol-section" data-reveal>
       <div class="section-head">
         <div>
-          <p class="eyebrow">Leaderboard</p>
-          <h2>Public KOL radar</h2>
+          <p class="eyebrow">Solana KOL watch</p>
+          <h1>KOL Scanner</h1>
+          <p class="kolscan-subtitle">
+            A leaderboard-ready view for public KOL and top-wallet activity once verified data is connected.
+          </p>
         </div>
         <a class="back-link" href="/">Back to home</a>
       </div>
-      <div class="kol-panel">
+
+      <section class="kol-kpis" aria-label="KOL scanner stats">
+        <article class="kol-kpi">
+          <span>Today PnL</span>
+          <strong id="kol-today-pnl">—</strong>
+          <small id="kol-stat-active">— active profiles</small>
+        </article>
+        <article class="kol-kpi">
+          <span>Monthly PnL</span>
+          <strong id="kol-month-pnl">—</strong>
+          <small>Current period</small>
+        </article>
+        <article class="kol-kpi">
+          <span>Monthly Volume</span>
+          <strong id="kol-month-volume">—</strong>
+          <small id="kol-stat-activity">—</small>
+        </article>
+        <article class="kol-kpi">
+          <span>Tracked KOLs</span>
+          <strong id="kol-stat-count">—</strong>
+          <small id="kol-data-status">Pending</small>
+        </article>
+      </section>
+
+      <section class="kol-activity-card" aria-label="KOL activity calendar">
+        <div class="kol-card-head">
+          <div>
+            <p class="eyebrow">Activity</p>
+            <h2 id="kol-period-label">Current month</h2>
+          </div>
+          <div class="heat-legend"><span>Quiet</span><i></i><i></i><i></i><span>Active</span></div>
+        </div>
+        <div id="kol-heatmap" class="kol-heatmap" aria-label="Monthly KOL activity"></div>
+      </section>
+
+      <section class="kol-board-card" aria-label="KOL leaderboard">
+        <div class="kol-board-toolbar">
+          <div class="tab-group" aria-label="Leaderboard period">
+            <button class="tab is-active" type="button">All-Time</button>
+            <button class="tab" type="button">By Period</button>
+          </div>
+          <div class="sort-strip" aria-label="Sort options">
+            <span>Total PnL</span>
+            <span>Realized</span>
+            <span>Win %</span>
+            <span>ROI</span>
+            <span>Trades</span>
+            <span>Last Trade</span>
+          </div>
+        </div>
+        <div class="kol-table-head" aria-hidden="true">
+          <span>#</span>
+          <span>Wallet</span>
+          <span>Total PnL</span>
+          <span>Win Rate</span>
+          <span>ROI</span>
+          <span>Trades</span>
+          <span>Last Trade</span>
+        </div>
         <div id="kol-leaderboard" class="kol-leaderboard" aria-live="polite">
           <article class="kol-empty">
             <span class="empty-icon">◇</span>
@@ -97,7 +112,7 @@
             <p>Public wallet activity will appear once a verified source is connected.</p>
           </article>
         </div>
-      </div>
+      </section>
     </section>
   </main>
 
