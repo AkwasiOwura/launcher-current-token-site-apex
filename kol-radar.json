@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-05-23T23:20:00.000Z",
+  "updatedAt": "2026-05-23T23:20:00Z",
   "source": {
     "name": "Operator seeded public leaderboard",
     "url": "https://solmemehub.tech/kolscan/"
@@ -11,29 +11,121 @@
   "activeToday": 226,
   "topActivity": "23 profitable days",
   "activityDays": [
-    { "day": 1, "level": 3 },
-    { "day": 2, "level": 3 },
-    { "day": 3, "level": 2 },
-    { "day": 4, "level": 2 },
-    { "day": 5, "level": 2 },
-    { "day": 6, "level": 1 },
-    { "day": 7, "level": 3 },
-    { "day": 8, "level": 3 },
-    { "day": 9, "level": 2 },
-    { "day": 10, "level": 2 },
-    { "day": 11, "level": 3 },
-    { "day": 12, "level": 3 },
-    { "day": 13, "level": 3 },
-    { "day": 14, "level": 2 },
-    { "day": 15, "level": 2 },
-    { "day": 16, "level": 3 },
-    { "day": 17, "level": 1 },
-    { "day": 18, "level": 2 },
-    { "day": 19, "level": 2 },
-    { "day": 20, "level": 2 },
-    { "day": 21, "level": 3 },
-    { "day": 22, "level": 2 },
-    { "day": 23, "level": 2 }
+    {
+      "day": 1,
+      "level": 3,
+      "value": "150.5K"
+    },
+    {
+      "day": 2,
+      "level": 3,
+      "value": "177.0K"
+    },
+    {
+      "day": 3,
+      "level": 2,
+      "value": "105.3K"
+    },
+    {
+      "day": 4,
+      "level": 2,
+      "value": "91.7K"
+    },
+    {
+      "day": 5,
+      "level": 2,
+      "value": "138.5K"
+    },
+    {
+      "day": 6,
+      "level": 1,
+      "value": "49.9K"
+    },
+    {
+      "day": 7,
+      "level": 3,
+      "value": "295.5K"
+    },
+    {
+      "day": 8,
+      "level": 3,
+      "value": "275.3K"
+    },
+    {
+      "day": 9,
+      "level": 2,
+      "value": "184.3K"
+    },
+    {
+      "day": 10,
+      "level": 2,
+      "value": "160.2K"
+    },
+    {
+      "day": 11,
+      "level": 3,
+      "value": "110.4K"
+    },
+    {
+      "day": 12,
+      "level": 3,
+      "value": "189.4K"
+    },
+    {
+      "day": 13,
+      "level": 3,
+      "value": "268.0K"
+    },
+    {
+      "day": 14,
+      "level": 2,
+      "value": "110.1K"
+    },
+    {
+      "day": 15,
+      "level": 2,
+      "value": "93.1K"
+    },
+    {
+      "day": 16,
+      "level": 3,
+      "value": "297.4K"
+    },
+    {
+      "day": 17,
+      "level": 1,
+      "value": "67.1K"
+    },
+    {
+      "day": 18,
+      "level": 2,
+      "value": "138.5K"
+    },
+    {
+      "day": 19,
+      "level": 2,
+      "value": "102.8K"
+    },
+    {
+      "day": 20,
+      "level": 2,
+      "value": "127.4K"
+    },
+    {
+      "day": 21,
+      "level": 3,
+      "value": "222.1K"
+    },
+    {
+      "day": 22,
+      "level": 2,
+      "value": "199.5K"
+    },
+    {
+      "day": 23,
+      "level": 2,
+      "value": "137.8K"
+    }
   ],
   "entries": [
     {
@@ -101,5 +193,8 @@
       "lastTrade": "8h ago",
       "activity": "8h ago"
     }
-  ]
+  ],
+  "dataMode": "preview",
+  "tradingDays": 23,
+  "todayVolume": 2310000
 }
