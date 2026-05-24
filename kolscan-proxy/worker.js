@@ -106,9 +106,10 @@ function toNumber(value) {
 }
 
 function deriveWalletStats(payload, wallet) {
-  const directWinRate = toNumber(pick(payload, ['analysis.winRate', 'winRate']));
-  const winning = toNumber(pick(payload, ['stats.profitable', 'analysis.tokens.winning', 'profitableTokens']));
-  const losing = toNumber(pick(payload, ['stats.losing', 'analysis.tokens.losing', 'losingTokens']));
+  const walletPayload = payload?.data || payload;
+  const directWinRate = toNumber(pick(walletPayload, ['analysis.winRate', 'winRate']));
+  const winning = toNumber(pick(walletPayload, ['stats.profitable', 'analysis.tokens.winning', 'profitableTokens']));
+  const losing = toNumber(pick(walletPayload, ['stats.losing', 'analysis.tokens.losing', 'losingTokens']));
   const winRate = directWinRate !== null
     ? directWinRate
     : winning !== null && losing !== null && winning + losing > 0
@@ -116,13 +117,15 @@ function deriveWalletStats(payload, wallet) {
       : null;
   return {
     wallet,
-    roi: toNumber(pick(payload, ['summary.roi', 'roi'])),
+    roi: toNumber(pick(walletPayload, ['summary.roi', 'roi'])),
     winRate,
-    trades: toNumber(pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades'])),
+    trades: toNumber(pick(walletPayload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades'])),
+    lastTrade: toNumber(pick(walletPayload, ['summary.timing.lastTrade', 'timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime'])),
     sourceFields: {
-      roi: pick(payload, ['summary.roi', 'roi']) !== null ? 'summary.roi' : null,
+      roi: pick(walletPayload, ['summary.roi', 'roi']) !== null ? 'summary.roi' : null,
       winRate: directWinRate !== null ? 'analysis.winRate' : winning !== null && losing !== null ? 'stats.profitable/stats.losing' : null,
-      trades: pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades']) !== null ? 'summary.counts.trades' : null
+      trades: pick(walletPayload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades']) !== null ? 'summary.counts.trades' : null,
+      lastTrade: pick(walletPayload, ['summary.timing.lastTrade', 'timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime']) !== null ? 'summary.timing.lastTrade' : null
     }
   };
 }
@@ -155,7 +158,7 @@ function deriveLastTrade(payload, wallet) {
 
 async function fetchWalletLastTrade(wallet, env) {
   const cached = walletLastTradeCache.get(wallet);
-  if (cached && Date.now() - cached.cachedAt < LAST_TRADE_TTL_MS) {
+  if (cached && cached.body?.data?.lastTrade && Date.now() - cached.cachedAt < LAST_TRADE_TTL_MS) {
     return cached.body.data;
   }
   const walletController = new AbortController();
@@ -199,8 +202,10 @@ async function fetchWalletLastTrade(wallet, env) {
     const tradeText = await tradeResponse.text();
     if (!tradeResponse.ok) return { wallet, lastTrade: null, sourceField: null };
     const derived = deriveLastTrade(JSON.parse(tradeText), wallet);
-    const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: derived };
-    walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
+    if (derived.lastTrade) {
+      const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: derived };
+      walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
+    }
     return derived;
   } catch {
     return { wallet, lastTrade: null, sourceField: null };
@@ -278,7 +283,7 @@ async function walletLastTradeResponse(wallet, env, origin) {
   try {
     const derived = await fetchWalletLastTrade(wallet, env);
     const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: derived };
-    walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
+    if (derived.lastTrade) walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
     return jsonResponse(body, 200, origin);
   } catch (error) {
     return jsonResponse({ ok: false, error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed', data: { wallet, lastTrade: null } }, 200, origin);
@@ -393,17 +398,13 @@ export default {
         );
       }
 
-      const responseData = url.pathname === '/api/kolscan/leaderboard'
-        ? await enrichLeaderboardLastTrades(data, env, upstreamUrl)
-        : data;
-
       return jsonResponse(
         {
           ok: true,
           source: 'solana-tracker',
           route: url.pathname,
           updatedAt: new Date().toISOString(),
-          data: responseData
+          data
         },
         200,
         origin

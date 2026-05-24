@@ -13,7 +13,7 @@
   var walletStatsCache = Object.create(null);
   var lastTradeCache = Object.create(null);
   var genericStatsLoaded = false;
-  var WALLET_FETCH_CONCURRENCY = 1;
+  var WALLET_FETCH_CONCURRENCY = 2;
   var LAST_TRADE_FETCH_CONCURRENCY = 6;
   var walletStatsRun = 0;
   var lastTradeRun = 0;
@@ -226,6 +226,7 @@
       var lifetime = pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl']);
       var directLastTrade = pick(row, ['timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime', 'lastTransactionAt']);
       var cachedTrade = lastTradeCache[wallet];
+      var statsTrade = cached && cached.lastTrade ? cached.lastTrade : null;
       var periodClass = toNumber(periodPnl) < 0 ? 'loss' : 'profit';
       var lifetimeClass = toNumber(lifetime) < 0 ? 'loss' : 'profit';
       var cached = walletStatsCache[wallet];
@@ -237,7 +238,7 @@
       var roiCell = metricCell('roi-cell', cached && cached.roi !== null ? percent(cached.roi) : null);
       var tradesCell = metricCell('trades-cell', cached && cached.trades !== null ? integer(cached.trades) : null);
       var xLink = twitterLinkHtml(row);
-      var lastTrade = cachedTrade && cachedTrade.state === 'done' ? cachedTrade.value : directLastTrade;
+      var lastTrade = cachedTrade && cachedTrade.state === 'done' ? cachedTrade.value : (statsTrade || directLastTrade);
       var lastTradeText = lastTrade ? timeAgo(lastTrade) : (cachedTrade && cachedTrade.state === 'done' ? 'N/A' : 'Loading');
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
@@ -253,7 +254,6 @@
     }).join('');
 
     enrichWalletStats(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), walletStatsRun += 1);
-    enrichLastTrades(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), lastTradeRun += 1);
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
         window.location.href = row.getAttribute('data-wallet-url') || './wallet.html';
@@ -365,6 +365,10 @@
     paintCell(wallet, 'win-rate', stats.winRate === null ? 'N/A' : percent(stats.winRate));
     paintCell(wallet, 'roi-cell',  stats.roi      === null ? 'N/A' : percent(stats.roi));
     paintCell(wallet, 'trades-cell', stats.trades === null ? 'N/A' : integer(stats.trades));
+    if (stats.lastTrade) {
+      lastTradeCache[wallet] = { state: 'done', value: stats.lastTrade };
+      paintLastTrade(wallet, stats.lastTrade);
+    }
   }
 
   function deriveWinRate(payload) {
@@ -384,6 +388,7 @@
       winRate: deriveWinRate(payload),
       roi:     toNumber(pick(payload, ['summary.roi', 'roi'])),
       trades:  toNumber(pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades'])),
+      lastTrade: toNumber(pick(payload, ['summary.timing.lastTrade', 'timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime'])),
       source:  'wallet'
     };
   }
@@ -399,6 +404,7 @@
       winRate: winRate,
       roi: roi,
       trades: trades,
+      lastTrade: toNumber(pick(row, ['timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime', 'lastTransactionAt'])),
       source: 'generic-leaderboard'
     };
   }
@@ -416,6 +422,7 @@
           winRate: stats.winRate,
           roi: stats.roi,
           trades: stats.trades,
+          lastTrade: stats.lastTrade,
           source: stats.source
         };
       });
@@ -427,7 +434,7 @@
 
   async function enrichWalletStats(wallets, runId) {
     var queue = wallets.filter(function (w) {
-      return !walletStatsCache[w] || walletStatsCache[w].state === 'fail';
+      return !walletStatsCache[w] || walletStatsCache[w].state === 'fail' || !walletStatsCache[w].lastTrade;
     });
     queue.forEach(function (w) { walletStatsCache[w] = { state: 'pending', winRate: null, roi: null, trades: null }; });
     var active = 0;
@@ -448,7 +455,8 @@
                 state: 'done',
                 winRate: stats.winRate,
                 roi: stats.roi,
-                trades: stats.trades
+                trades: stats.trades,
+                lastTrade: stats.lastTrade
               };
               paintWalletStats(wallet, stats);
               active -= 1;
@@ -479,7 +487,7 @@
             .catch(function () { return null; })
             .then(function (value) {
               if (runId !== lastTradeRun) { active -= 1; next(); return; }
-              lastTradeCache[wallet] = { state: 'done', value: value };
+              lastTradeCache[wallet] = { state: value ? 'done' : 'fail', value: value };
               paintLastTrade(wallet, value);
               active -= 1;
               next();
