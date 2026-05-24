@@ -238,7 +238,7 @@
       var tradesCell = metricCell('trades-cell', cached && cached.trades !== null ? integer(cached.trades) : null);
       var xLink = twitterLinkHtml(row);
       var lastTrade = cachedTrade && cachedTrade.state === 'done' ? cachedTrade.value : directLastTrade;
-      var lastTradeText = lastTrade ? timeAgo(lastTrade) : 'N/A';
+      var lastTradeText = lastTrade ? timeAgo(lastTrade) : (cachedTrade && cachedTrade.state === 'done' ? 'N/A' : 'Loading');
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
         '<td><div class="wallet-cell">' + avatarHtml(row) + '<div class="wallet-stack"><div class="wallet-name-line"><span class="primary">' + escapeHtml(name) + '</span>' + xLink + '</div><button class="wallet-address-copy" type="button" data-copy-address="' + escapeHtml(wallet) + '" aria-label="Copy wallet address">' + escapeHtml(wallet || 'public wallet') + '</button></div></div></td>' +
@@ -254,7 +254,6 @@
 
     enrichWalletStats(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), walletStatsRun += 1);
     enrichLastTrades(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), lastTradeRun += 1);
-
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
         window.location.href = row.getAttribute('data-wallet-url') || './wallet.html';
@@ -318,19 +317,8 @@
     return Math.floor(hours / 24) + 'd ago';
   }
 
-  function firstTradeTime(payload) {
-    var direct = pick(payload, ['lastTrade', 'data.lastTrade']);
-    if (direct) return direct;
-    var rows = tradeRows(payload);
-    if (!rows.length) return null;
-    var best = rows.reduce(function (latest, trade) {
-      var value = pick(trade, ['time', 'timestamp', 'date', 'blockTime', 'createdAt']);
-      var stamp = toNumber(value);
-      if (stamp === null && value) stamp = Date.parse(String(value));
-      if (stamp && stamp < 10000000000) stamp *= 1000;
-      return stamp && (!latest || stamp > latest) ? stamp : latest;
-    }, null);
-    return best;
+  function readLastTrade(payload) {
+    return pick(payload, ['lastTrade', 'data.lastTrade']);
   }
 
   function paintLastTrade(wallet, value) {
@@ -487,7 +475,7 @@
           active += 1;
           if (runId !== lastTradeRun) { active -= 1; next(); return; }
           fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet) + '/last-trade')
-            .then(firstTradeTime)
+            .then(readLastTrade)
             .catch(function () { return null; })
             .then(function (value) {
               if (runId !== lastTradeRun) { active -= 1; next(); return; }

@@ -6,6 +6,7 @@ const WALLET_STATS_TTL_MS = 15 * 60 * 1000;
 const LAST_TRADE_TTL_MS = 10 * 60 * 1000;
 const walletStatsCache = new Map();
 const walletLastTradeCache = new Map();
+const leaderboardEnrichmentCache = new Map();
 
 const ROUTES = [
   {
@@ -135,6 +136,11 @@ function tradeRows(payload) {
 }
 
 function deriveLastTrade(payload, wallet) {
+  const walletPayload = payload?.data || payload;
+  const walletTiming = toNumber(pick(walletPayload, ['summary.timing.lastTrade', 'timing.lastTrade', 'lastTrade', 'data.summary.timing.lastTrade']));
+  if (walletTiming !== null) {
+    return { wallet, lastTrade: walletTiming, sourceField: 'summary.timing.lastTrade' };
+  }
   const latest = tradeRows(payload).reduce((best, trade) => {
     let stamp = toNumber(pick(trade, ['time', 'timestamp', 'date', 'blockTime', 'createdAt']));
     if (stamp === null) {
@@ -145,6 +151,60 @@ function deriveLastTrade(payload, wallet) {
     return stamp && (!best || stamp > best) ? stamp : best;
   }, null);
   return { wallet, lastTrade: latest, sourceField: latest ? 'wallet-trades.time' : null };
+}
+
+async function fetchWalletLastTrade(wallet, env) {
+  const cached = walletLastTradeCache.get(wallet);
+  if (cached && Date.now() - cached.cachedAt < LAST_TRADE_TTL_MS) {
+    return cached.body.data;
+  }
+  const tradeTimeoutMs = 8000;
+  const tradeController = new AbortController();
+  const tradeTimeout = setTimeout(() => tradeController.abort(), tradeTimeoutMs);
+  try {
+    const tradeResponse = await fetch(API_BASE + `/wallet/${wallet}/trades?limit=1`, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'x-api-key': env.SOLANA_TRACKER_API_KEY
+      },
+      signal: tradeController.signal
+    });
+    const tradeText = await tradeResponse.text();
+    if (!tradeResponse.ok) return { wallet, lastTrade: null, sourceField: null };
+    const derived = deriveLastTrade(JSON.parse(tradeText), wallet);
+    const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: derived };
+    walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
+    return derived;
+  } catch {
+    return { wallet, lastTrade: null, sourceField: null };
+  } finally {
+    clearTimeout(tradeTimeout);
+  }
+}
+
+async function enrichLeaderboardLastTrades(data, env, cacheKey) {
+  const cached = leaderboardEnrichmentCache.get(cacheKey);
+  if (cached && Date.now() - cached.cachedAt < LAST_TRADE_TTL_MS) return cached.data;
+  const rows = Array.isArray(data?.traders) ? data.traders : Array.isArray(data) ? data : [];
+  if (!rows.length) return data;
+  let cursor = 0;
+  const concurrency = 2;
+  async function worker() {
+    while (cursor < rows.length) {
+      const row = rows[cursor++];
+      const wallet = pick(row, ['wallet', 'address']);
+      if (!wallet || pick(row, ['timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime', 'lastTransactionAt'])) continue;
+      const derived = await fetchWalletLastTrade(wallet, env);
+      if (derived.lastTrade) {
+        row.timing = { ...(row.timing || {}), lastTrade: derived.lastTrade };
+        row.lastTradeSource = derived.sourceField;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, rows.length) }, () => worker()));
+  leaderboardEnrichmentCache.set(cacheKey, { cachedAt: Date.now(), data });
+  return data;
 }
 
 async function walletStatsResponse(wallet, env, origin) {
@@ -189,29 +249,13 @@ async function walletLastTradeResponse(wallet, env, origin) {
   if (!env.SOLANA_TRACKER_API_KEY) {
     return jsonResponse({ ok: false, error: 'missing_secret', data: { wallet, lastTrade: null } }, 200, origin);
   }
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const upstream = await fetch(API_BASE + `/wallet/${wallet}/trades?limit=1`, {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-        'x-api-key': env.SOLANA_TRACKER_API_KEY
-      },
-      signal: controller.signal
-    });
-    const text = await upstream.text();
-    if (!upstream.ok) {
-      return jsonResponse({ ok: false, error: 'upstream_unavailable', upstreamStatus: upstream.status, data: { wallet, lastTrade: null } }, 200, origin);
-    }
-    const parsed = JSON.parse(text);
-    const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: deriveLastTrade(parsed, wallet) };
+    const derived = await fetchWalletLastTrade(wallet, env);
+    const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: derived };
     walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
     return jsonResponse(body, 200, origin);
   } catch (error) {
     return jsonResponse({ ok: false, error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed', data: { wallet, lastTrade: null } }, 200, origin);
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -323,13 +367,17 @@ export default {
         );
       }
 
+      const responseData = url.pathname === '/api/kolscan/leaderboard'
+        ? await enrichLeaderboardLastTrades(data, env, upstreamUrl)
+        : data;
+
       return jsonResponse(
         {
           ok: true,
           source: 'solana-tracker',
           route: url.pathname,
           updatedAt: new Date().toISOString(),
-          data
+          data: responseData
         },
         200,
         origin
