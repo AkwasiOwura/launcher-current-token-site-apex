@@ -132,10 +132,11 @@
   function avatarHtml(row) {
     var image = pick(row, ['identity.avatar', 'avatar', 'image']);
     var name = pick(row, ['identity.name', 'name', 'wallet']) || 'KOL';
+    var fallback = escapeHtml(initials(name));
     if (typeof image === 'string' && /^https?:\/\//.test(image)) {
-      return '<span class="avatar"><img src="' + escapeHtml(image) + '" alt="" onerror="this.remove();this.parentElement.textContent=\'' + escapeHtml(initials(name)) + '\'"></span>';
+      return '<span class="avatar" data-initials="' + fallback + '"><img src="' + escapeHtml(image) + '" alt="" onerror="this.parentElement.textContent=this.parentElement.dataset.initials"></span>';
     }
-    return '<span class="avatar">' + escapeHtml(initials(name)) + '</span>';
+    return '<span class="avatar">' + fallback + '</span>';
   }
 
   async function fetchJson(path) {
