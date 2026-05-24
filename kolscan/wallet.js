@@ -142,9 +142,9 @@
     var pnl = pick(trade, ['pnl', 'profit', 'profitUsd', 'realizedPnl', 'realizedProfit']);
     var number = toNumber(pnl);
     if (number === null) {
-      return '<span class="status-pill muted-pill">P&L unavailable</span>';
+      return '<span class="pnl-cell muted">P&L unavailable</span>';
     }
-    return '<span class="status-pill ' + (number >= 0 ? 'good-pill' : 'bad-pill') + '">' + (number >= 0 ? 'Profitable' : 'Loss') + ' ' + money(number) + '</span>';
+    return '<span class="pnl-cell ' + (number >= 0 ? 'profit' : 'loss') + '">' + (number >= 0 ? 'Profit ' : 'Loss ') + money(number) + '</span>';
   }
 
   function renderWallet(data, address) {
@@ -180,7 +180,7 @@
   }
 
   function renderTrades(rows) {
-    els.tradesFeed.innerHTML = rows.slice(0, 80).map(function (trade) {
+    var items = rows.slice(0, 80).map(function (trade) {
       var token = tradedToken(trade);
       var tokenName = pick(token, ['token.name', 'name']) || 'Token';
       var tokenSymbol = pick(token, ['token.symbol', 'symbol']) || tokenName;
@@ -188,22 +188,23 @@
       var side = tradeSide(trade);
       var value = pick(trade, ['volume.usd', 'volume', 'usdValue', 'amountUsd', 'value']);
       var price = pick(trade, ['price.usd', 'priceUsd', 'entryPrice', 'exitPrice']);
-      return '<div class="feed-item trade-item ' + (String(side).toLowerCase() === 'buy' ? 'buy-trade' : String(side).toLowerCase() === 'sell' ? 'sell-trade' : '') + '">' +
-        '<div class="trade-main">' +
-          '<strong>' + escapeHtml(side.toUpperCase()) + ' ' + escapeHtml(tokenSymbol) + '</strong>' +
-          profitLabel(trade) +
-        '</div>' +
-        '<div class="trade-grid">' +
-          '<span><b>Token</b>' + escapeHtml(tokenName) + '</span>' +
-          '<span><b>Symbol</b>' + escapeHtml(tokenSymbol) + '</span>' +
-          '<span><b>Address</b>' + escapeHtml(shortAddress(tokenAddress)) + '</span>' +
-          '<span><b>Value</b>' + money(value) + '</span>' +
-          '<span><b>Entry/exit price</b>' + money(price) + '</span>' +
-          '<span><b>Date</b>' + escapeHtml(dateTime(pick(trade, ['time', 'timestamp', 'date']))) + '</span>' +
-          '<span><b>Tx</b>' + escapeHtml(shortAddress(pick(trade, ['tx', 'signature']) || '—')) + '</span>' +
-        '</div>' +
+      var sideClass = String(side).toLowerCase() === 'buy' ? 'buy-trade' : String(side).toLowerCase() === 'sell' ? 'sell-trade' : '';
+      return '<div class="trade-row ' + sideClass + '">' +
+        '<span class="trade-side">' + escapeHtml(side.toUpperCase()) + '</span>' +
+        '<span class="trade-token"><strong>' + escapeHtml(tokenName) + '</strong></span>' +
+        '<span data-label="Symbol">' + escapeHtml(tokenSymbol) + '</span>' +
+        '<span data-label="Address"><code>' + escapeHtml(shortAddress(tokenAddress)) + '</code></span>' +
+        '<span data-label="Value">' + money(value) + '</span>' +
+        '<span data-label="Entry/exit price">' + money(price) + '</span>' +
+        '<span data-label="Date / Time">' + escapeHtml(dateTime(pick(trade, ['time', 'timestamp', 'date']))) + '</span>' +
+        '<span data-label="TX"><code>' + escapeHtml(shortAddress(pick(trade, ['tx', 'signature']) || '—')) + '</code></span>' +
+        profitLabel(trade) +
       '</div>';
     }).join('');
+    els.tradesFeed.innerHTML = '<div class="trade-table">' +
+      '<div class="trade-row trade-head"><span>Side</span><span>Token</span><span>Symbol</span><span>Address</span><span>Value</span><span>Entry/exit price</span><span>Date / Time</span><span>TX</span><span>P&L</span></div>' +
+      items +
+    '</div>';
   }
 
   async function loadWallet(address) {
