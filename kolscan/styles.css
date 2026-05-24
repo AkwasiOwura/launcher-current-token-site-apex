@@ -295,8 +295,29 @@ h2 {
 
 table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1180px;
   border-collapse: collapse;
+}
+
+.x-link {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-left: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+.x-link:hover {
+  color: var(--text);
+  border-color: var(--line-green);
+  background: var(--green-soft);
 }
 
 th,

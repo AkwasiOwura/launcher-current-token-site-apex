@@ -7,12 +7,11 @@
   var pollTimer = null;
   var currentPeriod = 'daily';
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
-  // Cache win-rate per wallet across tab switches.
-  // value === undefined: never fetched
-  // value === null:      fetched, no win rate available
-  // value === number:    real percentage from API
-  var winRateCache = Object.create(null);
-  var WIN_RATE_CONCURRENCY = 6;
+  // Cache wallet-derived stats per wallet across tab switches.
+  // entry.state: 'pending' | 'done' | 'fail'
+  // entry.winRate, entry.roi, entry.trades: number | null
+  var walletStatsCache = Object.create(null);
+  var WALLET_FETCH_CONCURRENCY = 6;
 
   var els = {
     globalStatus: document.getElementById('global-status'),
@@ -157,8 +156,33 @@
 
   function avatarHtml(row) {
     var name = pick(row, ['identity.name', 'name', 'wallet']) || 'KOL';
+    var img = pick(row, ['identity.avatar', 'avatar', 'image', 'identity.image']);
     var fallback = escapeHtml(initials(name));
+    if (img) {
+      return '<span class="avatar"><img src="' + escapeHtml(String(img)) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{textContent:\'' + fallback + '\'}))"></span>';
+    }
     return '<span class="avatar">' + fallback + '</span>';
+  }
+
+  function twitterUrl(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        var parsed = new URL(raw);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+      } catch (_e) { /* fall through */ }
+      return '';
+    }
+    var handle = raw.replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '');
+    if (!handle) return '';
+    return 'https://x.com/' + handle;
+  }
+
+  function twitterLinkHtml(row) {
+    var url = twitterUrl(pick(row, ['identity.twitter', 'twitter', 'twitterUrl', 'x', 'xUrl', 'identity.x']));
+    if (!url) return '';
+    return ' <a class="x-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" aria-label="Open X profile" onclick="event.stopPropagation();">𝕏</a>';
   }
 
   async function fetchJson(path) {
@@ -192,24 +216,31 @@
       var snapshot = pick(row, ['lastSnapshotDate', 'updatedAt', 'timing.lastTrade']);
       var periodClass = toNumber(periodPnl) < 0 ? 'loss' : 'profit';
       var lifetimeClass = toNumber(lifetime) < 0 ? 'loss' : 'profit';
-      var cached = winRateCache[wallet];
-      var winCell = cached === undefined
-        ? '<td class="win-rate muted" data-wallet="' + escapeHtml(wallet) + '">…</td>'
-        : '<td class="win-rate" data-wallet="' + escapeHtml(wallet) + '">' + (cached === null ? '—' : percent(cached)) + '</td>';
+      var cached = walletStatsCache[wallet];
+      function metricCell(cls, value) {
+        if (!cached || cached.state === 'pending') return '<td class="' + cls + ' muted" data-wallet="' + escapeHtml(wallet) + '">…</td>';
+        return '<td class="' + cls + '" data-wallet="' + escapeHtml(wallet) + '">' + (value === null ? '—' : value) + '</td>';
+      }
+      var winCell = metricCell('win-rate', cached && cached.winRate !== null ? percent(cached.winRate) : null);
+      var roiCell = metricCell('roi-cell', cached && cached.roi !== null ? percent(cached.roi) : null);
+      var tradesCell = metricCell('trades-cell', cached && cached.trades !== null ? integer(cached.trades) : null);
+      var xLink = twitterLinkHtml(row);
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
-        '<td><a class="wallet-cell wallet-link" href="' + escapeHtml(url) + '">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></a></td>' +
+        '<td><div class="wallet-cell"><a class="wallet-link" href="' + escapeHtml(url) + '">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></a>' + xLink + '</div></td>' +
         '<td class="' + periodClass + '">' + money(periodPnl) + '</td>' +
         '<td>' + money(periodVolume) + '</td>' +
         '<td class="' + lifetimeClass + '">' + money(lifetime) + '</td>' +
+        roiCell +
         winCell +
+        tradesCell +
         '<td>' + integer(tradingDays) + '</td>' +
         '<td class="muted">' + escapeHtml(snapshotLabel(snapshot)) + '</td>' +
         '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
         '</tr>';
     }).join('');
 
-    enrichWinRates(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean));
+    enrichWalletStats(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean));
 
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
@@ -262,49 +293,69 @@
     return Math.floor(hours / 24) + 'd ago';
   }
 
-  function paintWinRate(wallet, value) {
-    var cells = els.leaderboardBody.querySelectorAll('td.win-rate[data-wallet="' + cssAttr(wallet) + '"]');
+  function cssAttr(value) {
+    return String(value || '').replace(/["\\\n\r]/g, '\\$&');
+  }
+
+  function paintCell(wallet, selector, text) {
+    var sel = 'td.' + selector + '[data-wallet="' + cssAttr(wallet) + '"]';
+    var cells = els.leaderboardBody.querySelectorAll(sel);
     for (var i = 0; i < cells.length; i += 1) {
       cells[i].classList.remove('muted');
-      cells[i].textContent = value === null ? '—' : percent(value);
+      cells[i].textContent = text;
     }
   }
 
-  function cssAttr(value) {
-    return String(value || '').replace(/["\\\n\r]/g, '\\$&');
+  function paintWalletStats(wallet, stats) {
+    paintCell(wallet, 'win-rate', stats.winRate === null ? '—' : percent(stats.winRate));
+    paintCell(wallet, 'roi-cell',  stats.roi      === null ? '—' : percent(stats.roi));
+    paintCell(wallet, 'trades-cell', stats.trades === null ? '—' : integer(stats.trades));
   }
 
   function deriveWinRate(payload) {
     var direct = pick(payload, ['analysis.winRate', 'winRate']);
     var n = toNumber(direct);
     if (n !== null) return n;
-    // Fallback: profitable / (profitable + losing) from stats or analysis.tokens.
-    var win = toNumber(pick(payload, ['stats.profitable', 'analysis.tokens.winning']));
-    var loss = toNumber(pick(payload, ['stats.losing', 'analysis.tokens.losing']));
+    var win = toNumber(pick(payload, ['stats.profitable', 'analysis.tokens.winning', 'profitableTokens']));
+    var loss = toNumber(pick(payload, ['stats.losing', 'analysis.tokens.losing', 'losingTokens']));
     if (win !== null && loss !== null && (win + loss) > 0) {
       return (win / (win + loss)) * 100;
     }
     return null;
   }
 
-  async function enrichWinRates(wallets) {
-    var queue = wallets.filter(function (w) { return winRateCache[w] === undefined; });
+  function deriveStats(payload) {
+    return {
+      winRate: deriveWinRate(payload),
+      roi:     toNumber(pick(payload, ['summary.roi', 'roi'])),
+      trades:  toNumber(pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades']))
+    };
+  }
+
+  async function enrichWalletStats(wallets) {
+    var queue = wallets.filter(function (w) {
+      return !walletStatsCache[w] || walletStatsCache[w].state === 'fail';
+    });
+    queue.forEach(function (w) { walletStatsCache[w] = { state: 'pending', winRate: null, roi: null, trades: null }; });
     var active = 0;
     var idx = 0;
     return new Promise(function (resolve) {
       function next() {
         if (idx >= queue.length && active === 0) { resolve(); return; }
-        while (active < WIN_RATE_CONCURRENCY && idx < queue.length) {
+        while (active < WALLET_FETCH_CONCURRENCY && idx < queue.length) {
           var wallet = queue[idx++];
           active += 1;
           fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet))
-            .then(function (data) {
-              return deriveWinRate(data);
-            })
-            .catch(function () { return null; })
-            .then(function (rate) {
-              winRateCache[wallet] = rate;
-              paintWinRate(wallet, rate);
+            .then(function (data) { return deriveStats(data); })
+            .catch(function () { return { winRate: null, roi: null, trades: null }; })
+            .then(function (stats) {
+              walletStatsCache[wallet] = {
+                state: 'done',
+                winRate: stats.winRate,
+                roi: stats.roi,
+                trades: stats.trades
+              };
+              paintWalletStats(wallet, stats);
               active -= 1;
               next();
             });
