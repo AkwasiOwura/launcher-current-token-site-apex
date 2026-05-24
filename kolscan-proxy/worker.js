@@ -6,7 +6,13 @@ const ERROR_EXCERPT_LIMIT = 700;
 const ROUTES = [
   {
     pattern: /^\/api\/kolscan\/leaderboard\/?$/,
-    upstream: () => '/v2/pnl/leaderboard/kols'
+    upstream: (_match, searchParams) => {
+      const period = normalizeLeaderboardPeriod(searchParams.get('period') || searchParams.get('timeframe'));
+      searchParams.delete('timeframe');
+      if (!period) return '/v2/pnl/leaderboard/kols';
+      searchParams.set('period', period);
+      return '/v2/pnl/leaderboard/kols/period';
+    }
   },
   {
     pattern: /^\/api\/kolscan\/wallet\/([1-9A-HJ-NP-Za-km-z]{32,44})\/?$/,
@@ -65,16 +71,27 @@ function safeJsonExcerpt(text) {
 function resolveRoute(pathname) {
   for (const route of ROUTES) {
     const match = pathname.match(route.pattern);
-    if (match) return route.upstream(match);
+    if (match) return route.upstream(match, arguments[1]);
   }
   return null;
+}
+
+function normalizeLeaderboardPeriod(value) {
+  const period = String(value || '').trim().toLowerCase();
+  if (period === 'daily' || period === 'day' || period === '1d') return '1d';
+  if (period === 'weekly' || period === 'week' || period === '7d') return '7d';
+  if (period === 'monthly' || period === 'month' || period === '30d') return '30d';
+  if (['14d', '90d'].includes(period)) return period;
+  return '';
 }
 
 function safeQuery(searchParams) {
   const params = new URLSearchParams();
   const allowed = new Set([
     'cursor',
+    'direction',
     'limit',
+    'sort',
     'sortBy',
     'sortDirection',
     'timeframe',
@@ -111,7 +128,7 @@ export default {
       return jsonResponse({ error: 'method_not_allowed', message: 'Use GET for this route.' }, 405, origin);
     }
 
-    const upstreamPath = resolveRoute(url.pathname);
+    const upstreamPath = resolveRoute(url.pathname, url.searchParams);
     if (!upstreamPath) {
       return jsonResponse({ error: 'not_found', message: 'Kolscan proxy route not found.', route: url.pathname }, 404, origin);
     }

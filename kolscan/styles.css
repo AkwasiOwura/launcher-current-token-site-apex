@@ -256,6 +256,35 @@ h2 {
   border-bottom: 1px solid var(--line);
 }
 
+.leaderboard-actions,
+.period-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.period-tabs {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.period-tab {
+  border-color: transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  padding: 9px 12px;
+}
+
+.period-tab:hover,
+.period-tab.active {
+  color: var(--text);
+  border-color: var(--line-green);
+  background: var(--green-soft);
+}
+
 .panel-heading.compact {
   padding-bottom: 12px;
 }
@@ -562,6 +591,12 @@ footer {
 
   .panel-heading,
   .search-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .leaderboard-actions,
+  .period-tabs {
     align-items: stretch;
     flex-direction: column;
   }

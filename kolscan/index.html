@@ -62,7 +62,14 @@
               <p class="eyebrow">Leaderboard</p>
               <h2>KOL wallet rankings</h2>
             </div>
-            <button id="refresh-leaderboard" type="button">Refresh</button>
+            <div class="leaderboard-actions">
+              <div class="period-tabs" role="tablist" aria-label="Leaderboard period">
+                <button class="period-tab active" type="button" data-period="daily" role="tab" aria-selected="true">Daily</button>
+                <button class="period-tab" type="button" data-period="weekly" role="tab" aria-selected="false">Weekly</button>
+                <button class="period-tab" type="button" data-period="monthly" role="tab" aria-selected="false">Monthly</button>
+              </div>
+              <button id="refresh-leaderboard" type="button">Refresh</button>
+            </div>
           </div>
           <div class="state" id="leaderboard-loading">Loading leaderboard...</div>
           <div class="state hidden" id="leaderboard-empty">No leaderboard rows returned.</div>

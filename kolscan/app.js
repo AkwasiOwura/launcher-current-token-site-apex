@@ -5,6 +5,7 @@
   var API_BASE = (WORKER_ENDPOINT_OVERRIDE || '').replace(/\/$/, '');
   var POLL_INTERVAL_MS = 120000;
   var pollTimer = null;
+  var currentPeriod = 'daily';
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
 
   var els = {
@@ -20,6 +21,7 @@
     leaderboardTable: document.getElementById('leaderboard-table'),
     leaderboardBody: document.getElementById('leaderboard-body'),
     refreshLeaderboard: document.getElementById('refresh-leaderboard'),
+    periodTabs: document.querySelectorAll('.period-tab'),
     walletForm: document.getElementById('wallet-form'),
     walletInput: document.getElementById('wallet-input'),
     walletLoading: document.getElementById('wallet-loading'),
@@ -41,6 +43,10 @@
 
   function endpoint(path) {
     return API_BASE + path;
+  }
+
+  function periodLabel(period) {
+    return { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }[period] || 'Daily';
   }
 
   function setText(node, value) {
@@ -173,8 +179,8 @@
       var name = pick(row, ['identity.name', 'name']) || 'KOL Wallet';
       var wallet = pick(row, ['wallet', 'address']) || '';
       var url = walletDetailUrl(wallet);
-      var total = pick(row, ['pnl.total', 'totalPnl']);
-      var realized = pick(row, ['pnl.realized', 'realizedPnl']);
+      var total = pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl']);
+      var realized = pick(row, ['period.realized', 'pnl.realized', 'realizedPnl']);
       var totalClass = toNumber(total) < 0 ? 'loss' : 'profit';
       var realizedClass = toNumber(realized) < 0 ? 'loss' : 'profit';
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
@@ -184,8 +190,8 @@
         '<td class="' + realizedClass + '">' + money(realized) + '</td>' +
         '<td>' + percent(pick(row, ['winRate'])) + '</td>' +
         '<td class="profit">' + percent(pick(row, ['roi'])) + '</td>' +
-        '<td>' + integer(pick(row, ['counts.trades', 'trades'])) + '</td>' +
-        '<td class="muted">' + timeAgo(pick(row, ['timing.lastTrade', 'lastTrade', 'updatedAt'])) + '</td>' +
+        '<td>' + integer(pick(row, ['counts.trades', 'period.trades', 'trades'])) + '</td>' +
+        '<td class="muted">' + timeAgo(pick(row, ['timing.lastTrade', 'lastTrade', 'updatedAt', 'lastSnapshotDate'])) + '</td>' +
         '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
         '</tr>';
     }).join('');
@@ -208,9 +214,9 @@
   }
 
   function updateStats(rows) {
-    var totalPnl = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['pnl.total', 'totalPnl'])) || 0); }, 0);
-    var realized = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['pnl.realized', 'realizedPnl'])) || 0); }, 0);
-    var trades = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['counts.trades', 'trades'])) || 0); }, 0);
+    var totalPnl = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl'])) || 0); }, 0);
+    var realized = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['period.realized', 'pnl.realized', 'realizedPnl'])) || 0); }, 0);
+    var trades = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['counts.trades', 'period.trades', 'trades'])) || 0); }, 0);
     setText(els.statKols, integer(rows.length));
     setText(els.statTotalPnl, money(totalPnl));
     setText(els.statRealizedPnl, money(realized));
@@ -222,23 +228,32 @@
     show(els.leaderboardEmpty, false);
     show(els.leaderboardError, false);
     show(els.leaderboardTable, false);
-    setText(els.globalStatus, 'Refreshing leaderboard...');
+    setText(els.globalStatus, 'Refreshing ' + periodLabel(currentPeriod).toLowerCase() + ' leaderboard...');
 
     try {
-      var data = await fetchJson('/api/kolscan/leaderboard');
+      var data = await fetchJson('/api/kolscan/leaderboard?period=' + encodeURIComponent(currentPeriod) + '&sort=realized&direction=desc&limit=100');
       var rows = leaderboardRows(data);
       updateStats(rows);
       renderLeaderboard(rows);
       show(els.leaderboardLoading, false);
       show(els.leaderboardTable, rows.length > 0);
       show(els.leaderboardEmpty, rows.length === 0);
-      setText(els.globalStatus, rows.length ? 'Leaderboard live via proxy.' : 'No leaderboard rows returned.');
+      setText(els.globalStatus, rows.length ? periodLabel(currentPeriod) + ' leaderboard live via proxy.' : 'No leaderboard rows returned.');
     } catch (error) {
       show(els.leaderboardLoading, false);
       show(els.leaderboardError, true);
       setText(els.leaderboardError, error.message);
       setText(els.globalStatus, 'Leaderboard unavailable.');
     }
+  }
+
+  function setActivePeriod(period) {
+    currentPeriod = period;
+    els.periodTabs.forEach(function (button) {
+      var active = button.getAttribute('data-period') === currentPeriod;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
   }
 
   function renderWallet(data, address) {
@@ -428,6 +443,13 @@
   }
 
   els.refreshLeaderboard.addEventListener('click', loadLeaderboard);
+  els.periodTabs.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var period = button.getAttribute('data-period') || 'daily';
+      setActivePeriod(period);
+      loadLeaderboard();
+    });
+  });
   els.walletForm.addEventListener('submit', function (event) {
     event.preventDefault();
     var address = String(els.walletInput.value || '').trim();
