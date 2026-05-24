@@ -138,6 +138,8 @@
 
     return [
       '<a class="coin-card" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
+      '<span class="cyber-corner-tl" aria-hidden="true"></span>',
+      '<span class="cyber-corner-br" aria-hidden="true"></span>',
       '<div class="coin-media">',
       image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-coin-image />' : '',
       '<span class="coin-fallback">' + initials + '</span>',
@@ -281,11 +283,51 @@
     }).join('');
   }
 
+  function renderDailyRadar(data) {
+    var list = document.getElementById('daily-radar-list');
+    if (!list) return;
+    var trending = uniqueCoins((data && Array.isArray(data.trending)) ? data.trending : []);
+    var top = trending.slice(0, 3);
+    if (!top.length) {
+      list.innerHTML = '<li class="radar-row radar-row--placeholder">Top movers unavailable right now.</li>';
+      return;
+    }
+    list.innerHTML = top.map(function (coin, idx) {
+      var name = escapeHtml(coin.name || coin.symbol || 'Unnamed');
+      var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase() || 'COIN');
+      var image = safeAssetUrl(coin.imageUrl || coin.image || coin.icon || coin.logo || '');
+      var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
+      var price = compactPrice(coin.priceUsd || coin.price);
+      var mcap = compactNumber(coin.marketCapUsd, '$');
+      var change = Number(coin.priceChange24h || coin.change24h || coin.priceChange);
+      var changeText = '';
+      var changeClass = '';
+      if (Number.isFinite(change) && change !== 0) {
+        changeClass = change > 0 ? 'up' : 'down';
+        changeText = (change > 0 ? '▲ ' : '▼ ') + Math.abs(change).toFixed(2) + '%';
+      }
+      var primary = price || (mcap ? 'Cap ' + mcap : '');
+      var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#trending');
+      var external = href !== '#trending';
+      return [
+        '<li>',
+        '<a class="radar-row" href="' + href + '"' + (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>',
+        '<span class="rank">' + (idx + 1) + '</span>',
+        '<span class="logo">' + (image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : initials) + '</span>',
+        '<span class="meta"><strong>' + name + '</strong><small>$' + symbol + (mcap && price ? ' · ' + mcap : '') + '</small></span>',
+        '<span class="values">' + (primary ? '<span class="price">' + escapeHtml(primary) + '</span>' : '') + (changeText ? '<span class="change ' + changeClass + '">' + escapeHtml(changeText) + '</span>' : '') + '</span>',
+        '</a>',
+        '</li>'
+      ].join('');
+    }).join('');
+  }
+
   function renderMemeData(data) {
     memeState.data = data || {};
     var coins = currentCoins();
     renderTicker(data);
     renderStats(data);
+    renderDailyRadar(data);
 
     renderCoinGrid(
       'trending-grid',
@@ -343,6 +385,8 @@
 
         return [
           '<a class="token-card" style="animation-delay:' + delay + 'ms" href="' + href + '">',
+          '<span class="cyber-corner-tl" aria-hidden="true"></span>',
+          '<span class="cyber-corner-br" aria-hidden="true"></span>',
           '<div>',
           '<div class="token-top">',
           '<span class="token-symbol">' + (symbol ? '$' + symbol : 'SOL') + '</span>',

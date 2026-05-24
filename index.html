@@ -34,38 +34,34 @@
 
   <main>
     <section class="hero" data-reveal>
-      <div class="hero-copy">
-        <p class="eyebrow">Daily meme-coin radar</p>
-        <h1>Track Solana Memecoin momentum from one premium hub.</h1>
+      <div class="hero-copy hero-animated">
+        <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Real-time momentum</p>
+        <h1>Welcome to <span class="hero-brand">SolMemeHub</span></h1>
         <p class="lead">
-          Follow trending Solana meme assets, compare live radar signals, and open SolMemeHub token pages from
-          one clean market-style dashboard.
+          The premium hub for <span class="lead-accent">Solana memecoins</span>,
+          <span class="lead-accent">KOLs</span>, and <span class="lead-accent">smart money</span>.
+          Track trending memecoins, follow top KOL wallets, and stay ahead of the market with real-time
+          intelligence and momentum signals.
         </p>
         <div class="hero-actions" aria-label="Primary actions">
           <a class="button primary" href="#trending">View market radar</a>
           <a class="button ghost" href="/kolscan/">Open KOL Scanner</a>
           <a class="button ghost" href="#pages">Explore live token pages</a>
-          <a class="button ghost" href="#verify">Verify before trading</a>
         </div>
       </div>
 
-      <aside class="launch-panel" aria-label="SolMemeHub highlights">
-        <div class="panel-top">
-          <span class="pulse"></span>
-          <span>Daily radar</span>
-        </div>
-        <div class="signal-card">
-          <span class="signal-label">Network</span>
-          <strong>Solana</strong>
-        </div>
-        <div class="signal-card">
-          <span class="signal-label">Radar</span>
-          <strong id="hero-token-count">Loading</strong>
-        </div>
-        <div class="signal-card wide">
-          <span class="signal-label">Rule</span>
-          <strong>Verify every contract</strong>
-        </div>
+      <aside class="cyber-card daily-radar" aria-label="Daily radar — top 3 momentum tokens">
+        <header class="radar-head">
+          <div>
+            <p class="radar-title">Daily Radar</p>
+            <p class="radar-sub">Top 3 tokens with the strongest momentum today.</p>
+          </div>
+          <span class="radar-live"><span class="pulse" aria-hidden="true"></span>Live</span>
+        </header>
+        <ol id="daily-radar-list" class="radar-list" aria-live="polite">
+          <li class="radar-row radar-row--placeholder">Loading top movers…</li>
+        </ol>
+        <a class="radar-cta" href="#trending">View Full Radar <span aria-hidden="true">→</span></a>
       </aside>
     </section>
 
