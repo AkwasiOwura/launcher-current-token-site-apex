@@ -3,7 +3,9 @@ const API_BASE = 'https://data.solanatracker.io';
 const TIMEOUT_MS = 12000;
 const ERROR_EXCERPT_LIMIT = 700;
 const WALLET_STATS_TTL_MS = 15 * 60 * 1000;
+const LAST_TRADE_TTL_MS = 10 * 60 * 1000;
 const walletStatsCache = new Map();
+const walletLastTradeCache = new Map();
 
 const ROUTES = [
   {
@@ -124,6 +126,27 @@ function deriveWalletStats(payload, wallet) {
   };
 }
 
+function tradeRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.trades)) return payload.trades;
+  if (Array.isArray(payload?.data?.trades)) return payload.data.trades;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+function deriveLastTrade(payload, wallet) {
+  const latest = tradeRows(payload).reduce((best, trade) => {
+    let stamp = toNumber(pick(trade, ['time', 'timestamp', 'date', 'blockTime', 'createdAt']));
+    if (stamp === null) {
+      const raw = pick(trade, ['time', 'timestamp', 'date', 'blockTime', 'createdAt']);
+      stamp = raw ? Date.parse(String(raw)) : null;
+    }
+    if (stamp && stamp < 10000000000) stamp *= 1000;
+    return stamp && (!best || stamp > best) ? stamp : best;
+  }, null);
+  return { wallet, lastTrade: latest, sourceField: latest ? 'wallet-trades.time' : null };
+}
+
 async function walletStatsResponse(wallet, env, origin) {
   const cached = walletStatsCache.get(wallet);
   if (cached && Date.now() - cached.cachedAt < WALLET_STATS_TTL_MS) {
@@ -153,6 +176,40 @@ async function walletStatsResponse(wallet, env, origin) {
     return jsonResponse(body, 200, origin);
   } catch (error) {
     return jsonResponse({ ok: false, error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed', data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function walletLastTradeResponse(wallet, env, origin) {
+  const cached = walletLastTradeCache.get(wallet);
+  if (cached && Date.now() - cached.cachedAt < LAST_TRADE_TTL_MS) {
+    return jsonResponse({ ...cached.body, cached: true }, 200, origin);
+  }
+  if (!env.SOLANA_TRACKER_API_KEY) {
+    return jsonResponse({ ok: false, error: 'missing_secret', data: { wallet, lastTrade: null } }, 200, origin);
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const upstream = await fetch(API_BASE + `/wallet/${wallet}/trades?limit=1`, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'x-api-key': env.SOLANA_TRACKER_API_KEY
+      },
+      signal: controller.signal
+    });
+    const text = await upstream.text();
+    if (!upstream.ok) {
+      return jsonResponse({ ok: false, error: 'upstream_unavailable', upstreamStatus: upstream.status, data: { wallet, lastTrade: null } }, 200, origin);
+    }
+    const parsed = JSON.parse(text);
+    const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: deriveLastTrade(parsed, wallet) };
+    walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
+    return jsonResponse(body, 200, origin);
+  } catch (error) {
+    return jsonResponse({ ok: false, error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed', data: { wallet, lastTrade: null } }, 200, origin);
   } finally {
     clearTimeout(timeout);
   }
@@ -204,6 +261,11 @@ export default {
     const statsMatch = url.pathname.match(/^\/api\/kolscan\/wallet\/([1-9A-HJ-NP-Za-km-z]{32,44})\/stats\/?$/);
     if (statsMatch) {
       return walletStatsResponse(statsMatch[1], env, origin);
+    }
+
+    const lastTradeMatch = url.pathname.match(/^\/api\/kolscan\/wallet\/([1-9A-HJ-NP-Za-km-z]{32,44})\/last-trade\/?$/);
+    if (lastTradeMatch) {
+      return walletLastTradeResponse(lastTradeMatch[1], env, origin);
     }
 
     const upstreamPath = resolveRoute(url.pathname, url.searchParams);

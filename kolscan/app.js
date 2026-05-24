@@ -320,6 +320,8 @@
   }
 
   function firstTradeTime(payload) {
+    var direct = pick(payload, ['lastTrade', 'data.lastTrade']);
+    if (direct) return direct;
     var rows = tradeRows(payload);
     if (!rows.length) return null;
     var best = rows.reduce(function (latest, trade) {
@@ -485,7 +487,7 @@
           var wallet = queue[idx++];
           active += 1;
           if (runId !== lastTradeRun) { active -= 1; next(); return; }
-          fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet) + '/trades?limit=1')
+          fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet) + '/last-trade')
             .then(firstTradeTime)
             .catch(function () { return null; })
             .then(function (value) {
