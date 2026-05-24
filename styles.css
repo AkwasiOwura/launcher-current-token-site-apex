@@ -198,6 +198,70 @@ h2{
   font-size:clamp(18px,2vw,22px);
 }
 .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+
+/* ────── Feature strip (replaces hero CTA buttons) ────── */
+.feature-strip{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:center;
+  gap:0;
+  margin-top:34px;
+  padding:22px 26px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(10,26,16,.78),rgba(3,6,4,.6));
+  box-shadow:0 18px 56px rgba(22,242,139,.06);
+}
+.feature-item{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:6px 22px;
+  min-width:0;
+}
+.feature-item + .feature-item::before{
+  content:"";
+  position:absolute;
+  left:0;top:14%;bottom:14%;
+  width:1px;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.18),transparent);
+}
+.feature-icon{
+  flex:0 0 auto;
+  display:grid;place-items:center;
+  width:44px;height:44px;
+  color:var(--mint);
+  filter:drop-shadow(0 0 10px rgba(22,242,139,.35));
+}
+.feature-icon svg{width:30px;height:30px;display:block}
+.feature-copy{display:flex;flex-direction:column;min-width:0}
+.feature-copy strong{
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:.005em;
+  color:var(--text);
+  line-height:1.15;
+}
+.feature-copy p{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:13.5px;
+  line-height:1.4;
+}
+@media (max-width:840px){
+  .feature-strip{
+    grid-template-columns:1fr;
+    padding:18px 18px;
+    gap:12px;
+  }
+  .feature-item{padding:10px 4px}
+  .feature-item + .feature-item::before{
+    left:8%;right:8%;top:0;bottom:auto;
+    width:auto;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
+  }
+}
 .button{
   display:inline-flex;
   align-items:center;
