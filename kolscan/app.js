@@ -11,7 +11,8 @@
   // entry.state: 'pending' | 'done' | 'fail'
   // entry.winRate, entry.roi, entry.trades: number | null
   var walletStatsCache = Object.create(null);
-  var WALLET_FETCH_CONCURRENCY = 6;
+  var WALLET_FETCH_CONCURRENCY = 1;
+  var walletStatsRun = 0;
 
   var els = {
     globalStatus: document.getElementById('global-status'),
@@ -156,11 +157,7 @@
 
   function avatarHtml(row) {
     var name = pick(row, ['identity.name', 'name', 'wallet']) || 'KOL';
-    var img = pick(row, ['identity.avatar', 'avatar', 'image', 'identity.image']);
     var fallback = escapeHtml(initials(name));
-    if (img) {
-      return '<span class="avatar"><img src="' + escapeHtml(String(img)) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{textContent:\'' + fallback + '\'}))"></span>';
-    }
     return '<span class="avatar">' + fallback + '</span>';
   }
 
@@ -212,14 +209,13 @@
       var periodPnl = pick(row, ['period.realized', 'pnl.realized', 'realizedPnl']);
       var periodVolume = pick(row, ['period.volume', 'volume']);
       var lifetime = pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl']);
-      var tradingDays = pick(row, ['period.tradingDays', 'tradingDays']);
       var snapshot = pick(row, ['lastSnapshotDate', 'updatedAt', 'timing.lastTrade']);
       var periodClass = toNumber(periodPnl) < 0 ? 'loss' : 'profit';
       var lifetimeClass = toNumber(lifetime) < 0 ? 'loss' : 'profit';
       var cached = walletStatsCache[wallet];
       function metricCell(cls, value) {
-        if (!cached || cached.state === 'pending') return '<td class="' + cls + ' muted" data-wallet="' + escapeHtml(wallet) + '">…</td>';
-        return '<td class="' + cls + '" data-wallet="' + escapeHtml(wallet) + '">' + (value === null ? '—' : value) + '</td>';
+        if (!cached || cached.state === 'pending') return '<td class="' + cls + ' muted" data-wallet="' + escapeHtml(wallet) + '">N/A</td>';
+        return '<td class="' + cls + '" data-wallet="' + escapeHtml(wallet) + '">' + (value === null ? 'N/A' : value) + '</td>';
       }
       var winCell = metricCell('win-rate', cached && cached.winRate !== null ? percent(cached.winRate) : null);
       var roiCell = metricCell('roi-cell', cached && cached.roi !== null ? percent(cached.roi) : null);
@@ -234,13 +230,12 @@
         roiCell +
         winCell +
         tradesCell +
-        '<td>' + integer(tradingDays) + '</td>' +
         '<td class="muted">' + escapeHtml(snapshotLabel(snapshot)) + '</td>' +
         '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
         '</tr>';
     }).join('');
 
-    enrichWalletStats(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean));
+    enrichWalletStats(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), walletStatsRun += 1);
 
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
@@ -307,9 +302,9 @@
   }
 
   function paintWalletStats(wallet, stats) {
-    paintCell(wallet, 'win-rate', stats.winRate === null ? '—' : percent(stats.winRate));
-    paintCell(wallet, 'roi-cell',  stats.roi      === null ? '—' : percent(stats.roi));
-    paintCell(wallet, 'trades-cell', stats.trades === null ? '—' : integer(stats.trades));
+    paintCell(wallet, 'win-rate', stats.winRate === null ? 'N/A' : percent(stats.winRate));
+    paintCell(wallet, 'roi-cell',  stats.roi      === null ? 'N/A' : percent(stats.roi));
+    paintCell(wallet, 'trades-cell', stats.trades === null ? 'N/A' : integer(stats.trades));
   }
 
   function deriveWinRate(payload) {
@@ -332,7 +327,7 @@
     };
   }
 
-  async function enrichWalletStats(wallets) {
+  async function enrichWalletStats(wallets, runId) {
     var queue = wallets.filter(function (w) {
       return !walletStatsCache[w] || walletStatsCache[w].state === 'fail';
     });
@@ -345,10 +340,12 @@
         while (active < WALLET_FETCH_CONCURRENCY && idx < queue.length) {
           var wallet = queue[idx++];
           active += 1;
+          if (runId !== walletStatsRun) { active -= 1; next(); return; }
           fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet))
             .then(function (data) { return deriveStats(data); })
             .catch(function () { return { winRate: null, roi: null, trades: null }; })
             .then(function (stats) {
+              if (runId !== walletStatsRun) { active -= 1; next(); return; }
               walletStatsCache[wallet] = {
                 state: 'done',
                 winRate: stats.winRate,
