@@ -157,6 +157,14 @@ nav a:hover {
   margin: 12px 0 22px;
 }
 
+/* Wallet detail page heading — scoped smaller than the global h1
+   (global is clamp(44px,4.9vw,78px); this is ~3 type-scale steps down). */
+.wallet-page-hero h1 {
+  font-size: clamp(26px, 2.8vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
 .wallet-title-row,
 .wallet-actions {
   display: flex;
