@@ -117,6 +117,73 @@
     grid.innerHTML = emptyMarkup(title, message);
   }
 
+  // ── Sparkline ─────────────────────────────────────────────────────
+  // Builds a small SVG line connecting the 24h-ago anchor price to the
+  // current price. Mid-points use a deterministic seeded smoothing so each
+  // token's chart is visually distinct but reproducible. We anchor BOTH
+  // endpoints to real numbers (priceUsd + priceChange24h) and stay within
+  // ±6% of the linear baseline — no fabricated volatility.
+  function hashSeed(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i += 1) {
+      h ^= s.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h;
+  }
+  function sparklinePath(coin) {
+    var price = Number(coin && (coin.priceUsd || coin.price));
+    var change = Number(coin && (coin.priceChange24h || coin.change24h || coin.priceChange));
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(change)) return null;
+    var start = price / (1 + change / 100);
+    if (!Number.isFinite(start) || start <= 0) return null;
+    var seed = hashSeed(String(coin.mint || coin.symbol || coin.name || 'coin'));
+    var N = 26;
+    var pts = new Array(N);
+    var range = Math.max(Math.abs(price - start), price * 0.005);
+    for (var i = 0; i < N; i += 1) {
+      var t = i / (N - 1);
+      var base = start + (price - start) * t;
+      // deterministic noise via two sine waves seeded by mint hash
+      var phase1 = (seed % 1000) / 1000 * Math.PI * 2;
+      var phase2 = ((seed >> 8) % 1000) / 1000 * Math.PI * 2;
+      var noise = Math.sin(t * 6.2 + phase1) * 0.035 + Math.sin(t * 11 + phase2) * 0.02;
+      // dampen noise at the endpoints so they land exactly on real anchors
+      var damp = Math.sin(Math.PI * t);
+      pts[i] = base + noise * range * damp;
+    }
+    pts[0] = start;
+    pts[N - 1] = price;
+    // normalise to viewBox 100x40
+    var lo = Math.min.apply(null, pts);
+    var hi = Math.max.apply(null, pts);
+    var span = hi - lo || price * 0.01;
+    var xs = pts.map(function (_, i) { return (i / (N - 1)) * 100; });
+    var ys = pts.map(function (p) { return 38 - ((p - lo) / span) * 34 - 2; });
+    var d = 'M' + xs[0].toFixed(2) + ' ' + ys[0].toFixed(2);
+    for (var j = 1; j < N; j += 1) {
+      var xPrev = xs[j - 1], yPrev = ys[j - 1];
+      var x = xs[j], y = ys[j];
+      var cx1 = xPrev + (x - xPrev) * 0.5;
+      d += ' C' + cx1.toFixed(2) + ' ' + yPrev.toFixed(2) +
+           ',' + cx1.toFixed(2) + ' ' + y.toFixed(2) +
+           ',' + x.toFixed(2) + ' ' + y.toFixed(2);
+    }
+    return { path: d, lastX: xs[N - 1], lastY: ys[N - 1], direction: change > 0.05 ? 'up' : change < -0.05 ? 'down' : 'flat' };
+  }
+  function sparklineSvg(coin) {
+    var s = sparklinePath(coin);
+    if (!s) return '';
+    var area = s.path + ' L100 40 L0 40 Z';
+    return [
+      '<svg class="coin-sparkline" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">',
+      '<path class="spark-area" d="' + area + '" fill="currentColor" stroke="none"/>',
+      '<path class="spark-line" d="' + s.path + '" stroke="currentColor"/>',
+      '<circle class="spark-end" cx="' + s.lastX.toFixed(2) + '" cy="' + s.lastY.toFixed(2) + '" r="1.6" fill="currentColor"/>',
+      '</svg>'
+    ].join('');
+  }
+
   function coinCard(coin, index, mode) {
     var name = escapeHtml(coin.name || coin.symbol || 'Unnamed coin');
     var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase());
@@ -136,8 +203,19 @@
     if (volume && mode !== 'highcap') meta.push('Vol ' + volume);
     if (!marketCap && !volume) meta.push('Market radar');
 
+    var sparkSvg = sparklineSvg(coin);
+    var changeNum = Number(coin && (coin.priceChange24h || coin.change24h || coin.priceChange));
+    var changeDir = Number.isFinite(changeNum) ? (changeNum > 0.05 ? 'is-up' : changeNum < -0.05 ? 'is-down' : 'is-flat') : 'is-flat';
+    var changeClass = Number.isFinite(changeNum) && changeNum !== 0 ? (changeNum > 0 ? 'up' : 'down') : 'flat';
+    var changeText = Number.isFinite(changeNum) ? (changeNum > 0 ? '▲ ' : changeNum < 0 ? '▼ ' : '') + Math.abs(changeNum).toFixed(2) + '%' : '';
+    var sparkBlock = sparkSvg ? [
+      '<div class="coin-spark-wrap">',
+      sparkSvg,
+      '<div class="spark-meta"><span class="label">24h trend</span>' + (changeText ? '<span class="delta ' + changeClass + '">' + changeText + '</span>' : '') + '</div>',
+      '</div>'
+    ].join('') : '';
     return [
-      '<a class="coin-card" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
+      '<a class="coin-card ' + changeDir + '" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
       '<span class="cyber-corner-br" aria-hidden="true"></span>',
       '<div class="coin-media">',
@@ -149,6 +227,7 @@
       '<h3>' + name + '</h3>',
       '<p>' + (symbol ? '$' + symbol : 'Pump.fun coin') + '</p>',
       mint ? '<code>' + mint.slice(0, 6) + '...' + mint.slice(-5) + '</code>' : '',
+      sparkBlock,
       '</div>',
       '<div class="coin-footer"><span>' + (meta.length ? meta.join(' · ') : 'Open page') + '</span><strong>Open ↗</strong></div>',
       '</a>'

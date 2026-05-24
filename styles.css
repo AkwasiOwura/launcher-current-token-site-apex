@@ -92,7 +92,7 @@ button,input,textarea,select{font:inherit}
   width:38px;
   height:38px;
   border:1px solid rgba(255,255,255,.18);
-  border-radius:12px;
+  border-radius:0;
   background:linear-gradient(135deg,rgba(22,242,139,.22),rgba(255,255,255,.05));
   color:var(--mint);
   font-family:var(--mono);
@@ -208,7 +208,7 @@ h2{
   margin-top:34px;
   padding:22px 26px;
   border:1px solid var(--border);
-  border-radius:18px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(10,26,16,.78),rgba(3,6,4,.6));
   box-shadow:0 18px 56px rgba(22,242,139,.06);
 }
@@ -268,7 +268,7 @@ h2{
   justify-content:center;
   min-height:48px;
   padding:0 18px;
-  border-radius:8px;
+  border-radius:0;
   border:1px solid var(--border-strong);
   font-size:14px;
   font-weight:900;
@@ -292,7 +292,7 @@ h2{
   gap:12px;
   padding:18px;
   border:1px solid var(--border);
-  border-radius:14px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(10,26,16,.88),rgba(3,6,4,.72));
   box-shadow:0 18px 60px rgba(0,0,0,.32);
   overflow:hidden;
@@ -323,7 +323,7 @@ h2{
   gap:7px;
   padding:16px;
   border:1px solid rgba(255,255,255,.1);
-  border-radius:12px;
+  border-radius:0;
   background:rgba(255,255,255,.035);
 }
 .signal-card.wide{grid-column:1/-1;min-height:118px}
@@ -377,7 +377,7 @@ h2{
   min-height:104px;
   padding:18px;
   border:1px solid var(--border);
-  border-radius:10px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
 }
 .metric span{
@@ -417,7 +417,7 @@ h2{
 .tab,.search{
   min-height:40px;
   border:1px solid var(--border);
-  border-radius:8px;
+  border-radius:0;
   background:rgba(255,255,255,.035);
   color:var(--muted);
 }
@@ -462,7 +462,7 @@ h2{
 .token-card,.coin-card,.empty-card{
   min-height:230px;
   border:1px solid var(--border);
-  border-radius:10px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
   box-shadow:0 16px 44px rgba(0,0,0,.2);
 }
@@ -502,7 +502,7 @@ h2{
   min-width:52px;
   height:32px;
   padding:0 10px;
-  border-radius:8px;
+  border-radius:0;
   background:rgba(22,242,139,.12);
   color:var(--mint);
   font-family:var(--mono);
@@ -535,7 +535,7 @@ h2{
   display:grid;
   place-items:center;
   border:1px solid rgba(255,255,255,.1);
-  border-radius:10px;
+  border-radius:0;
   background:rgba(0,0,0,.35);
   overflow:hidden;
 }
@@ -558,7 +558,7 @@ h2{
   place-items:center;
   width:66px;
   height:66px;
-  border-radius:16px;
+  border-radius:0;
   background:
     radial-gradient(circle at 30% 25%,rgba(255,255,255,.32),transparent 26%),
     linear-gradient(135deg,rgba(22,242,139,.28),rgba(255,255,255,.08));
@@ -633,7 +633,7 @@ h2{
 .kol-section{padding-top:42px}
 .kol-panel{
   border:1px solid var(--border);
-  border-radius:12px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.022));
   overflow:hidden;
 }
@@ -664,7 +664,7 @@ h2{
   width:42px;
   height:32px;
   border:1px solid rgba(22,242,139,.28);
-  border-radius:8px;
+  border-radius:0;
   color:var(--mint);
   font-family:var(--mono);
   font-weight:900;
@@ -731,7 +731,7 @@ h2{
   min-height:38px;
   padding:0 12px;
   border:1px solid var(--border);
-  border-radius:8px;
+  border-radius:0;
   color:var(--muted);
   font-weight:900;
 }
@@ -766,7 +766,7 @@ body.kolscan-page .kolscan-shell{padding-top:18px}
   min-height:120px;
   padding:18px;
   border:1px solid var(--border);
-  border-radius:12px;
+  border-radius:0;
   background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
 }
 .kol-kpi span,.kol-kpi small{
@@ -788,7 +788,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .kol-activity-card,.kol-board-card{
   margin-top:14px;
   border:1px solid var(--border);
-  border-radius:12px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.022));
   overflow:hidden;
 }
@@ -849,7 +849,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   min-height:32px;
   padding:0 9px;
   border:1px solid rgba(255,255,255,.1);
-  border-radius:8px;
+  border-radius:0;
   color:var(--soft);
   font-family:var(--mono);
   font-size:11px;
@@ -879,7 +879,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .verify-steps div{
   padding:18px;
   border:1px solid var(--border);
-  border-radius:12px;
+  border-radius:0;
   background:rgba(255,255,255,.045);
 }
 .verify-steps span{color:var(--mint);font-family:var(--mono);font-weight:900;font-size:12px}
@@ -939,7 +939,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   gap:14px;
   padding:22px;
   border:1px solid var(--border);
-  border-radius:18px;
+  border-radius:0;
   background:linear-gradient(180deg,rgba(10,26,16,.88),rgba(3,6,4,.78));
   box-shadow:var(--shadow);
 }
@@ -990,7 +990,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   align-items:center;
   padding:12px 14px;
   border:1px solid rgba(255,255,255,.08);
-  border-radius:12px;
+  border-radius:0;
   background:rgba(8,18,12,.6);
   transition:border-color .2s var(--ease),transform .2s var(--ease);
 }
@@ -1030,7 +1030,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   margin-top:4px;
   padding:12px 16px;
   border:1px solid rgba(22,242,139,.35);
-  border-radius:12px;
+  border-radius:0;
   color:var(--mint);
   font-size:13px;
   font-weight:900;
@@ -1118,3 +1118,50 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   *,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}
   [data-reveal],.token-card{opacity:1;transform:none}
 }
+
+/* ────── v3: square edges + sparklines + hero balance ────── */
+
+/* Make hero columns stretch + the copy column distribute its content. */
+.hero{align-items:stretch}
+.hero-copy{display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.feature-strip{margin-top:auto}
+
+/* Daily Radar fills its column height when paired with copy */
+.daily-radar{height:100%;justify-content:space-between}
+
+/* Token-card sparkline */
+.coin-sparkline{
+  display:block;
+  width:100%;
+  height:46px;
+  margin:8px 0 6px;
+  overflow:visible;
+}
+.coin-sparkline path.spark-area{opacity:.18}
+.coin-sparkline path.spark-line{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.coin-sparkline .spark-end{filter:drop-shadow(0 0 6px currentColor)}
+.coin-card.is-up .coin-sparkline{color:var(--mint)}
+.coin-card.is-down .coin-sparkline{color:var(--rose,#ff6464)}
+.coin-card.is-flat .coin-sparkline{color:var(--soft)}
+
+/* Sparkline mini-frame inside card */
+.coin-spark-wrap{
+  position:relative;
+  margin:6px -4px 0;
+  padding:6px 4px 2px;
+  border-top:1px solid rgba(255,255,255,.05);
+}
+.coin-spark-wrap .spark-meta{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;
+}
+.coin-spark-wrap .spark-meta .label{color:var(--soft);letter-spacing:.14em;text-transform:uppercase}
+.coin-spark-wrap .spark-meta .delta.up{color:var(--mint)}
+.coin-spark-wrap .spark-meta .delta.down{color:var(--rose,#ff6464)}
+.coin-spark-wrap .spark-meta .delta.flat{color:var(--soft)}
+
+/* Token-card sparkline (slightly taller for the SolMemeHub pages) */
+.token-card .coin-sparkline{height:32px}
+
+/* Killing the old token-card diamond ::after (clashes with square edges + cyber corners) */
+.token-card::after{display:none !important;content:none !important}
