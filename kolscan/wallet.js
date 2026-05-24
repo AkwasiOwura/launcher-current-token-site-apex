@@ -159,7 +159,11 @@
   }
 
   async function fetchJson(path) {
-    var response = await fetch(endpoint(path), {
+    // Cache-bust every call so neither the browser nor any intermediary
+    // CDN can serve stale trades. The Worker also sets Cache-Control: no-store.
+    var sep = path.indexOf('?') === -1 ? '?' : '&';
+    var url = endpoint(path + sep + '_=' + Date.now());
+    var response = await fetch(url, {
       headers: { accept: 'application/json' },
       cache: 'no-store'
     });
@@ -167,7 +171,27 @@
     if (!response.ok || payload.error) {
       throw new Error(payload.message || payload.error || 'Request failed');
     }
-    return payload.data || payload;
+    return { data: payload.data || payload, updatedAt: payload.updatedAt || null, source: payload.source || null };
+  }
+
+  function relativeTime(stamp) {
+    if (!stamp) return '';
+    var d = Math.max(0, Math.floor((Date.now() - stamp) / 1000));
+    if (d < 60)    return d + 's ago';
+    if (d < 3600)  return Math.floor(d / 60)   + 'm ago';
+    if (d < 86400) return Math.floor(d / 3600) + 'h ago';
+    return Math.floor(d / 86400) + 'd ago';
+  }
+
+  function solscanTxUrl(sig) {
+    var s = String(sig || '').trim();
+    if (!s || s === '—') return '';
+    return /^[1-9A-HJ-NP-Za-km-z]{32,}$/.test(s) ? 'https://solscan.io/tx/' + encodeURIComponent(s) : '';
+  }
+
+  function solscanTokenUrl(addr) {
+    var s = String(addr || '').trim();
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s) ? 'https://solscan.io/token/' + encodeURIComponent(s) : '';
   }
 
   function tradeRows(payload) {
@@ -265,7 +289,14 @@
     }
   }
 
-  function renderTrades(rows) {
+  function renderTrades(rows, meta) {
+    // Defensive: re-sort newest-first client-side. The Worker already asks the
+    // upstream for sortDirection=desc, but a safety pass costs nothing.
+    rows = rows.slice().sort(function (a, b) {
+      var at = toNumber(pick(a, ['time', 'timestamp', 'date'])) || 0;
+      var bt = toNumber(pick(b, ['time', 'timestamp', 'date'])) || 0;
+      return bt - at;
+    });
     var items = rows.slice(0, 80).map(function (trade) {
       var token = tradedToken(trade);
       var tokenName = pick(token, ['token.name', 'name']) || 'Token';
@@ -275,19 +306,35 @@
       var value = pick(trade, ['volume.usd', 'volume', 'usdValue', 'amountUsd', 'value']);
       var price = pick(trade, ['price.usd', 'priceUsd', 'entryPrice', 'exitPrice']);
       var sideClass = String(side).toLowerCase() === 'buy' ? 'buy-trade' : String(side).toLowerCase() === 'sell' ? 'sell-trade' : '';
+      var sig = pick(trade, ['tx', 'signature']) || '';
+      var txUrl = solscanTxUrl(sig);
+      var txCell = txUrl
+        ? '<a href="' + escapeHtml(txUrl) + '" target="_blank" rel="noopener noreferrer"><code>' + escapeHtml(shortAddress(sig)) + '</code></a>'
+        : '<code>' + escapeHtml(sig ? shortAddress(sig) : '—') + '</code>';
+      var tokUrl = solscanTokenUrl(tokenAddress);
+      var addrCell = tokUrl
+        ? '<a href="' + escapeHtml(tokUrl) + '" target="_blank" rel="noopener noreferrer"><code>' + escapeHtml(shortAddress(tokenAddress)) + '</code></a>'
+        : '<code>' + escapeHtml(shortAddress(tokenAddress)) + '</code>';
       return '<div class="trade-row ' + sideClass + '">' +
         '<span class="trade-side">' + escapeHtml(side.toUpperCase()) + '</span>' +
         '<span class="trade-token"><strong>' + escapeHtml(tokenName) + '</strong></span>' +
         '<span data-label="Symbol">' + escapeHtml(tokenSymbol) + '</span>' +
-        '<span data-label="Address"><code>' + escapeHtml(shortAddress(tokenAddress)) + '</code></span>' +
+        '<span data-label="Address">' + addrCell + '</span>' +
         '<span data-label="Value">' + money(value) + '</span>' +
         '<span data-label="Entry/exit price">' + money(price) + '</span>' +
         '<span data-label="Date / Time">' + escapeHtml(dateTime(pick(trade, ['time', 'timestamp', 'date']))) + '</span>' +
-        '<span data-label="TX"><code>' + escapeHtml(shortAddress(pick(trade, ['tx', 'signature']) || '—')) + '</code></span>' +
+        '<span data-label="TX">' + txCell + '</span>' +
         profitLabel(trade) +
       '</div>';
     }).join('');
-    els.tradesFeed.innerHTML = '<div class="trade-table">' +
+    var freshness = '';
+    if (meta && (meta.updatedAt || meta.fetchedAt)) {
+      var stamp = meta.updatedAt ? Date.parse(meta.updatedAt) : meta.fetchedAt;
+      var rel = relativeTime(stamp);
+      freshness = '<div class="trade-freshness" style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.65);padding:6px 2px 10px;letter-spacing:0.3px"><span>Showing <strong>' + Math.min(rows.length, 80) + '</strong> of <strong>' + rows.length + '</strong> recent trades</span><span>Last updated: <strong>' + escapeHtml(dateTime(stamp)) + '</strong> · ' + escapeHtml(rel) + '</span></div>';
+    }
+    els.tradesFeed.innerHTML = freshness +
+      '<div class="trade-table">' +
       '<div class="trade-row trade-head"><span>Side</span><span>Token</span><span>Symbol</span><span>Address</span><span>Value</span><span>Entry/exit price</span><span>Date / Time</span><span>TX</span><span>P&L</span></div>' +
       items +
     '</div>';
@@ -313,8 +360,8 @@
     els.tradesFeed.innerHTML = '';
 
     try {
-      var walletData = await fetchJson('/api/kolscan/wallet/' + encodeURIComponent(address));
-      renderWallet(walletData, address);
+      var walletResp = await fetchJson('/api/kolscan/wallet/' + encodeURIComponent(address));
+      renderWallet(walletResp.data, address);
       show(els.walletSummary, true);
     } catch (error) {
       show(els.walletError, true);
@@ -324,9 +371,9 @@
     }
 
     try {
-      var tradesData = await fetchJson('/api/kolscan/wallet/' + encodeURIComponent(address) + '/trades');
-      var rows = tradeRows(tradesData);
-      renderTrades(rows);
+      var tradesResp = await fetchJson('/api/kolscan/wallet/' + encodeURIComponent(address) + '/trades');
+      var rows = tradeRows(tradesResp.data);
+      renderTrades(rows, { updatedAt: tradesResp.updatedAt, fetchedAt: Date.now() });
       show(els.tradesEmpty, rows.length === 0);
     } catch (error) {
       show(els.tradesError, true);

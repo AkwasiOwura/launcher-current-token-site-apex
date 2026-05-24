@@ -354,6 +354,13 @@ export default {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    // For wallet-trades requests, force newest-first sort if the client did
+    // not specify one. Solana Tracker accepts sortBy=time & sortDirection=desc.
+    const isWalletTrades = /^\/wallet\/[1-9A-HJ-NP-Za-km-z]{32,44}\/trades$/.test(upstreamPath);
+    if (isWalletTrades) {
+      if (!url.searchParams.has('sortBy'))        url.searchParams.set('sortBy', 'time');
+      if (!url.searchParams.has('sortDirection')) url.searchParams.set('sortDirection', 'desc');
+    }
     const upstreamUrl = API_BASE + upstreamPath + safeQuery(url.searchParams);
 
     try {
@@ -361,9 +368,11 @@ export default {
         method: 'GET',
         headers: {
           accept: 'application/json',
+          'cache-control': 'no-cache',
           'x-api-key': env.SOLANA_TRACKER_API_KEY
         },
-        signal: controller.signal
+        signal: controller.signal,
+        cf: { cacheTtl: 0, cacheEverything: false }
       });
 
       const text = await upstream.text();
