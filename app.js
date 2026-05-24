@@ -300,8 +300,10 @@
 
   function allCoins(data) {
     return []
+      .concat(data && Array.isArray(data.dailyRadar) ? data.dailyRadar : [])
       .concat(data && Array.isArray(data.trending) ? data.trending : [])
-      .concat(data && Array.isArray(data.highCap) ? data.highCap : []);
+      .concat(data && Array.isArray(data.highCap) ? data.highCap : [])
+      .concat(data && Array.isArray(data.lowCap) ? data.lowCap : []);
   }
 
   function uniqueCoins(coins) {
@@ -316,9 +318,12 @@
 
   function currentCoins() {
     var data = memeState.data || {};
-    var coins = memeState.tab === 'highcap' && Array.isArray(data.highCap) ? data.highCap : data.trending;
+    var pool;
+    if (memeState.tab === 'highcap' && Array.isArray(data.highCap)) pool = data.highCap;
+    else if (memeState.tab === 'lowcap' && Array.isArray(data.lowCap)) pool = data.lowCap;
+    else pool = data.trending;
     var query = memeState.query.trim().toLowerCase();
-    coins = uniqueCoins(coins || []);
+    var coins = uniqueCoins(pool || []);
     if (!query) return coins;
     return coins.filter(function (coin) {
       return [coin.name, coin.symbol, coin.mint].some(function (value) {
@@ -330,6 +335,7 @@
   function renderStats(data) {
     var trending = Array.isArray(data && data.trending) ? data.trending : [];
     var highCap = Array.isArray(data && data.highCap) ? data.highCap : [];
+    var lowCap = Array.isArray(data && data.lowCap) ? data.lowCap : [];
     var volume = uniqueCoins(allCoins(data)).reduce(function (sum, coin) {
       var n = Number(coin && coin.volume24hUsd);
       return Number.isFinite(n) && n > 0 ? sum + n : sum;
@@ -343,6 +349,7 @@
     setText('stat-highcap', highCap.length ? String(highCap.length) : '—');
     setText('stat-volume', compactNumber(volume, '$') || '—');
     setText('stat-largest', compactNumber(largest, '$') || '—');
+    setText('stat-lowcap', lowCap.length ? String(lowCap.length) : '—');
     setText('hero-token-count', String(uniqueCoins(allCoins(data)).length || '—') + ' assets');
   }
 
@@ -383,8 +390,10 @@
   function renderDailyRadar(data) {
     var list = document.getElementById('daily-radar-list');
     if (!list) return;
-    var trending = uniqueCoins((data && Array.isArray(data.trending)) ? data.trending : []);
-    var top = trending.slice(0, 3);
+    var radarPool = (data && Array.isArray(data.dailyRadar) && data.dailyRadar.length)
+      ? data.dailyRadar
+      : (data && Array.isArray(data.trending)) ? data.trending : [];
+    var top = uniqueCoins(radarPool).slice(0, 3);
     if (!top.length) {
       list.innerHTML = '<li class="radar-row radar-row--placeholder">Top movers unavailable right now.</li>';
       return;
