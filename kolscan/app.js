@@ -179,19 +179,21 @@
       var name = pick(row, ['identity.name', 'name']) || 'KOL Wallet';
       var wallet = pick(row, ['wallet', 'address']) || '';
       var url = walletDetailUrl(wallet);
-      var total = pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl']);
-      var realized = pick(row, ['period.realized', 'pnl.realized', 'realizedPnl']);
-      var totalClass = toNumber(total) < 0 ? 'loss' : 'profit';
-      var realizedClass = toNumber(realized) < 0 ? 'loss' : 'profit';
+      var periodPnl = pick(row, ['period.realized', 'pnl.realized', 'realizedPnl']);
+      var periodVolume = pick(row, ['period.volume', 'volume']);
+      var lifetime = pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl']);
+      var tradingDays = pick(row, ['period.tradingDays', 'tradingDays']);
+      var snapshot = pick(row, ['lastSnapshotDate', 'updatedAt', 'timing.lastTrade']);
+      var periodClass = toNumber(periodPnl) < 0 ? 'loss' : 'profit';
+      var lifetimeClass = toNumber(lifetime) < 0 ? 'loss' : 'profit';
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
         '<td><a class="wallet-cell wallet-link" href="' + escapeHtml(url) + '">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></a></td>' +
-        '<td class="' + totalClass + '">' + money(total) + '</td>' +
-        '<td class="' + realizedClass + '">' + money(realized) + '</td>' +
-        '<td>' + percent(pick(row, ['winRate'])) + '</td>' +
-        '<td class="profit">' + percent(pick(row, ['roi'])) + '</td>' +
-        '<td>' + integer(pick(row, ['counts.trades', 'period.trades', 'trades'])) + '</td>' +
-        '<td class="muted">' + timeAgo(pick(row, ['timing.lastTrade', 'lastTrade', 'updatedAt', 'lastSnapshotDate'])) + '</td>' +
+        '<td class="' + periodClass + '">' + money(periodPnl) + '</td>' +
+        '<td>' + money(periodVolume) + '</td>' +
+        '<td class="' + lifetimeClass + '">' + money(lifetime) + '</td>' +
+        '<td>' + integer(tradingDays) + '</td>' +
+        '<td class="muted">' + escapeHtml(snapshotLabel(snapshot)) + '</td>' +
         '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
         '</tr>';
     }).join('');
@@ -214,13 +216,37 @@
   }
 
   function updateStats(rows) {
-    var totalPnl = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl'])) || 0); }, 0);
-    var realized = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['period.realized', 'pnl.realized', 'realizedPnl'])) || 0); }, 0);
-    var trades = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['counts.trades', 'period.trades', 'trades'])) || 0); }, 0);
+    var periodPnl = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['period.realized', 'pnl.realized', 'realizedPnl'])) || 0); }, 0);
+    var periodVolume = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['period.volume', 'volume'])) || 0); }, 0);
+    var lifetimePnl = rows.reduce(function (sum, row) { return sum + (toNumber(pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl'])) || 0); }, 0);
     setText(els.statKols, integer(rows.length));
-    setText(els.statTotalPnl, money(totalPnl));
-    setText(els.statRealizedPnl, money(realized));
-    setText(els.statTrades, integer(trades));
+    setText(els.statTotalPnl, money(periodPnl));
+    setText(els.statRealizedPnl, money(periodVolume));
+    setText(els.statTrades, money(lifetimePnl));
+    var label = periodLabel(currentPeriod);
+    var pnlLabel = document.getElementById('stat-period-pnl-label');
+    var volLabel = document.getElementById('stat-period-volume-label');
+    var thPnl = document.getElementById('th-period-pnl');
+    var thVol = document.getElementById('th-period-volume');
+    if (pnlLabel) pnlLabel.textContent = label + ' PnL';
+    if (volLabel) volLabel.textContent = label + ' Volume';
+    if (thPnl) thPnl.textContent = label + ' PnL';
+    if (thVol) thVol.textContent = label + ' Volume';
+  }
+
+  function snapshotLabel(value) {
+    if (!value) return '—';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    var stamp = toNumber(value);
+    if (stamp === null) stamp = Date.parse(String(value));
+    if (!stamp) return '—';
+    var diff = Date.now() - stamp;
+    if (diff < 0) diff = 0;
+    var mins = Math.floor(diff / 60000);
+    if (mins < 60) return mins + 'm ago';
+    var hours = Math.floor(mins / 60);
+    if (hours < 48) return hours + 'h ago';
+    return Math.floor(hours / 24) + 'd ago';
   }
 
   async function loadLeaderboard() {
