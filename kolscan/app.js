@@ -11,9 +11,12 @@
   // entry.state: 'pending' | 'done' | 'fail'
   // entry.winRate, entry.roi, entry.trades: number | null
   var walletStatsCache = Object.create(null);
+  var lastTradeCache = Object.create(null);
   var genericStatsLoaded = false;
   var WALLET_FETCH_CONCURRENCY = 1;
+  var LAST_TRADE_FETCH_CONCURRENCY = 2;
   var walletStatsRun = 0;
+  var lastTradeRun = 0;
 
   var els = {
     globalStatus: document.getElementById('global-status'),
@@ -159,7 +162,19 @@
   function avatarHtml(row) {
     var name = pick(row, ['identity.name', 'name', 'wallet']) || 'KOL';
     var fallback = escapeHtml(initials(name));
-    return '<span class="avatar">' + fallback + '</span>';
+    var image = safeImageUrl(pick(row, ['identity.avatar', 'avatar', 'image', 'profile.image', 'profile.avatar']));
+    return '<span class="avatar">' + (image ? '<img src="' + escapeHtml(image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();">' : '') + '<span>' + fallback + '</span></span>';
+  }
+
+  function safeImageUrl(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return '';
+    try {
+      var url = new URL(raw, window.location.href);
+      return /^https?:$/.test(url.protocol) ? url.href : '';
+    } catch (_error) {
+      return '';
+    }
   }
 
   function twitterUrl(value) {
@@ -180,7 +195,7 @@
   function twitterLinkHtml(row) {
     var url = twitterUrl(pick(row, ['identity.twitter', 'twitter', 'twitterUrl', 'x', 'xUrl', 'identity.x']));
     if (!url) return '';
-    return ' <a class="x-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" aria-label="Open X profile" onclick="event.stopPropagation();">𝕏</a>';
+    return '<a class="x-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" aria-label="Open X profile">𝕏</a>';
   }
 
   async function fetchJson(path) {
@@ -210,7 +225,8 @@
       var periodPnl = pick(row, ['period.realized', 'pnl.realized', 'realizedPnl']);
       var periodVolume = pick(row, ['period.volume', 'volume']);
       var lifetime = pick(row, ['ending.pnl.total', 'pnl.total', 'totalPnl']);
-      var snapshot = pick(row, ['lastSnapshotDate', 'updatedAt', 'timing.lastTrade']);
+      var directLastTrade = pick(row, ['timing.lastTrade', 'lastTrade', 'lastTradeAt', 'lastTradeTime', 'lastTransactionAt']);
+      var cachedTrade = lastTradeCache[wallet];
       var periodClass = toNumber(periodPnl) < 0 ? 'loss' : 'profit';
       var lifetimeClass = toNumber(lifetime) < 0 ? 'loss' : 'profit';
       var cached = walletStatsCache[wallet];
@@ -222,21 +238,23 @@
       var roiCell = metricCell('roi-cell', cached && cached.roi !== null ? percent(cached.roi) : null);
       var tradesCell = metricCell('trades-cell', cached && cached.trades !== null ? integer(cached.trades) : null);
       var xLink = twitterLinkHtml(row);
+      var lastTrade = cachedTrade && cachedTrade.state === 'done' ? cachedTrade.value : directLastTrade;
+      var lastTradeText = lastTrade ? timeAgo(lastTrade) : 'Loading';
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
-        '<td><div class="wallet-cell"><a class="wallet-link" href="' + escapeHtml(url) + '">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></a>' + xLink + '</div></td>' +
+        '<td><div class="wallet-cell">' + avatarHtml(row) + '<div class="wallet-stack"><div class="wallet-name-line"><span class="primary">' + escapeHtml(name) + '</span>' + xLink + '</div><button class="wallet-address-copy" type="button" data-copy-address="' + escapeHtml(wallet) + '" aria-label="Copy wallet address">' + escapeHtml(wallet || 'public wallet') + '</button></div></div></td>' +
         '<td class="' + periodClass + '">' + money(periodPnl) + '</td>' +
         '<td>' + money(periodVolume) + '</td>' +
         '<td class="' + lifetimeClass + '">' + money(lifetime) + '</td>' +
         roiCell +
         winCell +
         tradesCell +
-        '<td class="muted">' + escapeHtml(snapshotLabel(snapshot)) + '</td>' +
-        '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
+        '<td class="last-trade-cell muted" data-wallet="' + escapeHtml(wallet) + '">' + escapeHtml(lastTradeText) + '</td>' +
         '</tr>';
     }).join('');
 
     enrichWalletStats(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), walletStatsRun += 1);
+    enrichLastTrades(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean), lastTradeRun += 1);
 
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
@@ -247,6 +265,18 @@
           event.preventDefault();
           window.location.href = row.getAttribute('data-wallet-url') || './wallet.html';
         }
+      });
+    });
+    els.leaderboardBody.querySelectorAll('[data-copy-address]').forEach(function (button) {
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        copyAddress(button.getAttribute('data-copy-address') || '', button);
+      });
+    });
+    els.leaderboardBody.querySelectorAll('.x-link').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        event.stopPropagation();
       });
     });
   }
@@ -287,6 +317,46 @@
     var hours = Math.floor(mins / 60);
     if (hours < 48) return hours + 'h ago';
     return Math.floor(hours / 24) + 'd ago';
+  }
+
+  function firstTradeTime(payload) {
+    var rows = tradeRows(payload);
+    if (!rows.length) return null;
+    var best = rows.reduce(function (latest, trade) {
+      var value = pick(trade, ['time', 'timestamp', 'date', 'blockTime', 'createdAt']);
+      var stamp = toNumber(value);
+      if (stamp === null && value) stamp = Date.parse(String(value));
+      if (stamp && stamp < 10000000000) stamp *= 1000;
+      return stamp && (!latest || stamp > latest) ? stamp : latest;
+    }, null);
+    return best;
+  }
+
+  function paintLastTrade(wallet, value) {
+    var sel = 'td.last-trade-cell[data-wallet="' + cssAttr(wallet) + '"]';
+    var cells = els.leaderboardBody.querySelectorAll(sel);
+    var text = value ? timeAgo(value) : 'N/A';
+    for (var i = 0; i < cells.length; i += 1) {
+      cells[i].classList.remove('muted');
+      cells[i].textContent = text;
+    }
+  }
+
+  function copyAddress(address, button) {
+    if (!address) return;
+    var done = function () {
+      button.classList.add('copied');
+      button.textContent = 'Copied';
+      window.setTimeout(function () {
+        button.classList.remove('copied');
+        button.textContent = address;
+      }, 1100);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(address).then(done).catch(done);
+    } else {
+      done();
+    }
   }
 
   function cssAttr(value) {
@@ -392,6 +462,36 @@
                 trades: stats.trades
               };
               paintWalletStats(wallet, stats);
+              active -= 1;
+              next();
+            });
+        }
+      }
+      next();
+    });
+  }
+
+  async function enrichLastTrades(wallets, runId) {
+    var queue = wallets.filter(function (w) {
+      return !lastTradeCache[w] || lastTradeCache[w].state === 'fail';
+    });
+    queue.forEach(function (w) { lastTradeCache[w] = { state: 'pending', value: null }; });
+    var active = 0;
+    var idx = 0;
+    return new Promise(function (resolve) {
+      function next() {
+        if (idx >= queue.length && active === 0) { resolve(); return; }
+        while (active < LAST_TRADE_FETCH_CONCURRENCY && idx < queue.length) {
+          var wallet = queue[idx++];
+          active += 1;
+          if (runId !== lastTradeRun) { active -= 1; next(); return; }
+          fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet) + '/trades?limit=1')
+            .then(firstTradeTime)
+            .catch(function () { return null; })
+            .then(function (value) {
+              if (runId !== lastTradeRun) { active -= 1; next(); return; }
+              lastTradeCache[wallet] = { state: 'done', value: value };
+              paintLastTrade(wallet, value);
               active -= 1;
               next();
             });
