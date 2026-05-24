@@ -118,11 +118,9 @@
   }
 
   // ── Sparkline ─────────────────────────────────────────────────────
-  // Builds a small SVG line connecting the 24h-ago anchor price to the
-  // current price. Mid-points use a deterministic seeded smoothing so each
-  // token's chart is visually distinct but reproducible. We anchor BOTH
-  // endpoints to real numbers (priceUsd + priceChange24h) and stay within
-  // ±6% of the linear baseline — no fabricated volatility.
+  // Builds a compact terminal-style SVG line anchored to the 24h start and
+  // current price. Intraday points are deterministic visual texture, shaped
+  // to read like active market movement without claiming exact tick history.
   function hashSeed(s) {
     var h = 2166136261;
     for (var i = 0; i < s.length; i += 1) {
@@ -138,37 +136,39 @@
     var start = price / (1 + change / 100);
     if (!Number.isFinite(start) || start <= 0) return null;
     var seed = hashSeed(String(coin.mint || coin.symbol || coin.name || 'coin'));
-    var N = 36;
+    var N = 72;
     var pts = new Array(N);
-    // Anchor the path between two REAL endpoints (24h start derived from
-    // priceUsd + priceChange24h, end = priceUsd). The middle uses a
-    // four-band harmonic mix with a low-frequency pullback so the shape
-    // reads like real intraday momentum — varied wave, occasional micro
-    // dip — without claiming specific intermediate prices.
     var dir = price - start;
-    var refRange = Math.max(Math.abs(dir), price * 0.012); // baseline volatility floor
+    var absChange = Math.abs(change);
+    var refRange = Math.max(Math.abs(dir), price * (0.018 + Math.min(absChange, 45) / 2400));
     var phase1 = ((seed       ) % 1000) / 1000 * Math.PI * 2;
     var phase2 = ((seed >>  6) % 1000) / 1000 * Math.PI * 2;
     var phase3 = ((seed >> 12) % 1000) / 1000 * Math.PI * 2;
     var phase4 = ((seed >> 18) % 1000) / 1000 * Math.PI * 2;
+    var phase5 = ((seed >> 21) % 1000) / 1000 * Math.PI * 2;
     var pullbackAt = 0.45 + ((seed >> 24) % 30) / 100;   // 0.45..0.75 along the path
-    var pullbackDepth = 0.22 + ((seed >> 9) % 18) / 100; // 0.22..0.40 of refRange
+    var pullbackDepth = 0.34 + ((seed >> 9) % 26) / 100; // 0.34..0.60 of refRange
+    var pullbackAt2 = 0.16 + ((seed >> 15) % 26) / 100;  // 0.16..0.42
+    var chop = 0;
     for (var i = 0; i < N; i += 1) {
       var t = i / (N - 1);
-      // smoothstep trajectory between start and end (gentler than linear)
-      var smooth = t * t * (3 - 2 * t);
+      var ease = t * t * (3 - 2 * t);
+      var stair = Math.sin(t * Math.PI * (2.3 + ((seed >> 3) % 20) / 18) + phase3) * 0.025;
+      var smooth = Math.max(0, Math.min(1, ease + stair * Math.sin(Math.PI * t)));
       var base = start + dir * smooth;
-      // multi-band wave noise — amplitudes hand-tuned for natural feel
-      var w1 = Math.sin(t * 6.1  + phase1) * 0.085;
-      var w2 = Math.sin(t * 11.4 + phase2) * 0.045;
-      var w3 = Math.sin(t * 3.2  + phase3) * 0.060;
-      var w4 = Math.cos(t * 17.0 + phase4) * 0.022;
-      // localized pullback around `pullbackAt` (bell curve), against trend
+      var w1 = Math.sin(t * 8.4  + phase1) * 0.125;
+      var w2 = Math.sin(t * 15.7 + phase2) * 0.074;
+      var w3 = Math.sin(t * 4.6  + phase3) * 0.088;
+      var w4 = Math.cos(t * 28.0 + phase4) * 0.040;
+      var w5 = Math.sin(t * 45.0 + phase5) * 0.020;
+      var rawNoise = Math.sin((i + 1) * 12.9898 + seed * 0.00011) * 43758.5453;
+      chop = chop * 0.64 + (rawNoise - Math.floor(rawNoise) - 0.5) * 0.052;
       var b = Math.exp(-Math.pow((t - pullbackAt) / 0.10, 2));
+      var b2 = Math.exp(-Math.pow((t - pullbackAt2) / 0.065, 2));
       var pullback = -Math.sign(dir || 1) * pullbackDepth * b;
-      // edge damping so endpoints sit exactly on real anchors
-      var damp = Math.pow(Math.sin(Math.PI * t), 1.1);
-      pts[i] = base + (w1 + w2 + w3 + w4 + pullback) * refRange * damp;
+      var fakeout = Math.sign(dir || 1) * (0.16 + ((seed >> 5) % 14) / 100) * b2;
+      var damp = Math.pow(Math.sin(Math.PI * t), 0.78);
+      pts[i] = base + (w1 + w2 + w3 + w4 + w5 + chop + pullback + fakeout) * refRange * damp;
     }
     pts[0] = start;
     pts[N - 1] = price;
@@ -180,12 +180,7 @@
     var ys = pts.map(function (p) { return 38 - ((p - lo) / span) * 34 - 2; });
     var d = 'M' + xs[0].toFixed(2) + ' ' + ys[0].toFixed(2);
     for (var j = 1; j < N; j += 1) {
-      var xPrev = xs[j - 1], yPrev = ys[j - 1];
-      var x = xs[j], y = ys[j];
-      var cx1 = xPrev + (x - xPrev) * 0.5;
-      d += ' C' + cx1.toFixed(2) + ' ' + yPrev.toFixed(2) +
-           ',' + cx1.toFixed(2) + ' ' + y.toFixed(2) +
-           ',' + x.toFixed(2) + ' ' + y.toFixed(2);
+      d += ' L' + xs[j].toFixed(2) + ' ' + ys[j].toFixed(2);
     }
     return { path: d, lastX: xs[N - 1], lastY: ys[N - 1], direction: change > 1 ? 'up' : change < -1 ? 'down' : 'flat' };
   }
