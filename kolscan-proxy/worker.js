@@ -85,6 +85,71 @@ function normalizeLeaderboardPeriod(value) {
   return '';
 }
 
+function pick(source, paths) {
+  for (const path of paths) {
+    const value = path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), source);
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+  return null;
+}
+
+function toNumber(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+  const parsed = Number(value.replace(/[$,%\s,]/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function deriveWalletStats(payload, wallet) {
+  const directWinRate = toNumber(pick(payload, ['analysis.winRate', 'winRate']));
+  const winning = toNumber(pick(payload, ['stats.profitable', 'analysis.tokens.winning', 'profitableTokens']));
+  const losing = toNumber(pick(payload, ['stats.losing', 'analysis.tokens.losing', 'losingTokens']));
+  const winRate = directWinRate !== null
+    ? directWinRate
+    : winning !== null && losing !== null && winning + losing > 0
+      ? (winning / (winning + losing)) * 100
+      : null;
+  return {
+    wallet,
+    roi: toNumber(pick(payload, ['summary.roi', 'roi'])),
+    winRate,
+    trades: toNumber(pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades'])),
+    sourceFields: {
+      roi: pick(payload, ['summary.roi', 'roi']) !== null ? 'summary.roi' : null,
+      winRate: directWinRate !== null ? 'analysis.winRate' : winning !== null && losing !== null ? 'stats.profitable/stats.losing' : null,
+      trades: pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades']) !== null ? 'summary.counts.trades' : null
+    }
+  };
+}
+
+async function walletStatsResponse(wallet, env, origin) {
+  if (!env.SOLANA_TRACKER_API_KEY) {
+    return jsonResponse({ ok: false, error: 'missing_secret', data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const upstream = await fetch(API_BASE + `/v2/pnl/wallets/${wallet}`, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'x-api-key': env.SOLANA_TRACKER_API_KEY
+      },
+      signal: controller.signal
+    });
+    const text = await upstream.text();
+    if (!upstream.ok) {
+      return jsonResponse({ ok: false, error: 'upstream_unavailable', upstreamStatus: upstream.status, data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
+    }
+    const parsed = JSON.parse(text);
+    return jsonResponse({ ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/stats`, data: deriveWalletStats(parsed, wallet) }, 200, origin);
+  } catch (error) {
+    return jsonResponse({ ok: false, error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed', data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function safeQuery(searchParams) {
   const params = new URLSearchParams();
   const allowed = new Set([
@@ -126,6 +191,11 @@ export default {
 
     if (request.method !== 'GET') {
       return jsonResponse({ error: 'method_not_allowed', message: 'Use GET for this route.' }, 405, origin);
+    }
+
+    const statsMatch = url.pathname.match(/^\/api\/kolscan\/wallet\/([1-9A-HJ-NP-Za-km-z]{32,44})\/stats\/?$/);
+    if (statsMatch) {
+      return walletStatsResponse(statsMatch[1], env, origin);
     }
 
     const upstreamPath = resolveRoute(url.pathname, url.searchParams);

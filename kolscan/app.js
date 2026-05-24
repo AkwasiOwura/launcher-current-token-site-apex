@@ -341,7 +341,7 @@
           var wallet = queue[idx++];
           active += 1;
           if (runId !== walletStatsRun) { active -= 1; next(); return; }
-          fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet))
+          fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet) + '/stats')
             .then(function (data) { return deriveStats(data); })
             .catch(function () { return { winRate: null, roi: null, trades: null }; })
             .then(function (stats) {
