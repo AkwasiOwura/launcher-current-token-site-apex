@@ -7,6 +7,7 @@
     tab: 'trending',
     query: ''
   };
+  var RUGCHECK_REPORT_BASE = 'https://api.rugcheck.xyz/v1/tokens/';
   try {
     reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch (_err) {
@@ -83,6 +84,14 @@
     if (!Number.isFinite(n) || n === 0) return '';
     return (n > 0 ? '+' : '') + Intl.NumberFormat('en', {
       maximumFractionDigits: 1
+    }).format(n) + '%';
+  }
+
+  function percentNumber(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return '';
+    return Intl.NumberFormat('en', {
+      maximumFractionDigits: n >= 10 ? 1 : 2
     }).format(n) + '%';
   }
 
@@ -512,6 +521,156 @@
     grid.innerHTML = cards.join('');
   }
 
+  function isSolanaAddress(value) {
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(value || '').trim());
+  }
+
+  function shortAddress(value) {
+    var raw = String(value || '');
+    return raw.length > 12 ? raw.slice(0, 6) + '...' + raw.slice(-5) : raw;
+  }
+
+  function authorityState(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw || raw === '11111111111111111111111111111111') return { text: 'Disabled', tone: 'good' };
+    return { text: 'Active', tone: 'danger' };
+  }
+
+  function riskTone(report) {
+    var risks = Array.isArray(report && report.risks) ? report.risks : [];
+    var score = Number(report && (report.score_normalised != null ? report.score_normalised : report.score));
+    var hasDanger = risks.some(function (risk) { return /danger|critical|high/i.test(String(risk && risk.level)); });
+    var hasWarn = risks.some(function (risk) { return /warn|medium/i.test(String(risk && risk.level)); });
+    if (report && report.rugged) return { tone: 'danger', label: 'Rugged token' };
+    if (hasDanger || (Number.isFinite(score) && score >= 40)) return { tone: 'danger', label: 'High risk' };
+    if (hasWarn || risks.length || (Number.isFinite(score) && score >= 15)) return { tone: 'warn', label: 'Review risks' };
+    return { tone: 'good', label: 'Low visible risk' };
+  }
+
+  function bestLp(report) {
+    var markets = Array.isArray(report && report.markets) ? report.markets : [];
+    return markets.reduce(function (best, market) {
+      var lp = market && market.lp ? market.lp : {};
+      var locked = Number(lp.lpLockedPct);
+      var usd = Number(lp.lpLockedUSD);
+      if (!Number.isFinite(locked)) locked = -1;
+      if (!best || locked > best.locked || (locked === best.locked && Number.isFinite(usd) && usd > best.usd)) {
+        return { locked: locked, usd: Number.isFinite(usd) ? usd : 0 };
+      }
+      return best;
+    }, null);
+  }
+
+  function topHolderPct(report) {
+    var holders = Array.isArray(report && report.topHolders) ? report.topHolders : [];
+    var topTen = holders.slice(0, 10).reduce(function (sum, holder) {
+      var n = Number(holder && holder.pct);
+      return Number.isFinite(n) ? sum + n : sum;
+    }, 0);
+    return topTen || null;
+  }
+
+  function metricCard(label, value, tone) {
+    return [
+      '<div class="rug-metric ' + escapeHtml(tone || '') + '">',
+      '<span>' + escapeHtml(label) + '</span>',
+      '<strong>' + escapeHtml(value || 'Unavailable') + '</strong>',
+      '</div>'
+    ].join('');
+  }
+
+  function renderRugcheckResult(report, address) {
+    var results = document.getElementById('rugcheck-results');
+    if (!results) return;
+    var tokenMeta = report && (report.tokenMeta || (report.token_extensions && report.token_extensions.tokenMetadata)) || {};
+    var name = tokenMeta.name || 'Token contract';
+    var symbol = tokenMeta.symbol ? '$' + String(tokenMeta.symbol).replace(/^\$/, '').toUpperCase() : shortAddress(address);
+    var tone = riskTone(report);
+    var mint = authorityState(report && (report.mintAuthority || (report.token && report.token.mintAuthority)));
+    var freeze = authorityState(report && (report.freezeAuthority || (report.token && report.token.freezeAuthority)));
+    var lp = bestLp(report);
+    var holderPct = topHolderPct(report);
+    var transferFee = report && report.transferFee ? Number(report.transferFee.pct) : 0;
+    var mutable = tokenMeta.mutable;
+    var liquidity = compactNumber(report && report.totalMarketLiquidity, '$') || 'Unavailable';
+    var score = report && report.score_normalised != null ? String(report.score_normalised) + '/100' : (report && report.score != null ? String(report.score) : 'Unavailable');
+    var risks = Array.isArray(report && report.risks) ? report.risks : [];
+    var explorer = 'https://rugcheck.xyz/tokens/' + encodeURIComponent(address);
+    var warnings = risks.length ? risks.slice(0, 6).map(function (risk) {
+      var level = /danger|critical|high/i.test(String(risk && risk.level)) ? 'danger' : 'warn';
+      return [
+        '<div class="rug-warning ' + level + '">',
+        '<strong>' + escapeHtml(risk.name || 'Risk signal') + '</strong>',
+        '<p>' + escapeHtml(risk.description || risk.value || risk.level || 'Review this token signal before trading.') + '</p>',
+        '</div>'
+      ].join('');
+    }).join('') : '<p>No major RugCheck warnings returned for this contract.</p>';
+
+    results.innerHTML = [
+      '<article class="rug-summary">',
+      '<div class="rug-summary-head">',
+      '<div><span class="rug-kicker">RugCheck scan</span><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(symbol) + ' · ' + escapeHtml(shortAddress(address)) + '</p></div>',
+      '<span class="rug-badge ' + tone.tone + '">' + escapeHtml(tone.label) + '</span>',
+      '</div>',
+      '<div class="rug-metrics">',
+      metricCard('Score', score, tone.tone),
+      metricCard('Liquidity', liquidity, liquidity === 'Unavailable' ? 'warn' : 'good'),
+      metricCard('Mint authority', mint.text, mint.tone),
+      metricCard('Freeze authority', freeze.text, freeze.tone),
+      metricCard('LP locked', lp && lp.locked >= 0 ? percentNumber(lp.locked) : 'Unavailable', lp && lp.locked >= 80 ? 'good' : 'warn'),
+      metricCard('Top 10 holders', holderPct ? percentNumber(holderPct) : 'Unavailable', holderPct && holderPct > 50 ? 'danger' : 'warn'),
+      metricCard('Transfer tax', Number.isFinite(transferFee) ? percentNumber(transferFee) : 'Unavailable', transferFee > 0 ? 'warn' : 'good'),
+      metricCard('Metadata', mutable === false ? 'Immutable' : mutable === true ? 'Mutable' : 'Unavailable', mutable === false ? 'good' : 'warn'),
+      '</div>',
+      '<div class="rug-warning-list"><h4>Security signals</h4>' + warnings + '</div>',
+      '<div class="rug-actions"><a href="' + explorer + '" target="_blank" rel="noopener noreferrer">Open RugCheck report</a></div>',
+      '</article>'
+    ].join('');
+  }
+
+  function setupRugcheck() {
+    var form = document.getElementById('rugcheck-form');
+    var input = document.getElementById('rugcheck-address');
+    var status = document.getElementById('rugcheck-status');
+    var button = form ? form.querySelector('button[type="submit"]') : null;
+    if (!form || !input || !status || !button) return;
+
+    function setStatus(text, state) {
+      status.textContent = text;
+      status.classList.toggle('is-error', state === 'error');
+      status.classList.toggle('is-good', state === 'good');
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var address = input.value.trim();
+      if (!isSolanaAddress(address)) {
+        setStatus('Enter a valid Solana token mint address.', 'error');
+        return;
+      }
+      button.disabled = true;
+      setStatus('Checking public RugCheck risk signals...', '');
+      fetch(RUGCHECK_REPORT_BASE + encodeURIComponent(address) + '/report', {
+        cache: 'no-store',
+        credentials: 'omit'
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error('RugCheck returned HTTP ' + response.status);
+          return response.json();
+        })
+        .then(function (report) {
+          renderRugcheckResult(report, address);
+          setStatus('Verification signals loaded. Review every source before trading.', 'good');
+        })
+        .catch(function (err) {
+          setStatus(err && err.message ? err.message : 'Verification data unavailable right now.', 'error');
+        })
+        .finally(function () {
+          button.disabled = false;
+        });
+    });
+  }
+
   function loadJson(path) {
     return fetch(path, { cache: 'no-store', credentials: 'omit' })
       .then(function (response) {
@@ -562,6 +721,7 @@
   function boot() {
     setupReveal();
     setupControls();
+    setupRugcheck();
     loadData();
   }
 

@@ -164,14 +164,35 @@
         <p class="eyebrow">Trade carefully</p>
         <h2>Verify contracts before trading.</h2>
         <p>
-          Token pages are public information surfaces. Always confirm the contract address through trusted explorers,
-          review liquidity and holders, and understand that meme-token markets can move sharply.
+          Paste a Solana token contract address to review public security signals before you trade.
+          Always compare the result with trusted explorers and decide independently.
         </p>
       </div>
-      <div class="verify-steps">
-        <div><span>01</span><strong>Open the token page</strong><p>Start from the page linked in the SolMemeHub index.</p></div>
-        <div><span>02</span><strong>Check the contract</strong><p>Compare the address against trusted public explorers.</p></div>
-        <div><span>03</span><strong>Decide independently</strong><p>Nothing on this site is financial advice.</p></div>
+      <div class="verify-tool cyber-card" aria-live="polite">
+        <form id="rugcheck-form" class="verify-form">
+          <label for="rugcheck-address">Token contract address</label>
+          <div class="verify-field">
+            <input
+              id="rugcheck-address"
+              name="address"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Paste Solana mint address"
+              aria-describedby="rugcheck-status"
+            />
+            <button type="submit">Verify</button>
+          </div>
+        </form>
+        <p id="rugcheck-status" class="verify-status">Ready for a Solana token address.</p>
+        <div id="rugcheck-results" class="rug-results">
+          <div class="rug-empty">
+            <span>01</span>
+            <strong>Contract scan</strong>
+            <p>RugCheck risk signals will appear here after a valid address is submitted.</p>
+          </div>
+        </div>
       </div>
     </section>
 
