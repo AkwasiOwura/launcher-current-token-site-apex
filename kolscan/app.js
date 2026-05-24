@@ -7,6 +7,12 @@
   var pollTimer = null;
   var currentPeriod = 'daily';
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
+  // Cache win-rate per wallet across tab switches.
+  // value === undefined: never fetched
+  // value === null:      fetched, no win rate available
+  // value === number:    real percentage from API
+  var winRateCache = Object.create(null);
+  var WIN_RATE_CONCURRENCY = 6;
 
   var els = {
     globalStatus: document.getElementById('global-status'),
@@ -186,17 +192,24 @@
       var snapshot = pick(row, ['lastSnapshotDate', 'updatedAt', 'timing.lastTrade']);
       var periodClass = toNumber(periodPnl) < 0 ? 'loss' : 'profit';
       var lifetimeClass = toNumber(lifetime) < 0 ? 'loss' : 'profit';
+      var cached = winRateCache[wallet];
+      var winCell = cached === undefined
+        ? '<td class="win-rate muted" data-wallet="' + escapeHtml(wallet) + '">…</td>'
+        : '<td class="win-rate" data-wallet="' + escapeHtml(wallet) + '">' + (cached === null ? '—' : percent(cached)) + '</td>';
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
         '<td><a class="wallet-cell wallet-link" href="' + escapeHtml(url) + '">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></a></td>' +
         '<td class="' + periodClass + '">' + money(periodPnl) + '</td>' +
         '<td>' + money(periodVolume) + '</td>' +
         '<td class="' + lifetimeClass + '">' + money(lifetime) + '</td>' +
+        winCell +
         '<td>' + integer(tradingDays) + '</td>' +
         '<td class="muted">' + escapeHtml(snapshotLabel(snapshot)) + '</td>' +
         '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
         '</tr>';
     }).join('');
+
+    enrichWinRates(rows.map(function (row) { return pick(row, ['wallet', 'address']) || ''; }).filter(Boolean));
 
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
@@ -247,6 +260,58 @@
     var hours = Math.floor(mins / 60);
     if (hours < 48) return hours + 'h ago';
     return Math.floor(hours / 24) + 'd ago';
+  }
+
+  function paintWinRate(wallet, value) {
+    var cells = els.leaderboardBody.querySelectorAll('td.win-rate[data-wallet="' + cssAttr(wallet) + '"]');
+    for (var i = 0; i < cells.length; i += 1) {
+      cells[i].classList.remove('muted');
+      cells[i].textContent = value === null ? '—' : percent(value);
+    }
+  }
+
+  function cssAttr(value) {
+    return String(value || '').replace(/["\\\n\r]/g, '\\$&');
+  }
+
+  function deriveWinRate(payload) {
+    var direct = pick(payload, ['analysis.winRate', 'winRate']);
+    var n = toNumber(direct);
+    if (n !== null) return n;
+    // Fallback: profitable / (profitable + losing) from stats or analysis.tokens.
+    var win = toNumber(pick(payload, ['stats.profitable', 'analysis.tokens.winning']));
+    var loss = toNumber(pick(payload, ['stats.losing', 'analysis.tokens.losing']));
+    if (win !== null && loss !== null && (win + loss) > 0) {
+      return (win / (win + loss)) * 100;
+    }
+    return null;
+  }
+
+  async function enrichWinRates(wallets) {
+    var queue = wallets.filter(function (w) { return winRateCache[w] === undefined; });
+    var active = 0;
+    var idx = 0;
+    return new Promise(function (resolve) {
+      function next() {
+        if (idx >= queue.length && active === 0) { resolve(); return; }
+        while (active < WIN_RATE_CONCURRENCY && idx < queue.length) {
+          var wallet = queue[idx++];
+          active += 1;
+          fetchJson('/api/kolscan/wallet/' + encodeURIComponent(wallet))
+            .then(function (data) {
+              return deriveWinRate(data);
+            })
+            .catch(function () { return null; })
+            .then(function (rate) {
+              winRateCache[wallet] = rate;
+              paintWinRate(wallet, rate);
+              active -= 1;
+              next();
+            });
+        }
+      }
+      next();
+    });
   }
 
   async function loadLeaderboard() {
