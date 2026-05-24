@@ -11,6 +11,7 @@
   // entry.state: 'pending' | 'done' | 'fail'
   // entry.winRate, entry.roi, entry.trades: number | null
   var walletStatsCache = Object.create(null);
+  var genericStatsLoaded = false;
   var WALLET_FETCH_CONCURRENCY = 1;
   var walletStatsRun = 0;
 
@@ -323,8 +324,46 @@
     return {
       winRate: deriveWinRate(payload),
       roi:     toNumber(pick(payload, ['summary.roi', 'roi'])),
-      trades:  toNumber(pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades']))
+      trades:  toNumber(pick(payload, ['summary.counts.trades', 'counts.trades', 'trades', 'totalTrades'])),
+      source:  'wallet'
     };
+  }
+
+  function deriveLeaderboardStats(row) {
+    var roi = toNumber(pick(row, ['roi']));
+    var winRate = toNumber(pick(row, ['winRate']));
+    var trades = toNumber(pick(row, ['counts.trades']));
+    var buys = toNumber(pick(row, ['counts.buys']));
+    var sells = toNumber(pick(row, ['counts.sells']));
+    if (trades === null && buys !== null && sells !== null) trades = buys + sells;
+    return {
+      winRate: winRate,
+      roi: roi,
+      trades: trades,
+      source: 'generic-leaderboard'
+    };
+  }
+
+  async function loadGenericLeaderboardStats() {
+    if (genericStatsLoaded) return;
+    try {
+      var data = await fetchJson('/api/kolscan/leaderboard?limit=500');
+      leaderboardRows(data).forEach(function (row) {
+        var wallet = pick(row, ['wallet', 'address']) || '';
+        if (!wallet) return;
+        var stats = deriveLeaderboardStats(row);
+        walletStatsCache[wallet] = {
+          state: 'done',
+          winRate: stats.winRate,
+          roi: stats.roi,
+          trades: stats.trades,
+          source: stats.source
+        };
+      });
+      genericStatsLoaded = true;
+    } catch (_error) {
+      genericStatsLoaded = false;
+    }
   }
 
   async function enrichWalletStats(wallets, runId) {
@@ -370,7 +409,11 @@
     setText(els.globalStatus, 'Refreshing ' + periodLabel(currentPeriod).toLowerCase() + ' leaderboard...');
 
     try {
-      var data = await fetchJson('/api/kolscan/leaderboard?period=' + encodeURIComponent(currentPeriod) + '&sort=realized&direction=desc&limit=100');
+      var results = await Promise.all([
+        fetchJson('/api/kolscan/leaderboard?period=' + encodeURIComponent(currentPeriod) + '&sort=realized&direction=desc&limit=100'),
+        loadGenericLeaderboardStats()
+      ]);
+      var data = results[0];
       var rows = leaderboardRows(data);
       updateStats(rows);
       renderLeaderboard(rows);

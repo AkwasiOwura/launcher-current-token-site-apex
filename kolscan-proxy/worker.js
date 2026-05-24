@@ -2,6 +2,8 @@ const ALLOWED_ORIGIN = 'https://solmemehub.tech';
 const API_BASE = 'https://data.solanatracker.io';
 const TIMEOUT_MS = 12000;
 const ERROR_EXCERPT_LIMIT = 700;
+const WALLET_STATS_TTL_MS = 15 * 60 * 1000;
+const walletStatsCache = new Map();
 
 const ROUTES = [
   {
@@ -123,6 +125,10 @@ function deriveWalletStats(payload, wallet) {
 }
 
 async function walletStatsResponse(wallet, env, origin) {
+  const cached = walletStatsCache.get(wallet);
+  if (cached && Date.now() - cached.cachedAt < WALLET_STATS_TTL_MS) {
+    return jsonResponse({ ...cached.body, cached: true }, 200, origin);
+  }
   if (!env.SOLANA_TRACKER_API_KEY) {
     return jsonResponse({ ok: false, error: 'missing_secret', data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
   }
@@ -142,7 +148,9 @@ async function walletStatsResponse(wallet, env, origin) {
       return jsonResponse({ ok: false, error: 'upstream_unavailable', upstreamStatus: upstream.status, data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
     }
     const parsed = JSON.parse(text);
-    return jsonResponse({ ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/stats`, data: deriveWalletStats(parsed, wallet) }, 200, origin);
+    const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/stats`, data: deriveWalletStats(parsed, wallet) };
+    walletStatsCache.set(wallet, { cachedAt: Date.now(), body });
+    return jsonResponse(body, 200, origin);
   } catch (error) {
     return jsonResponse({ ok: false, error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed', data: { wallet, roi: null, winRate: null, trades: null } }, 200, origin);
   } finally {
