@@ -2,7 +2,7 @@
   'use strict';
 
   // Set this to a deployed workers.dev URL when the proxy is not mounted on solmemehub.tech.
-  var WORKER_ENDPOINT_OVERRIDE = '';
+  var WORKER_ENDPOINT_OVERRIDE = 'https://solmemehub-kolscan-proxy.solmemehub.workers.dev/api/kolscan/leaderboard';
   var API_ENDPOINT = WORKER_ENDPOINT_OVERRIDE || '/api/kolscan/leaderboard';
 
   var state = {
