@@ -480,9 +480,9 @@ h2{
 }
 .token-card:hover,.coin-card:hover{
   transform:translateY(-5px);
-  border-color:rgba(22,242,139,.38);
-  background:linear-gradient(180deg,rgba(22,242,139,.08),rgba(255,255,255,.035));
-  box-shadow:0 18px 54px rgba(22,242,139,.08);
+  border-color:var(--border-strong);
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+  box-shadow:0 18px 54px rgba(0,0,0,.32);
 }
 .token-card::after{
   content:"";
@@ -1052,10 +1052,24 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   position:absolute;
   width:14px;
   height:14px;
-  border:1.5px solid rgba(22,242,139,.65);
+  border:1.5px solid currentColor;
+  color:rgba(22,242,139,.65);
   pointer-events:none;
   z-index:3;
+  filter:drop-shadow(0 0 5px currentColor);
 }
+.coin-card.is-up .cyber-corner-tl,
+.coin-card.is-up .cyber-corner-br,
+.token-card.is-up .cyber-corner-tl,
+.token-card.is-up .cyber-corner-br{color:rgba(22,242,139,.75)}
+.coin-card.is-flat .cyber-corner-tl,
+.coin-card.is-flat .cyber-corner-br,
+.token-card.is-flat .cyber-corner-tl,
+.token-card.is-flat .cyber-corner-br{color:rgba(255,200,77,.78)}
+.coin-card.is-down .cyber-corner-tl,
+.coin-card.is-down .cyber-corner-br,
+.token-card.is-down .cyber-corner-tl,
+.token-card.is-down .cyber-corner-br{color:rgba(255,100,100,.78)}
 .coin-card .cyber-corner-tl,
 .token-card .cyber-corner-tl{
   top:-1px;left:-1px;
@@ -1141,8 +1155,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .coin-sparkline path.spark-line{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .coin-sparkline .spark-end{filter:drop-shadow(0 0 6px currentColor)}
 .coin-card.is-up .coin-sparkline{color:var(--mint)}
-.coin-card.is-down .coin-sparkline{color:var(--rose,#ff6464)}
-.coin-card.is-flat .coin-sparkline{color:var(--soft)}
+.coin-card.is-down .coin-sparkline{color:#ff6464}
+.coin-card.is-flat .coin-sparkline{color:#ffc84d}
+.coin-spark-wrap .spark-meta .delta.flat{color:#ffc84d}
 
 /* Sparkline mini-frame inside card */
 .coin-spark-wrap{

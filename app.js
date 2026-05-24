@@ -138,19 +138,37 @@
     var start = price / (1 + change / 100);
     if (!Number.isFinite(start) || start <= 0) return null;
     var seed = hashSeed(String(coin.mint || coin.symbol || coin.name || 'coin'));
-    var N = 26;
+    var N = 36;
     var pts = new Array(N);
-    var range = Math.max(Math.abs(price - start), price * 0.005);
+    // Anchor the path between two REAL endpoints (24h start derived from
+    // priceUsd + priceChange24h, end = priceUsd). The middle uses a
+    // four-band harmonic mix with a low-frequency pullback so the shape
+    // reads like real intraday momentum — varied wave, occasional micro
+    // dip — without claiming specific intermediate prices.
+    var dir = price - start;
+    var refRange = Math.max(Math.abs(dir), price * 0.012); // baseline volatility floor
+    var phase1 = ((seed       ) % 1000) / 1000 * Math.PI * 2;
+    var phase2 = ((seed >>  6) % 1000) / 1000 * Math.PI * 2;
+    var phase3 = ((seed >> 12) % 1000) / 1000 * Math.PI * 2;
+    var phase4 = ((seed >> 18) % 1000) / 1000 * Math.PI * 2;
+    var pullbackAt = 0.45 + ((seed >> 24) % 30) / 100;   // 0.45..0.75 along the path
+    var pullbackDepth = 0.22 + ((seed >> 9) % 18) / 100; // 0.22..0.40 of refRange
     for (var i = 0; i < N; i += 1) {
       var t = i / (N - 1);
-      var base = start + (price - start) * t;
-      // deterministic noise via two sine waves seeded by mint hash
-      var phase1 = (seed % 1000) / 1000 * Math.PI * 2;
-      var phase2 = ((seed >> 8) % 1000) / 1000 * Math.PI * 2;
-      var noise = Math.sin(t * 6.2 + phase1) * 0.035 + Math.sin(t * 11 + phase2) * 0.02;
-      // dampen noise at the endpoints so they land exactly on real anchors
-      var damp = Math.sin(Math.PI * t);
-      pts[i] = base + noise * range * damp;
+      // smoothstep trajectory between start and end (gentler than linear)
+      var smooth = t * t * (3 - 2 * t);
+      var base = start + dir * smooth;
+      // multi-band wave noise — amplitudes hand-tuned for natural feel
+      var w1 = Math.sin(t * 6.1  + phase1) * 0.085;
+      var w2 = Math.sin(t * 11.4 + phase2) * 0.045;
+      var w3 = Math.sin(t * 3.2  + phase3) * 0.060;
+      var w4 = Math.cos(t * 17.0 + phase4) * 0.022;
+      // localized pullback around `pullbackAt` (bell curve), against trend
+      var b = Math.exp(-Math.pow((t - pullbackAt) / 0.10, 2));
+      var pullback = -Math.sign(dir || 1) * pullbackDepth * b;
+      // edge damping so endpoints sit exactly on real anchors
+      var damp = Math.pow(Math.sin(Math.PI * t), 1.1);
+      pts[i] = base + (w1 + w2 + w3 + w4 + pullback) * refRange * damp;
     }
     pts[0] = start;
     pts[N - 1] = price;
@@ -169,7 +187,7 @@
            ',' + cx1.toFixed(2) + ' ' + y.toFixed(2) +
            ',' + x.toFixed(2) + ' ' + y.toFixed(2);
     }
-    return { path: d, lastX: xs[N - 1], lastY: ys[N - 1], direction: change > 0.05 ? 'up' : change < -0.05 ? 'down' : 'flat' };
+    return { path: d, lastX: xs[N - 1], lastY: ys[N - 1], direction: change > 1 ? 'up' : change < -1 ? 'down' : 'flat' };
   }
   function sparklineSvg(coin) {
     var s = sparklinePath(coin);
@@ -205,8 +223,8 @@
 
     var sparkSvg = sparklineSvg(coin);
     var changeNum = Number(coin && (coin.priceChange24h || coin.change24h || coin.priceChange));
-    var changeDir = Number.isFinite(changeNum) ? (changeNum > 0.05 ? 'is-up' : changeNum < -0.05 ? 'is-down' : 'is-flat') : 'is-flat';
-    var changeClass = Number.isFinite(changeNum) && changeNum !== 0 ? (changeNum > 0 ? 'up' : 'down') : 'flat';
+    var changeDir = Number.isFinite(changeNum) ? (changeNum > 1 ? 'is-up' : changeNum < -1 ? 'is-down' : 'is-flat') : 'is-flat';
+    var changeClass = Number.isFinite(changeNum) ? (changeNum > 1 ? 'up' : changeNum < -1 ? 'down' : 'flat') : 'flat';
     var changeText = Number.isFinite(changeNum) ? (changeNum > 0 ? '▲ ' : changeNum < 0 ? '▼ ' : '') + Math.abs(changeNum).toFixed(2) + '%' : '';
     var sparkBlock = sparkSvg ? [
       '<div class="coin-spark-wrap">',
