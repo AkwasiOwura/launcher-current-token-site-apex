@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KOLScan | SolMemeHub</title>
+    <meta name="description" content="SolMemeHub KOLScan tracks public Solana wallet performance, trades, and token trader intelligence.">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="/">
+          <span class="brand-mark">SMH</span>
+          <span>SolMemeHub</span>
+        </a>
+        <nav aria-label="KOLScan navigation">
+          <a href="/">Home</a>
+          <a href="#leaderboard">Leaderboard</a>
+          <a href="#wallet-tools">Wallet</a>
+          <a href="#token-tools">Token</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Solana KOL Intelligence</p>
+            <h1>KOLScan</h1>
+            <p class="hero-copy">Track public Solana KOL wallets by PnL, ROI, win rate, trade activity, and token trader flow.</p>
+          </div>
+          <div class="hero-card">
+            <span>Data mode</span>
+            <strong id="data-mode">REST polling</strong>
+            <p id="global-status">Loading leaderboard...</p>
+          </div>
+        </section>
+
+        <section class="stats-grid" aria-label="Leaderboard summary">
+          <article class="stat-card">
+            <span>Tracked KOLs</span>
+            <strong id="stat-kols">—</strong>
+          </article>
+          <article class="stat-card">
+            <span>Total PnL</span>
+            <strong id="stat-total-pnl">—</strong>
+          </article>
+          <article class="stat-card">
+            <span>Realized PnL</span>
+            <strong id="stat-realized-pnl">—</strong>
+          </article>
+          <article class="stat-card">
+            <span>Trades</span>
+            <strong id="stat-trades">—</strong>
+          </article>
+        </section>
+
+        <section class="panel" id="leaderboard">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Leaderboard</p>
+              <h2>KOL wallet rankings</h2>
+            </div>
+            <button id="refresh-leaderboard" type="button">Refresh</button>
+          </div>
+          <div class="state" id="leaderboard-loading">Loading leaderboard...</div>
+          <div class="state hidden" id="leaderboard-empty">No leaderboard rows returned.</div>
+          <div class="state error hidden" id="leaderboard-error"></div>
+          <div class="table-wrap" id="leaderboard-table" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Wallet / KOL</th>
+                  <th>Total PnL</th>
+                  <th>Realized</th>
+                  <th>Win Rate</th>
+                  <th>ROI</th>
+                  <th>Trades</th>
+                  <th>Last Trade</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tool-grid">
+          <article class="panel" id="wallet-tools">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Wallet Scanner</p>
+                <h2>Wallet PnL</h2>
+              </div>
+            </div>
+            <form class="search-row" id="wallet-form">
+              <input id="wallet-input" name="wallet" placeholder="Paste wallet address" autocomplete="off">
+              <button type="submit">Scan</button>
+            </form>
+            <div class="state hidden" id="wallet-loading">Loading wallet...</div>
+            <div class="state hidden" id="wallet-empty">Search a wallet to view PnL and activity.</div>
+            <div class="state error hidden" id="wallet-error"></div>
+            <div class="detail-card hidden" id="wallet-summary"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Activity Feed</p>
+                <h2>Wallet trades</h2>
+              </div>
+            </div>
+            <div class="state hidden" id="trades-loading">Loading trades...</div>
+            <div class="state" id="trades-empty">Wallet trades appear after scanning a wallet.</div>
+            <div class="state error hidden" id="trades-error"></div>
+            <div class="feed" id="trades-feed"></div>
+          </article>
+        </section>
+
+        <section class="panel" id="token-tools">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Token Intelligence</p>
+              <h2>Token trader radar</h2>
+            </div>
+          </div>
+          <form class="search-row" id="token-form">
+            <input id="token-input" name="token" placeholder="Paste token mint address" autocomplete="off">
+            <button type="submit">Load Traders</button>
+          </form>
+          <div class="state hidden" id="token-loading">Loading token traders...</div>
+          <div class="state" id="token-empty">Token trader intelligence appears after entering a token mint.</div>
+          <div class="state error hidden" id="token-error"></div>
+          <div class="table-wrap" id="token-table" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Trader</th>
+                  <th>Token PnL</th>
+                  <th>Wallet PnL</th>
+                  <th>ROI</th>
+                  <th>Buys</th>
+                  <th>Sells</th>
+                  <th>Last Trade</th>
+                </tr>
+              </thead>
+              <tbody id="token-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>© 2026 SolMemeHub. All rights reserved.</span>
+        <span>Verify contracts before trading.</span>
+      </footer>
+    </div>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
