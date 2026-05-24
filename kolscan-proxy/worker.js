@@ -158,6 +158,32 @@ async function fetchWalletLastTrade(wallet, env) {
   if (cached && Date.now() - cached.cachedAt < LAST_TRADE_TTL_MS) {
     return cached.body.data;
   }
+  const walletController = new AbortController();
+  const walletTimeout = setTimeout(() => walletController.abort(), 8000);
+  try {
+    const walletResponse = await fetch(API_BASE + `/v2/pnl/wallets/${wallet}`, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'x-api-key': env.SOLANA_TRACKER_API_KEY
+      },
+      signal: walletController.signal
+    });
+    const walletText = await walletResponse.text();
+    if (walletResponse.ok) {
+      const derived = deriveLastTrade(JSON.parse(walletText), wallet);
+      if (derived.lastTrade) {
+        const body = { ok: true, source: 'solana-tracker', route: `/api/kolscan/wallet/${wallet}/last-trade`, data: derived };
+        walletLastTradeCache.set(wallet, { cachedAt: Date.now(), body });
+        return derived;
+      }
+    }
+  } catch {
+    // Fall through to the raw trades endpoint.
+  } finally {
+    clearTimeout(walletTimeout);
+  }
+
   const tradeTimeoutMs = 8000;
   const tradeController = new AbortController();
   const tradeTimeout = setTimeout(() => tradeController.abort(), tradeTimeoutMs);
