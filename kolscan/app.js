@@ -176,41 +176,39 @@
     els.leaderboardBody.innerHTML = rows.map(function (row, index) {
       var name = pick(row, ['identity.name', 'name']) || 'KOL Wallet';
       var wallet = pick(row, ['wallet', 'address']) || '';
+      var url = walletDetailUrl(wallet);
       var total = pick(row, ['pnl.total', 'totalPnl']);
       var realized = pick(row, ['pnl.realized', 'realizedPnl']);
       var totalClass = toNumber(total) < 0 ? 'loss' : 'profit';
       var realizedClass = toNumber(realized) < 0 ? 'loss' : 'profit';
-      return '<tr class="leaderboard-row" data-wallet="' + escapeHtml(wallet) + '" tabindex="0" role="button" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
+      return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
-        '<td><div class="wallet-cell">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></div></td>' +
+        '<td><a class="wallet-cell wallet-link" href="' + escapeHtml(url) + '">' + avatarHtml(row) + '<span><span class="primary">' + escapeHtml(name) + '</span><span class="secondary">' + escapeHtml(shortAddress(wallet)) + '</span></span></a></td>' +
         '<td class="' + totalClass + '">' + money(total) + '</td>' +
         '<td class="' + realizedClass + '">' + money(realized) + '</td>' +
         '<td>' + percent(pick(row, ['winRate'])) + '</td>' +
         '<td class="profit">' + percent(pick(row, ['roi'])) + '</td>' +
         '<td>' + integer(pick(row, ['counts.trades', 'trades'])) + '</td>' +
         '<td class="muted">' + timeAgo(pick(row, ['timing.lastTrade', 'lastTrade', 'updatedAt'])) + '</td>' +
-        '<td><button type="button" data-wallet="' + escapeHtml(wallet) + '" class="scan-wallet">Scan</button></td>' +
+        '<td><a href="' + escapeHtml(url) + '" class="scan-wallet">Open</a></td>' +
         '</tr>';
     }).join('');
 
     els.leaderboardBody.querySelectorAll('.leaderboard-row').forEach(function (row) {
       row.addEventListener('click', function () {
-        openWallet(row.getAttribute('data-wallet') || '');
+        window.location.href = row.getAttribute('data-wallet-url') || './wallet.html';
       });
       row.addEventListener('keydown', function (event) {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          openWallet(row.getAttribute('data-wallet') || '');
+          window.location.href = row.getAttribute('data-wallet-url') || './wallet.html';
         }
       });
     });
+  }
 
-    els.leaderboardBody.querySelectorAll('.scan-wallet').forEach(function (button) {
-      button.addEventListener('click', function (event) {
-        event.stopPropagation();
-        openWallet(button.getAttribute('data-wallet') || '');
-      });
-    });
+  function walletDetailUrl(address) {
+    return './wallet.html?address=' + encodeURIComponent(String(address || '').trim());
   }
 
   function updateStats(rows) {
@@ -436,7 +434,8 @@
   els.refreshLeaderboard.addEventListener('click', loadLeaderboard);
   els.walletForm.addEventListener('submit', function (event) {
     event.preventDefault();
-    loadWallet(els.walletInput.value);
+    var address = String(els.walletInput.value || '').trim();
+    if (address) window.location.href = walletDetailUrl(address);
   });
   els.tokenForm.addEventListener('submit', function (event) {
     event.preventDefault();

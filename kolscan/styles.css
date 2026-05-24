@@ -54,6 +54,25 @@ button:hover {
   background: rgba(0, 245, 155, 0.18);
 }
 
+.button-link,
+.scan-wallet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-green);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--green-soft);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 11px 14px;
+}
+
+.button-link:hover,
+.scan-wallet:hover {
+  background: rgba(0, 245, 155, 0.18);
+}
+
 input {
   min-width: 0;
   width: 100%;
@@ -295,6 +314,15 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   gap: 11px;
+}
+
+.wallet-link {
+  width: max-content;
+  max-width: 100%;
+}
+
+.wallet-link:hover .primary {
+  color: var(--green);
 }
 
 .avatar {
