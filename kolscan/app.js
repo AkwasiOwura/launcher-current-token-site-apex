@@ -20,7 +20,6 @@
 
   var els = {
     globalStatus: document.getElementById('global-status'),
-    dataMode: document.getElementById('data-mode'),
     statKols: document.getElementById('stat-kols'),
     statTotalPnl: document.getElementById('stat-total-pnl'),
     statRealizedPnl: document.getElementById('stat-realized-pnl'),
@@ -744,7 +743,6 @@
     loadToken(els.tokenInput.value);
   });
 
-  setText(els.dataMode, 'REST polling');
   loadLeaderboard();
   pollTimer = window.setInterval(loadLeaderboard, POLL_INTERVAL_MS);
   window.addEventListener('beforeunload', function () {

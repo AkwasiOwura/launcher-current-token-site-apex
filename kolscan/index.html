@@ -26,35 +26,46 @@
       <main>
         <section class="hero">
           <div>
-            <p class="eyebrow">Solana KOL Intelligence</p>
-            <h1>KOLScan</h1>
+            <h1>KOL<span>Scan</span></h1>
             <p class="hero-copy">Track public Solana KOL wallets by PnL, ROI, win rate, trade activity, and token trader flow.</p>
-          </div>
-          <div class="hero-card">
-            <span>Data mode</span>
-            <strong id="data-mode">REST polling</strong>
-            <p id="global-status">Loading leaderboard...</p>
           </div>
         </section>
 
         <section class="stats-grid" aria-label="Leaderboard summary">
           <article class="stat-card">
-            <span>Tracked KOLs</span>
-            <strong id="stat-kols">—</strong>
+            <span class="stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 11a4 4 0 1 1 8 0M3 20a6 6 0 0 1 12 0M17 11a3 3 0 1 0-2.2-5M15.5 16.2A5 5 0 0 1 21 21"/></svg>
+            </span>
+            <span class="stat-label">Tracked KOLs</span>
+            <div class="stat-line"><strong id="stat-kols">—</strong></div>
+            <svg class="stat-spark" viewBox="0 0 120 18" aria-hidden="true"><path d="M2 14 C20 15 24 9 40 10 S58 4 72 6 S92 13 118 3"/></svg>
           </article>
           <article class="stat-card">
-            <span id="stat-period-pnl-label">Period PnL</span>
-            <strong id="stat-total-pnl">—</strong>
+            <span class="stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v18M7.5 7.5h7a3 3 0 0 1 0 6h-5a3 3 0 0 0 0 6h7M6 5.5l-2 2M18 5.5l2 2"/></svg>
+            </span>
+            <span class="stat-label" id="stat-period-pnl-label">Daily PnL</span>
+            <div class="stat-line"><strong id="stat-total-pnl">—</strong><em>+12.6%</em><small>vs yesterday</small></div>
+            <svg class="stat-spark" viewBox="0 0 120 18" aria-hidden="true"><path d="M2 13 C14 12 21 15 31 9 S48 8 58 5 S82 12 118 4"/></svg>
           </article>
           <article class="stat-card">
-            <span id="stat-period-volume-label">Period Volume</span>
-            <strong id="stat-realized-pnl">—</strong>
+            <span class="stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 20V10M11 20V5M17 20v-8M3 20h18"/></svg>
+            </span>
+            <span class="stat-label" id="stat-period-volume-label">Daily Volume</span>
+            <div class="stat-line"><strong id="stat-realized-pnl">—</strong><em>+18.3%</em><small>vs yesterday</small></div>
+            <svg class="stat-spark" viewBox="0 0 120 18" aria-hidden="true"><path d="M2 15 C18 11 30 13 43 6 S65 7 76 4 S99 8 118 2"/></svg>
           </article>
           <article class="stat-card">
-            <span>Lifetime PnL</span>
-            <strong id="stat-trades">—</strong>
+            <span class="stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 4 7-8M15 8h5v5"/></svg>
+            </span>
+            <span class="stat-label">Lifetime PnL</span>
+            <div class="stat-line"><strong id="stat-trades">—</strong><em>+24.7%</em><small>all time</small></div>
+            <svg class="stat-spark" viewBox="0 0 120 18" aria-hidden="true"><path d="M2 16 C18 15 27 11 38 12 S58 13 69 8 S88 5 118 3"/></svg>
           </article>
         </section>
+        <p class="global-status" id="global-status">Loading leaderboard...</p>
 
         <section class="panel" id="leaderboard">
           <div class="panel-heading">
