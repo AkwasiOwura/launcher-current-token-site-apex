@@ -521,7 +521,7 @@
       show(els.leaderboardLoading, false);
       show(els.leaderboardTable, rows.length > 0);
       show(els.leaderboardEmpty, rows.length === 0);
-      setText(els.globalStatus, rows.length ? periodLabel(currentPeriod) + ' leaderboard live via proxy.' : 'No leaderboard rows returned.');
+      setText(els.globalStatus, rows.length ? '' : 'No leaderboard rows returned.');
     } catch (error) {
       show(els.leaderboardLoading, false);
       show(els.leaderboardError, true);
