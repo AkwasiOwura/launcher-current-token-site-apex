@@ -86,6 +86,65 @@
     return text.length > 14 ? text.slice(0, 5) + '...' + text.slice(-5) : text || 'public wallet';
   }
 
+  function safeImageUrl(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return '';
+    try {
+      var url = new URL(raw, window.location.href);
+      return /^https?:$/.test(url.protocol) ? url.href : '';
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  function initials(name) {
+    return String(name || 'KOL')
+      .replace(/[^a-zA-Z0-9 ]/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(function (part) { return part.charAt(0).toUpperCase(); })
+      .join('') || 'K';
+  }
+
+  function twitterUrl(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        var parsed = new URL(raw);
+        return /^https?:$/.test(parsed.protocol) ? parsed.href : '';
+      } catch (_error) {
+        return '';
+      }
+    }
+    var handle = raw.replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '');
+    return handle ? 'https://x.com/' + handle : '';
+  }
+
+  function sparklineSvg(tone) {
+    var cls = tone === 'loss' ? ' loss-spark' : '';
+    return '<svg class="metric-spark' + cls + '" viewBox="0 0 120 22" aria-hidden="true"><path d="M3 18 C18 12 27 14 38 10 S59 12 69 7 S88 11 117 4"/></svg>';
+  }
+
+  function copyAddress(address, button) {
+    if (!address || !button) return;
+    var old = button.textContent;
+    var done = function () {
+      button.classList.add('copied');
+      button.textContent = 'Copied';
+      window.setTimeout(function () {
+        button.classList.remove('copied');
+        button.textContent = old;
+      }, 1100);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(address).then(done).catch(done);
+    } else {
+      done();
+    }
+  }
+
   function dateTime(value) {
     var stamp = toNumber(value);
     if (stamp === null && value) stamp = Date.parse(value);
@@ -152,31 +211,58 @@
     var analysis = data.analysis || {};
     var stats = data.stats || {};
     var identity = data.identity || {};
+    var name = pick(identity, ['name']) || 'KOL Wallet';
+    var avatar = safeImageUrl(pick(identity, ['avatar', 'image']));
+    var twitter = twitterUrl(pick(identity, ['twitter', 'x', 'twitterUrl', 'xUrl']));
     var metrics = [
-      ['Total PnL', money(pick(source, ['pnl.total', 'totalPnl', 'total']))],
-      ['Realized PnL', money(pick(source, ['pnl.realized', 'realizedPnl', 'realized']))],
-      ['Unrealized PnL', money(pick(source, ['pnl.unrealized', 'unrealizedPnl', 'unrealized']))],
-      ['Win Rate', percent(pick(analysis, ['winRate']) || pick(source, ['winRate']))],
-      ['Total Trades', integer(pick(source, ['counts.trades', 'trades', 'totalTrades']))],
-      ['Tokens Bought', integer(pick(source, ['counts.tokensTraded', 'tokensTraded']) || pick(stats, ['total']))],
-      ['Profitable Tokens', integer(pick(stats, ['profitable']) || pick(analysis, ['tokens.winning']))],
-      ['Losing Tokens', integer(pick(stats, ['losing']) || pick(analysis, ['tokens.losing']))]
+      ['Total PnL', money(pick(source, ['pnl.total', 'totalPnl', 'total'])), 'chart'],
+      ['Realized PnL', money(pick(source, ['pnl.realized', 'realizedPnl', 'realized'])), 'coin'],
+      ['Unrealized PnL', money(pick(source, ['pnl.unrealized', 'unrealizedPnl', 'unrealized'])), 'nodes'],
+      ['Win Rate', percent(pick(analysis, ['winRate']) || pick(source, ['winRate'])), 'target'],
+      ['Total Trades', integer(pick(source, ['counts.trades', 'trades', 'totalTrades'])), 'swap'],
+      ['Tokens Bought', integer(pick(source, ['counts.tokensTraded', 'tokensTraded']) || pick(stats, ['total'])), 'cart'],
+      ['Profitable Tokens', integer(pick(stats, ['profitable']) || pick(analysis, ['tokens.winning'])), 'trophy'],
+      ['Losing Tokens', integer(pick(stats, ['losing']) || pick(analysis, ['tokens.losing'])), 'flame', 'loss']
     ];
+    var dailyPnl = money(pick(source, ['pnl.realized', 'realizedPnl', 'realized']));
+    var dailyVolume = money(pick(source, ['proceeds']) || pick(source, ['openPositions.value']));
+    var lifetime = money(pick(source, ['pnl.total', 'totalPnl', 'total']));
+    var roi = percent(pick(source, ['roi']));
+    var winRate = percent(pick(analysis, ['winRate']) || pick(source, ['winRate']));
+    var trades = integer(pick(source, ['counts.trades', 'trades', 'totalTrades']));
 
     els.walletSummary.innerHTML =
-      '<div class="wallet-detail-head">' +
-        '<div>' +
-          '<p class="eyebrow">Wallet Address</p>' +
-          '<h3>' + escapeHtml(pick(identity, ['name']) || 'KOL Wallet') + '</h3>' +
-          '<span class="secondary full-address">' + escapeHtml(address) + '</span>' +
+      '<div class="wallet-hero-card">' +
+        '<div class="wallet-profile-main">' +
+          '<span class="wallet-avatar">' + (avatar ? '<img src="' + escapeHtml(avatar) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();">' : '') + '<span>' + escapeHtml(initials(name)) + '</span></span>' +
+          '<div>' +
+            '<div class="wallet-name-line"><h3>' + escapeHtml(name) + '</h3>' + (twitter ? '<a class="x-link" href="' + escapeHtml(twitter) + '" target="_blank" rel="noopener noreferrer" aria-label="Open X profile">𝕏</a>' : '') + '</div>' +
+            '<button class="wallet-copy" type="button" data-copy-address="' + escapeHtml(address) + '">' + escapeHtml(shortAddress(address)) + '</button>' +
+            '<span class="rank-badge">Ranked KOL</span>' +
+          '</div>' +
         '</div>' +
-        '<span class="status-pill">' + escapeHtml(pick(data, ['pnlMode']) || 'pnl') + '</span>' +
+        '<div class="wallet-hero-stats">' +
+          '<div><span>Daily PnL</span><strong class="profit">' + dailyPnl + '</strong></div>' +
+          '<div><span>Daily Volume</span><strong>' + dailyVolume + '</strong></div>' +
+          '<div><span>Lifetime PnL</span><strong class="profit">' + lifetime + '</strong></div>' +
+          '<div><span>ROI</span><strong>' + roi + '</strong></div>' +
+          '<div><span>Win Rate</span><strong>' + winRate + '</strong></div>' +
+          '<div><span>Trades</span><strong>' + trades + '</strong></div>' +
+        '</div>' +
       '</div>' +
+      '<div class="wallet-summary-head"><p class="eyebrow">PnL Summary</p><h2>Wallet performance</h2></div>' +
       '<div class="metric-grid">' +
       metrics.map(function (item) {
-        return '<div class="metric"><span class="metric-label">' + item[0] + '</span><strong>' + item[1] + '</strong></div>';
+        var tone = item[3] === 'loss' ? ' loss-metric' : '';
+        return '<div class="metric wallet-metric' + tone + '"><span class="metric-icon metric-icon-' + item[2] + '"></span><span class="metric-label">' + item[0] + '</span><strong>' + item[1] + '</strong>' + sparklineSvg(item[3]) + '</div>';
       }).join('') +
       '</div>';
+    var copyButton = els.walletSummary.querySelector('[data-copy-address]');
+    if (copyButton) {
+      copyButton.addEventListener('click', function () {
+        copyAddress(address, copyButton);
+      });
+    }
   }
 
   function renderTrades(rows) {

@@ -22,26 +22,20 @@
       </header>
 
       <main>
-        <section class="hero wallet-hero">
-          <div>
-            <p class="eyebrow">Wallet Detail</p>
-            <h1>KOL Wallet Scan</h1>
-            <p class="hero-copy" id="wallet-address-label">Loading wallet address...</p>
-          </div>
-          <div class="hero-card">
-            <span>Navigation</span>
-            <a class="button-link" href="/kolscan/">Back to KOL leaderboard</a>
+        <section class="wallet-page-hero">
+          <div class="wallet-title-row">
+            <div>
+              <p class="eyebrow">Wallet Detail</p>
+              <h1>KOL Wallet Scan</h1>
+            </div>
+            <div class="wallet-actions">
+              <a class="button-link" href="/kolscan/">← Back to KOL leaderboard</a>
+              <button id="refresh-wallet" type="button">↻ Refresh</button>
+            </div>
           </div>
         </section>
 
-        <section class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">PnL Summary</p>
-              <h2>Wallet performance</h2>
-            </div>
-            <button id="refresh-wallet" type="button">Refresh</button>
-          </div>
+        <section class="wallet-profile-panel">
           <div class="state" id="wallet-loading">Loading wallet detail...</div>
           <div class="state hidden" id="wallet-empty">No wallet address was supplied.</div>
           <div class="state error hidden" id="wallet-error"></div>
@@ -54,6 +48,7 @@
               <p class="eyebrow">Activity Feed</p>
               <h2>Token and trade history</h2>
             </div>
+            <span class="filter-chip">Filter</span>
           </div>
           <div class="state hidden" id="trades-loading">Loading wallet trades...</div>
           <div class="state hidden" id="trades-empty">No trade history returned for this wallet.</div>
