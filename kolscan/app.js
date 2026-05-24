@@ -239,7 +239,7 @@
       var tradesCell = metricCell('trades-cell', cached && cached.trades !== null ? integer(cached.trades) : null);
       var xLink = twitterLinkHtml(row);
       var lastTrade = cachedTrade && cachedTrade.state === 'done' ? cachedTrade.value : directLastTrade;
-      var lastTradeText = lastTrade ? timeAgo(lastTrade) : 'Loading';
+      var lastTradeText = lastTrade ? timeAgo(lastTrade) : 'N/A';
       return '<tr class="leaderboard-row" data-wallet-url="' + escapeHtml(url) + '" tabindex="0" role="link" aria-label="Open wallet ' + escapeHtml(shortAddress(wallet)) + '">' +
         '<td><span class="rank">' + (index + 1) + '</span></td>' +
         '<td><div class="wallet-cell">' + avatarHtml(row) + '<div class="wallet-stack"><div class="wallet-name-line"><span class="primary">' + escapeHtml(name) + '</span>' + xLink + '</div><button class="wallet-address-copy" type="button" data-copy-address="' + escapeHtml(wallet) + '" aria-label="Copy wallet address">' + escapeHtml(wallet || 'public wallet') + '</button></div></div></td>' +
