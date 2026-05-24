@@ -14,7 +14,7 @@
   var lastTradeCache = Object.create(null);
   var genericStatsLoaded = false;
   var WALLET_FETCH_CONCURRENCY = 1;
-  var LAST_TRADE_FETCH_CONCURRENCY = 2;
+  var LAST_TRADE_FETCH_CONCURRENCY = 6;
   var walletStatsRun = 0;
   var lastTradeRun = 0;
 
