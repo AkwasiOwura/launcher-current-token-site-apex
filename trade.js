@@ -103,7 +103,7 @@
       return;
     }
     if (!snap.consentSigned) {
-      els.confirm.textContent = currentSide === 'buy' ? 'Sign consent to buy' : 'Sign consent to sell';
+      els.confirm.textContent = 'Authenticate to ' + (currentSide === 'buy' ? 'buy' : 'sell');
       els.confirm.disabled = busy;
       return;
     }
@@ -227,9 +227,9 @@
       if (!snap.connected) {
         setStatus('warn', 'Quote ready — connect a wallet to sign.');
       } else if (snap.consentPending) {
-        setStatus('info', 'Quote ready — awaiting wallet consent signature…');
+        setStatus('info', 'Quote ready — awaiting wallet authentication…');
       } else if (!snap.consentSigned) {
-        setStatus('warn', 'Quote ready — sign wallet consent to trade.');
+        setStatus('warn', 'Quote ready — authenticate wallet to trade.');
       } else {
         setStatus('ok', 'Quote ready.');
       }
@@ -382,14 +382,14 @@
         // gated consent flow — sign before any swap can run
         busy = true;
         refreshConfirmState();
-        setStatus('info', 'Awaiting wallet consent signature…');
+        setStatus('info', 'Awaiting wallet authentication…');
         window.SMHWallet.signConsent().then(function () {
           busy = false;
           if (connected() && consentReady()) {
             if (lastQuote) {
-              setStatus('ok', 'Consent signed. Quote ready.');
+              setStatus('ok', 'Wallet authenticated. Quote ready.');
             } else {
-              setStatus('ok', 'Consent signed. Fetching quote…');
+              setStatus('ok', 'Wallet authenticated. Fetching quote…');
               scheduleQuote(0);
             }
           }
@@ -397,9 +397,9 @@
         }).catch(function (err) {
           busy = false;
           if (err && err.code === 'USER_REJECTED') {
-            setStatus('warn', 'Consent rejected — signature required before trading.');
+            setStatus('warn', 'Authentication rejected — signature required before trading.');
           } else {
-            setStatus('error', 'Consent failed: ' + (err && err.message ? err.message : err));
+            setStatus('error', 'Authentication failed: ' + (err && err.message ? err.message : err));
           }
           refreshConfirmState();
         });

@@ -137,20 +137,6 @@
       try { localStorage.setItem(STORAGE_KEY, entry.adapter.id); } catch (_e) {}
       attachProviderListeners(provider);
       emit();
-
-      // Explicit (user-initiated) connect + no existing consent for this
-      // address → immediately request the off-chain consent signature.
-      // Skipped for silent onlyIfTrusted reconnects so we never auto-prompt
-      // on a quiet page load.
-      if (!opts.onlyIfTrusted && !consentSigned() && typeof provider.signMessage === 'function') {
-        try { await signConsent(); } catch (e) {
-          if (!(e && e.code === 'USER_REJECTED')) {
-            // surface non-rejection errors to the caller via console; state
-            // stays "connected, consent required" and the UI gates trading.
-            try { console.warn('[smh-wallet] consent error:', e && e.message || e); } catch (_e2) {}
-          }
-        }
-      }
       return state.address;
     } catch (err) {
       if (err && (err.code === 4001 || /reject|denied|user|cancel/i.test(err.message || ''))) {
@@ -170,14 +156,6 @@
         state.address = pk.toString();
         state.consent = loadStoredConsent(state.address); // wallet changed → re-check
         emit();
-        // user-initiated account swap → prompt fresh consent if needed
-        if (!consentSigned() && typeof state.provider.signMessage === 'function') {
-          signConsent().catch(function (e) {
-            if (!(e && (e.code === 'USER_REJECTED' || e.code === 'CONSENT_PENDING'))) {
-              try { console.warn('[smh-wallet] consent error on accountChanged:', e && e.message || e); } catch (_e2) {}
-            }
-          });
-        }
       });
     } catch (_e) {}
   }
@@ -362,9 +340,9 @@
       btn.classList.toggle('is-consent-required', !!(snap.connected && !snap.consentSigned && !snap.consentPending));
       if (snap.connected) {
         if (snap.consentPending) {
-          if (label) label.textContent = 'Awaiting consent…';
+          if (label) label.textContent = 'Authenticating…';
         } else if (!snap.consentSigned) {
-          if (label) label.textContent = snap.shortAddress + ' · Consent required';
+          if (label) label.textContent = snap.shortAddress + ' · Authenticate';
         } else {
           if (label) label.textContent = snap.shortAddress;
         }
@@ -412,13 +390,11 @@
       var id = opt.getAttribute('data-wallet');
       api.connect(id).then(function () {
         closeModal();
-        // Connect resolves once the consent step finishes (success OR rejection).
-        // If consent ended up rejected, surface a one-line non-modal hint.
         var snap = api.getState();
         if (snap.connected && !snap.consentSigned && !snap.consentPending) {
           try {
             var hint = document.createElement('div');
-            hint.textContent = 'Wallet connected, but consent was rejected. Trading disabled until consent is signed.';
+            hint.textContent = 'Wallet connected. Click Authenticate before trading.';
             hint.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:200;padding:10px 16px;border:1px solid rgba(255,200,77,.55);background:rgba(255,200,77,.08);color:#ffcf5a;font-size:13px;font-weight:800;max-width:560px;text-align:center';
             document.body.appendChild(hint);
             setTimeout(function () { hint.remove(); }, 6000);
@@ -456,7 +432,7 @@
       if (dAdapter) dAdapter.textContent = snap.adapterName || '—';
       if (dAddress) { dAddress.textContent = snap.address || '—'; dAddress.title = snap.address || ''; }
       if (dConsent) {
-        dConsent.textContent = snap.consentSigned ? 'Signed' : 'Required';
+        dConsent.textContent = snap.consentSigned ? 'Authenticated' : 'Required';
         dConsent.className = 'consent-state ' + (snap.consentSigned ? 'is-ok' : 'is-warn');
       }
       if (consentBtn) {
@@ -510,12 +486,12 @@
       var snap = api.getState();
       if (!snap.connected) return;
       consentBtn.disabled = true;
-      consentBtn.textContent = 'Awaiting wallet…';
+      consentBtn.textContent = 'Authenticating…';
       api.signConsent().then(function () {
-        consentBtn.textContent = 'Sign consent';
+        consentBtn.textContent = 'Authenticate';
         consentBtn.disabled = false;
       }).catch(function (err) {
-        consentBtn.textContent = 'Sign consent';
+        consentBtn.textContent = 'Authenticate';
         consentBtn.disabled = false;
         if (err && err.code !== 'USER_REJECTED') alert('Consent failed: ' + (err && err.message ? err.message : err));
       });
