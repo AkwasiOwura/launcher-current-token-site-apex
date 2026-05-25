@@ -30,6 +30,7 @@
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
   var metadataCache = null;
   var lastRpcUrl = null;
+  var previousTokenValues = Object.create(null);
 
   var ADAPTERS = [
     {
@@ -682,11 +683,16 @@
         tokenList.innerHTML = '<div class="wallet-token-empty">No SPL token balances found.</div>';
         return;
       }
+      var nextValues = Object.create(null);
       tokenList.innerHTML = tokens.map(function (token) {
         var mintLabel = shortAddr(token.mint);
-        var valueTone = '';
+        var valueTone = ' value-neutral';
         if (Number.isFinite(token.changeUsd) && token.changeUsd !== 0) valueTone = token.changeUsd > 0 ? ' value-up' : ' value-down';
         else if (Number.isFinite(token.changePercent) && token.changePercent !== 0) valueTone = token.changePercent > 0 ? ' value-up' : ' value-down';
+        else if (Number.isFinite(token.usdValue) && Number.isFinite(previousTokenValues[token.mint]) && token.usdValue !== previousTokenValues[token.mint]) {
+          valueTone = token.usdValue > previousTokenValues[token.mint] ? ' value-up' : ' value-down';
+        }
+        if (Number.isFinite(token.usdValue)) nextValues[token.mint] = token.usdValue;
         return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
@@ -696,6 +702,7 @@
             (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
           '</span></a>';
       }).join('');
+      previousTokenValues = nextValues;
     }
 
     async function refreshPortfolio() {

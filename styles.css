@@ -1580,7 +1580,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .wallet-holdings-head strong{color:var(--mint);font-size:12px}
 .wallet-token-list{display:flex;flex-direction:column;gap:2px;max-height:360px;overflow:auto;padding-right:2px}
 .wallet-token-row{
-  display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start;
   padding:8px 0;color:#fff;text-decoration:none;border-top:1px solid rgba(255,255,255,.055);
 }
 .wallet-token-row:hover{color:#fff}
@@ -1590,22 +1590,24 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   color:var(--mint);font-size:10px;font-weight:900;overflow:hidden;
 }
 .wallet-token-avatar img{width:100%;height:100%;object-fit:cover}
-.wallet-token-meta,.wallet-token-amount{display:flex;flex-direction:column;min-width:0}
+.wallet-token-meta,.wallet-token-amount{display:flex;flex-direction:column;min-width:0;justify-content:flex-start}
 .wallet-token-meta strong,.wallet-token-amount strong{color:#fff;font-size:13px;font-weight:900}
 .wallet-token-meta small,.wallet-token-amount small{color:rgba(244,255,249,.62);font-size:11px;margin-top:2px}
 .wallet-token-meta strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wallet-token-contract{display:flex;align-items:center;gap:5px;min-width:0;margin-top:2px}
+.wallet-token-contract{display:flex;align-items:center;gap:4px;min-width:0;margin-top:2px;max-width:100%}
 .wallet-token-mint{
+  display:block;min-width:0;
   margin:0;padding:0;border:0;background:transparent;
   color:rgba(244,255,249,.62);font-family:var(--mono);font-size:11px;line-height:1.25;
-  cursor:pointer;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  cursor:pointer;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .wallet-token-mint:hover,.wallet-token-mint.is-copied{color:var(--mint)}
 .wallet-token-solscan{
-  flex:0 0 auto;color:rgba(244,255,249,.62);font-size:11px;line-height:1;text-decoration:none;
+  flex:0 0 auto;color:rgba(244,255,249,.62);font-size:11px;line-height:1;text-decoration:none;display:inline-flex;align-items:center;
 }
 .wallet-token-solscan:hover{color:var(--mint)}
-.wallet-token-amount{text-align:right;font-variant-numeric:tabular-nums}
+.wallet-token-amount{text-align:right;font-variant-numeric:tabular-nums;align-self:start;padding-top:0}
+.wallet-token-amount small.value-neutral{color:#ffcf5a}
 .wallet-token-amount .value-up{color:var(--mint)}
 .wallet-token-amount .value-down{color:#ff6464}
 .wallet-token-arrow{color:rgba(244,255,249,.42);font-size:22px;line-height:1}
