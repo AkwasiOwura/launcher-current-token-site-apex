@@ -340,21 +340,53 @@
     return Number(lamports) / 1e9;
   }
 
+  async function fetchParsedTokenAccounts(programId, index) {
+    var errors = [];
+    if (window.solanaWeb3 && window.solanaWeb3.Connection && window.solanaWeb3.PublicKey) {
+      for (var i = 0; i < TOKEN_RPC_URLS.length; i += 1) {
+        try {
+          var connection = new window.solanaWeb3.Connection(TOKEN_RPC_URLS[i], 'confirmed');
+          var result = await connection.getParsedTokenAccountsByOwner(
+            new window.solanaWeb3.PublicKey(state.address),
+            { programId: new window.solanaWeb3.PublicKey(programId) },
+            'confirmed'
+          );
+          lastRpcUrl = TOKEN_RPC_URLS[i];
+          return (result && result.value) || [];
+        } catch (err) {
+          errors.push(err && err.message ? err.message : String(err));
+        }
+      }
+    }
+    try {
+      var fallback = await rpcRequest({
+        jsonrpc: '2.0', id: 'tokens-' + index, method: 'getTokenAccountsByOwner',
+        params: [
+          state.address,
+          { programId: programId },
+          { encoding: 'jsonParsed', commitment: 'confirmed' }
+        ]
+      }, TOKEN_RPC_URLS);
+      return (fallback && fallback.value) || [];
+    } catch (err2) {
+      errors.push(err2 && err2.message ? err2.message : String(err2));
+    }
+    throw new Error(errors.filter(Boolean).slice(-2).join(' | ') || 'token account RPC failed');
+  }
+
   async function fetchTokenAccounts() {
     if (!state.address) throw new Error('Wallet not connected.');
     var all = [];
+    var errors = [];
     for (var i = 0; i < TOKEN_PROGRAMS.length; i += 1) {
       try {
-        var result = await rpcRequest({
-          jsonrpc: '2.0', id: 'tokens-' + i, method: 'getTokenAccountsByOwner',
-          params: [
-            state.address,
-            { programId: TOKEN_PROGRAMS[i] },
-            { encoding: 'jsonParsed', commitment: 'confirmed' }
-          ]
-        }, TOKEN_RPC_URLS);
-        all = all.concat((result && result.value) || []);
-      } catch (_e) {}
+        all = all.concat(await fetchParsedTokenAccounts(TOKEN_PROGRAMS[i], i));
+      } catch (err) {
+        errors.push(err && err.message ? err.message : String(err));
+      }
+    }
+    if (!all.length && errors.length === TOKEN_PROGRAMS.length) {
+      throw new Error('Token balances unavailable: ' + errors.join(' | '));
     }
     return all.map(function (entry) {
       var info = entry && entry.account && entry.account.data && entry.account.data.parsed && entry.account.data.parsed.info;
@@ -368,7 +400,7 @@
         amount: uiAmount,
         rawAmount: rawAmount,
         decimals: amount && amount.decimals,
-        account: entry && entry.pubkey
+        account: entry && entry.pubkey && entry.pubkey.toString ? entry.pubkey.toString() : entry && entry.pubkey
       };
     }).filter(function (token) {
       return token.mint && token.rawAmount !== '0' && Number.isFinite(token.amount);
@@ -420,7 +452,13 @@
 
   async function fetchWalletPortfolio() {
     var sol = await fetchSolBalance();
-    var tokens = await fetchTokenAccounts();
+    var tokens = [];
+    var tokenError = null;
+    try {
+      tokens = await fetchTokenAccounts();
+    } catch (err) {
+      tokenError = err;
+    }
     var meta = await loadLocalMetadata();
     var priceIds = [SOL_MINT].concat(tokens.map(function (t) { return t.mint; }));
     var prices = await fetchTokenPrices(priceIds);
@@ -430,7 +468,8 @@
       return {
         mint: token.mint,
         amount: token.amount,
-        name: m.name || 'SPL Token',
+        decimals: token.decimals,
+        name: m.name || shortAddr(token.mint),
         symbol: m.symbol || shortAddr(token.mint),
         imageUrl: m.imageUrl || '',
         url: m.url || ('https://solscan.io/token/' + token.mint),
@@ -441,7 +480,7 @@
       var bv = Number.isFinite(b.usdValue) ? b.usdValue : 0;
       return bv - av || b.amount - a.amount;
     });
-    return { sol: sol, solUsdValue: Number.isFinite(prices[SOL_MINT]) ? prices[SOL_MINT] * sol : null, tokens: tokens, rpcUrl: lastRpcUrl, updatedAt: Date.now() };
+    return { sol: sol, solUsdValue: Number.isFinite(prices[SOL_MINT]) ? prices[SOL_MINT] * sol : null, tokens: tokens, tokenError: tokenError, rpcUrl: lastRpcUrl, updatedAt: Date.now() };
   }
 
   // Best-effort silent reconnect on page load.
@@ -621,9 +660,11 @@
         return;
       }
       tokenList.innerHTML = tokens.slice(0, 12).map(function (token) {
+        var mintLabel = shortAddr(token.mint);
+        var detail = mintLabel + (token.decimals != null ? ' · ' + token.decimals + ' dec' : '');
         return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
           tokenAvatar(token) +
-          '<span class="wallet-token-meta"><strong>' + escapeHtml(token.symbol) + '</strong><small>' + escapeHtml(token.name) + '</small></span>' +
+          '<span class="wallet-token-meta"><strong>' + escapeHtml(token.symbol) + '</strong><small title="' + escapeHtml(token.mint) + '">' + escapeHtml(token.name) + ' · ' + escapeHtml(detail) + '</small></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
             (Number.isFinite(token.usdValue) ? '<small>' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
           '</span><span class="wallet-token-arrow">›</span></a>';
@@ -636,11 +677,17 @@
         var portfolio = await fetchWalletPortfolio();
         if (dBalance) dBalance.textContent = fmtAmount(portfolio.sol, 4) + ' SOL';
         if (dUsd) dUsd.textContent = Number.isFinite(portfolio.solUsdValue) ? fmtUsd(portfolio.solUsdValue) + ' USD' : '';
-        renderTokens(portfolio.tokens);
+        if (portfolio.tokenError) {
+          if (tokenCount) tokenCount.textContent = 'Unavailable';
+          if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable. ' + escapeHtml(portfolio.tokenError.message || portfolio.tokenError) + '</div>';
+        } else {
+          renderTokens(portfolio.tokens);
+        }
         if (dNetwork) dNetwork.textContent = portfolio.rpcUrl && portfolio.rpcUrl.indexOf('publicnode') !== -1 ? 'Solana Mainnet' : 'Solana Mainnet';
       } catch (err) {
         if (dBalance) dBalance.textContent = 'Unavailable';
-        if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable.</div>';
+        if (tokenCount) tokenCount.textContent = 'Unavailable';
+        if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable. ' + escapeHtml(err && err.message ? err.message : '') + '</div>';
       }
     }
 
