@@ -88,11 +88,23 @@
   function buyOrSellLabel() {
     return currentSide === 'buy' ? 'Buy' : 'Sell';
   }
+  function walletSnap() {
+    return (window.SMHWallet && window.SMHWallet.getState && window.SMHWallet.getState()) || {};
+  }
+  function consentReady() {
+    return !!walletSnap().consentSigned;
+  }
   function refreshConfirmState() {
     var label = buyOrSellLabel().toUpperCase();
-    if (!connected()) {
+    var snap = walletSnap();
+    if (!snap.connected) {
       els.confirm.textContent = currentSide === 'buy' ? 'Connect wallet to buy' : 'Connect wallet to sell';
       els.confirm.disabled = true;
+      return;
+    }
+    if (!snap.consentSigned) {
+      els.confirm.textContent = currentSide === 'buy' ? 'Sign consent to buy' : 'Sign consent to sell';
+      els.confirm.disabled = busy;
       return;
     }
     if (busy)        { els.confirm.textContent = label; els.confirm.disabled = true;  return; }
@@ -211,8 +223,13 @@
       els.route.textContent = hops.length ? hops.join(' → ') : 'Jupiter';
       var impact = Number(quote.priceImpactPct);
       els.impact.textContent = Number.isFinite(impact) ? (impact * 100).toFixed(3) + '%' : '—';
-      setStatus(connected() ? 'ok' : 'warn',
-        connected() ? 'Quote ready.' : 'Quote ready — connect a wallet to sign.');
+      if (!connected()) {
+        setStatus('warn', 'Quote ready — connect a wallet to sign.');
+      } else if (!consentReady()) {
+        setStatus('warn', 'Quote ready — sign wallet consent to trade.');
+      } else {
+        setStatus('ok', 'Quote ready.');
+      }
     } catch (err) {
       if (seq !== quoteSeq) return;
       lastQuote = null;
@@ -355,7 +372,37 @@
     });
 
     els.confirm.addEventListener('click', function () {
-      if (!lastQuote || !connected() || busy) return;
+      if (busy) return;
+      var snap = walletSnap();
+      if (!snap.connected) return; // button is disabled in this state
+      if (!snap.consentSigned) {
+        // gated consent flow — sign before any swap can run
+        busy = true;
+        refreshConfirmState();
+        setStatus('info', 'Awaiting wallet consent signature…');
+        window.SMHWallet.signConsent().then(function () {
+          busy = false;
+          if (connected() && consentReady()) {
+            if (lastQuote) {
+              setStatus('ok', 'Consent signed. Quote ready.');
+            } else {
+              setStatus('ok', 'Consent signed. Fetching quote…');
+              scheduleQuote(0);
+            }
+          }
+          refreshConfirmState();
+        }).catch(function (err) {
+          busy = false;
+          if (err && err.code === 'USER_REJECTED') {
+            setStatus('warn', 'Consent rejected — signature required before trading.');
+          } else {
+            setStatus('error', 'Consent failed: ' + (err && err.message ? err.message : err));
+          }
+          refreshConfirmState();
+        });
+        return;
+      }
+      if (!lastQuote) return;
       executeSwap();
     });
 

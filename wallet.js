@@ -11,6 +11,8 @@
   'use strict';
 
   var STORAGE_KEY = 'smh:wallet:last';
+  var CONSENT_KEY_PREFIX = 'smh:consent:';
+  var CONSENT_DOMAIN = 'solmemehub.tech';
 
   var ADAPTERS = [
     {
@@ -52,8 +54,39 @@
     adapter: null,         // current adapter object
     provider: null,        // window-injected provider
     publicKey: null,       // PublicKey instance
-    address: null          // base58 string
+    address: null,         // base58 string
+    consent: null          // { address, signatureHex, nonce, timestamp, domain }
   };
+
+  function bytesToHex(u8) {
+    var out = '';
+    for (var i = 0; i < u8.length; i += 1) {
+      var h = u8[i].toString(16);
+      out += h.length === 1 ? '0' + h : h;
+    }
+    return out;
+  }
+
+  function loadStoredConsent(address) {
+    if (!address) return null;
+    try {
+      var raw = localStorage.getItem(CONSENT_KEY_PREFIX + address);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (!obj || obj.address !== address || obj.domain !== CONSENT_DOMAIN) return null;
+      if (!obj.signatureHex || !obj.nonce || !obj.timestamp) return null;
+      return obj;
+    } catch (_e) { return null; }
+  }
+  function storeConsent(consent) {
+    try { localStorage.setItem(CONSENT_KEY_PREFIX + consent.address, JSON.stringify(consent)); } catch (_e) {}
+  }
+  function clearStoredConsent(address) {
+    try { localStorage.removeItem(CONSENT_KEY_PREFIX + address); } catch (_e) {}
+  }
+  function consentSigned() {
+    return !!(state.consent && state.address && state.consent.address === state.address);
+  }
 
   function emit() {
     var snap = {
@@ -61,7 +94,8 @@
       address: state.address,
       shortAddress: state.address ? shortAddr(state.address) : null,
       adapterId: state.adapter ? state.adapter.id : null,
-      adapterName: state.adapter ? state.adapter.name : null
+      adapterName: state.adapter ? state.adapter.name : null,
+      consentSigned: consentSigned()
     };
     listeners.forEach(function (fn) { try { fn(snap); } catch (_e) {} });
   }
@@ -97,6 +131,7 @@
       state.provider = provider;
       state.publicKey = pk;
       state.address = pk.toString();
+      state.consent = loadStoredConsent(state.address); // restore prior consent for this wallet, if any
       try { localStorage.setItem(STORAGE_KEY, entry.adapter.id); } catch (_e) {}
       attachProviderListeners(provider);
       emit();
@@ -117,6 +152,7 @@
         if (!pk) { handleDisconnect(); return; }
         state.publicKey = pk;
         state.address = pk.toString();
+        state.consent = loadStoredConsent(state.address); // wallet changed → re-check
         emit();
       });
     } catch (_e) {}
@@ -136,8 +172,65 @@
     state.provider = null;
     state.publicKey = null;
     state.address = null;
+    state.consent = null;
     try { localStorage.removeItem(STORAGE_KEY); } catch (_e) {}
     emit();
+  }
+
+  // Ask the wallet to sign a one-time human-readable consent message.
+  // Does NOT sign or send any transaction; signMessage is a pure
+  // off-chain attestation. The signature bytes are stored as proof of
+  // intent, keyed by the wallet address and the SolMemeHub domain.
+  async function signConsent() {
+    if (!state.provider || !state.address) throw new Error('Wallet is not connected.');
+    if (typeof state.provider.signMessage !== 'function') {
+      throw new Error(state.adapter.name + ' does not support message signing.');
+    }
+    var nonce = (function () {
+      try {
+        var buf = new Uint8Array(16);
+        crypto.getRandomValues(buf);
+        return bytesToHex(buf);
+      } catch (_e) { return String(Date.now()) + Math.floor(Math.random() * 1e9).toString(16); }
+    })();
+    var ts = new Date().toISOString();
+    var message =
+      'SolMemeHub wallet consent\n\n' +
+      'I confirm that I want to connect this wallet to SolMemeHub.\n\n' +
+      'This signature does not execute a transaction.\n' +
+      'This signature does not give permission to move funds.\n' +
+      'Each buy or sell still requires a separate wallet confirmation.\n\n' +
+      'Wallet: '   + state.address + '\n' +
+      'Domain: '   + CONSENT_DOMAIN + '\n' +
+      'Timestamp: ' + ts + '\n' +
+      'Nonce: '    + nonce;
+    var bytes = new TextEncoder().encode(message);
+    var resp;
+    try {
+      // Phantom + Solflare: signMessage(uint8array, 'utf8'). Backpack: signMessage(uint8array).
+      resp = await state.provider.signMessage(bytes, 'utf8');
+    } catch (err) {
+      if (err && (err.code === 4001 || /reject|denied|user|cancel/i.test(err.message || ''))) {
+        var e = new Error('User rejected consent signature.'); e.code = 'USER_REJECTED'; throw e;
+      }
+      throw err;
+    }
+    var sigBytes = resp && (resp.signature || resp) ;
+    if (sigBytes && sigBytes.signature) sigBytes = sigBytes.signature;
+    if (!sigBytes || typeof sigBytes.length !== 'number') throw new Error('Wallet returned no signature.');
+    var consent = {
+      address:     state.address,
+      adapterId:   state.adapter && state.adapter.id,
+      domain:      CONSENT_DOMAIN,
+      nonce:       nonce,
+      timestamp:   ts,
+      messagePreview: message.split('\n').slice(0, 1)[0],
+      signatureHex: bytesToHex(sigBytes instanceof Uint8Array ? sigBytes : new Uint8Array(sigBytes))
+    };
+    state.consent = consent;
+    storeConsent(consent);
+    emit();
+    return consent;
   }
 
   // Sign + send a Versioned/legacy transaction. Uses signAndSendTransaction
@@ -201,9 +294,17 @@
         provider: state.provider,
         publicKey: state.publicKey,
         address: state.address,
-        shortAddress: state.address ? shortAddr(state.address) : null
+        shortAddress: state.address ? shortAddr(state.address) : null,
+        consentSigned: consentSigned(),
+        consent: state.consent ? {
+          address: state.consent.address,
+          domain: state.consent.domain,
+          timestamp: state.consent.timestamp,
+          nonce: state.consent.nonce
+        } : null
       };
     },
+    signConsent: signConsent,
     fetchSolBalance: fetchSolBalance,
     on: function (fn) { if (typeof fn === 'function') listeners.push(fn); return function () { listeners = listeners.filter(function (x) { return x !== fn; }); }; },
     shortAddr: shortAddr,
@@ -286,8 +387,10 @@
     var dAdapter    = document.getElementById('wallet-details-adapter');
     var dAddress    = document.getElementById('wallet-details-address');
     var dBalance    = document.getElementById('wallet-details-balance');
+    var dConsent    = document.getElementById('wallet-details-consent');
     var copyBtn     = document.getElementById('wallet-copy-btn');
     var refreshBtn  = document.getElementById('wallet-refresh-btn');
+    var consentBtn  = document.getElementById('wallet-consent-btn');
     var disconBtn   = document.getElementById('wallet-disconnect-btn');
 
     function paintDetails(snap) {
@@ -295,6 +398,13 @@
       if (!snap.connected) { closeDetails(); return; }
       if (dAdapter) dAdapter.textContent = snap.adapterName || '—';
       if (dAddress) { dAddress.textContent = snap.address || '—'; dAddress.title = snap.address || ''; }
+      if (dConsent) {
+        dConsent.textContent = snap.consentSigned ? 'Signed' : 'Required';
+        dConsent.className = 'consent-state ' + (snap.consentSigned ? 'is-ok' : 'is-warn');
+      }
+      if (consentBtn) {
+        consentBtn.hidden = !!snap.consentSigned;
+      }
     }
 
     async function loadBalance() {
@@ -339,6 +449,20 @@
       }
     });
     if (refreshBtn) refreshBtn.addEventListener('click', loadBalance);
+    if (consentBtn) consentBtn.addEventListener('click', function () {
+      var snap = api.getState();
+      if (!snap.connected) return;
+      consentBtn.disabled = true;
+      consentBtn.textContent = 'Awaiting wallet…';
+      api.signConsent().then(function () {
+        consentBtn.textContent = 'Sign consent';
+        consentBtn.disabled = false;
+      }).catch(function (err) {
+        consentBtn.textContent = 'Sign consent';
+        consentBtn.disabled = false;
+        if (err && err.code !== 'USER_REJECTED') alert('Consent failed: ' + (err && err.message ? err.message : err));
+      });
+    });
     if (disconBtn)  disconBtn.addEventListener('click', function () {
       api.disconnect().finally(closeDetails);
     });

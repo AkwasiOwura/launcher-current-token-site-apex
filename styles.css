@@ -1524,6 +1524,12 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   grid-column:1 / -1;color:#ff6464;border-color:rgba(255,100,100,.55);background:rgba(255,100,100,.10);
 }
 .wallet-detail-actions .wallet-disconnect:hover{background:rgba(255,100,100,.22);color:var(--text)}
+.wallet-detail-actions .wallet-consent{
+  grid-column:1 / -1;color:var(--mint);border-color:rgba(22,242,139,.55);background:rgba(22,242,139,.12);
+}
+.wallet-detail-actions .wallet-consent:hover{background:rgba(22,242,139,.22);color:var(--text)}
+.consent-state.is-ok{color:var(--mint)}
+.consent-state.is-warn{color:#ffcf5a}
 
 @media (max-width:840px){
   .nav{flex-wrap:wrap}
