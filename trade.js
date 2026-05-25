@@ -85,6 +85,17 @@
       ? ' <a href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">View on Solscan ↗</a>'
       : '');
   }
+  function requestWalletRefresh(signature) {
+    [1500, 5000, 12000].forEach(function (delay) {
+      setTimeout(function () {
+        try {
+          window.dispatchEvent(new CustomEvent('smh:wallet-refresh', {
+            detail: { signature: signature, side: currentSide, delay: delay }
+          }));
+        } catch (_e) {}
+      }, delay);
+    });
+  }
 
   function buyOrSellLabel() {
     return currentSide === 'buy' ? 'Buy' : 'Sell';
@@ -312,7 +323,7 @@
       if (!value) throw new Error('Transaction confirmation returned no result.');
       if (value.err) throw new Error('Transaction failed on-chain: ' + JSON.stringify(value.err));
       setStatus('ok', (currentSide === 'buy' ? 'Bought ' : 'Sold ') + executedAmountLabel, solscan);
-      try { window.dispatchEvent(new CustomEvent('smh:wallet-refresh', { detail: { signature: sig, side: currentSide } })); } catch (_e) {}
+      requestWalletRefresh(sig);
       // success: refreshConfirmState() in finally will re-label the button
     } catch (err) {
       var msg = err && err.message ? err.message : String(err);

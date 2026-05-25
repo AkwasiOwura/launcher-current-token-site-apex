@@ -1599,8 +1599,6 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .wallet-token-arrow{color:rgba(244,255,249,.42);font-size:22px;line-height:1}
 .wallet-token-empty{padding:12px 0;color:rgba(244,255,249,.7);font-size:12px}
 .wallet-solscan-link{display:inline-flex;margin-top:10px;color:var(--mint);font-size:12px;font-weight:800;text-decoration:none}
-.wallet-auto-row{display:flex;justify-content:space-between;gap:10px;color:rgba(244,255,249,.66);font-size:11px;font-weight:700}
-.wallet-auto-row span:first-child{color:var(--mint)}
 .wallet-detail-row{
   display:flex;justify-content:space-between;align-items:center;gap:10px;
   padding:11px 12px;background:rgba(8,18,12,.5);border:1px solid var(--border);

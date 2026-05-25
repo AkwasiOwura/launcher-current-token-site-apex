@@ -17,9 +17,13 @@
     'https://solana-rpc.publicnode.com',
     'https://api.mainnet-beta.solana.com'
   ];
+  var TOKEN_RPC_URLS = [
+    'https://api.mainnet-beta.solana.com',
+    'https://solana-rpc.publicnode.com'
+  ];
   var TOKEN_PROGRAMS = [
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-    'TokenzQdBNbLqP5VEhdkAS6EPp5G8rE7S8SxPzVh58'
+    'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
   ];
   var JUP_PRICE_URL = 'https://lite-api.jup.ag/price/v3?ids=';
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -133,9 +137,16 @@
     if (!Number.isFinite(n)) return '';
     return '$' + n.toLocaleString(undefined, { minimumFractionDigits: n >= 1 ? 2 : 4, maximumFractionDigits: n >= 1 ? 2 : 6 });
   }
-  function timeLabel(ts) {
-    if (!ts) return 'Last updated —';
-    return 'Last updated ' + new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  function lamportsToUiAmount(raw, decimals) {
+    if (raw == null) return NaN;
+    var text = String(raw);
+    if (!/^\d+$/.test(text)) return NaN;
+    var places = Math.max(0, Number(decimals) || 0);
+    if (!places) return Number(text);
+    while (text.length <= places) text = '0' + text;
+    var whole = text.slice(0, text.length - places) || '0';
+    var frac = text.slice(text.length - places).replace(/0+$/, '');
+    return Number(whole + (frac ? '.' + frac : ''));
   }
 
   function detectInstalled() {
@@ -295,10 +306,11 @@
     throw new Error('Wallet does not support transaction signing.');
   }
 
-  async function rpcRequest(payload) {
+  async function rpcRequest(payload, urls) {
     var lastError = null;
-    for (var i = 0; i < RPC_URLS.length; i += 1) {
-      var url = RPC_URLS[i];
+    var list = urls || RPC_URLS;
+    for (var i = 0; i < list.length; i += 1) {
+      var url = list[i];
       try {
         var resp = await fetch(url, {
           method: 'POST',
@@ -340,20 +352,29 @@
             { programId: TOKEN_PROGRAMS[i] },
             { encoding: 'jsonParsed', commitment: 'confirmed' }
           ]
-        });
+        }, TOKEN_RPC_URLS);
         all = all.concat((result && result.value) || []);
       } catch (_e) {}
     }
     return all.map(function (entry) {
       var info = entry && entry.account && entry.account.data && entry.account.data.parsed && entry.account.data.parsed.info;
       var amount = info && info.tokenAmount;
+      var rawAmount = amount && amount.amount != null ? String(amount.amount) : '0';
+      var uiAmount = Number(amount && amount.uiAmountString);
+      if (!Number.isFinite(uiAmount)) uiAmount = Number(amount && amount.uiAmount);
+      if (!Number.isFinite(uiAmount)) uiAmount = lamportsToUiAmount(rawAmount, amount && amount.decimals);
       return {
         mint: info && info.mint,
-        amount: amount && amount.uiAmount != null ? Number(amount.uiAmount) : Number(amount && amount.uiAmountString),
-        decimals: amount && amount.decimals
+        amount: uiAmount,
+        rawAmount: rawAmount,
+        decimals: amount && amount.decimals,
+        account: entry && entry.pubkey
       };
     }).filter(function (token) {
-      return token.mint && Number.isFinite(token.amount) && token.amount > 0;
+      return token.mint && token.rawAmount !== '0' && Number.isFinite(token.amount);
+    }).filter(function (token, index, list) {
+      var key = token.account || token.mint;
+      return list.findIndex(function (item) { return (item.account || item.mint) === key; }) === index;
     }).sort(function (a, b) { return b.amount - a.amount; });
   }
 
@@ -565,8 +586,6 @@
     var tokenCount  = document.getElementById('wallet-token-count');
     var tokenList   = document.getElementById('wallet-token-list');
     var solscanLink = document.getElementById('wallet-solscan-link');
-    var autoStatus  = document.getElementById('wallet-auto-status');
-    var lastUpdated = document.getElementById('wallet-last-updated');
     var consentBtn  = document.getElementById('wallet-consent-btn');
     var disconBtn   = document.getElementById('wallet-disconnect-btn');
 
@@ -601,7 +620,7 @@
         tokenList.innerHTML = '<div class="wallet-token-empty">No SPL token balances found.</div>';
         return;
       }
-      tokenList.innerHTML = tokens.slice(0, 8).map(function (token) {
+      tokenList.innerHTML = tokens.slice(0, 12).map(function (token) {
         return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.symbol) + '</strong><small>' + escapeHtml(token.name) + '</small></span>' +
@@ -613,18 +632,14 @@
 
     async function refreshPortfolio() {
       if (!api.getState().connected) return;
-      if (autoStatus) autoStatus.textContent = 'Updating…';
       try {
         var portfolio = await fetchWalletPortfolio();
         if (dBalance) dBalance.textContent = fmtAmount(portfolio.sol, 4) + ' SOL';
         if (dUsd) dUsd.textContent = Number.isFinite(portfolio.solUsdValue) ? fmtUsd(portfolio.solUsdValue) + ' USD' : '';
         renderTokens(portfolio.tokens);
-        if (lastUpdated) lastUpdated.textContent = timeLabel(portfolio.updatedAt);
-        if (autoStatus) autoStatus.textContent = 'Auto-updating';
         if (dNetwork) dNetwork.textContent = portfolio.rpcUrl && portfolio.rpcUrl.indexOf('publicnode') !== -1 ? 'Solana Mainnet' : 'Solana Mainnet';
       } catch (err) {
         if (dBalance) dBalance.textContent = 'Unavailable';
-        if (autoStatus) autoStatus.textContent = err && err.message ? err.message : 'Update failed';
         if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable.</div>';
       }
     }
