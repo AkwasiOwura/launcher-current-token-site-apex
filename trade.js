@@ -312,6 +312,7 @@
       if (!value) throw new Error('Transaction confirmation returned no result.');
       if (value.err) throw new Error('Transaction failed on-chain: ' + JSON.stringify(value.err));
       setStatus('ok', (currentSide === 'buy' ? 'Bought ' : 'Sold ') + executedAmountLabel, solscan);
+      try { window.dispatchEvent(new CustomEvent('smh:wallet-refresh', { detail: { signature: sig, side: currentSide } })); } catch (_e) {}
       // success: refreshConfirmState() in finally will re-label the button
     } catch (err) {
       var msg = err && err.message ? err.message : String(err);

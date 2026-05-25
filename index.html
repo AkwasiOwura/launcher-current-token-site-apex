@@ -58,32 +58,54 @@
     <div class="modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="wallet-details-title">
       <span class="cyber-corner-tl" aria-hidden="true"></span>
       <span class="cyber-corner-br" aria-hidden="true"></span>
-      <header class="modal-head">
-        <h3 id="wallet-details-title">Wallet</h3>
+      <header class="modal-head wallet-modal-head">
+        <h3 id="wallet-details-title">My Wallet</h3>
         <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
       </header>
-      <div class="wallet-details">
-        <div class="wallet-detail-row">
-          <span class="wallet-detail-label">Adapter</span>
-          <strong id="wallet-details-adapter">—</strong>
+      <div class="wallet-details wallet-dashboard">
+        <section class="wallet-profile-card">
+          <div class="wallet-provider-icon" aria-hidden="true">◎</div>
+          <div class="wallet-profile-copy">
+            <span class="wallet-detail-label">Wallet</span>
+            <strong id="wallet-details-address">—</strong>
+            <span id="wallet-details-adapter" class="wallet-provider-name">—</span>
+          </div>
+          <div class="wallet-status-stack">
+            <strong id="wallet-details-consent" class="wallet-status-pill consent-state">—</strong>
+            <span id="wallet-mainnet-status" class="network-state">Solana Mainnet</span>
+          </div>
+        </section>
+
+        <section class="wallet-balance-card">
+          <div>
+            <span class="wallet-detail-label">SOL Balance</span>
+            <strong id="wallet-details-balance" class="wallet-balance-value">—</strong>
+            <span id="wallet-details-usd" class="wallet-balance-usd"></span>
+          </div>
+          <svg class="wallet-mini-chart" viewBox="0 0 120 38" aria-hidden="true">
+            <path d="M2 29 C 16 24, 23 31, 35 20 S 55 22, 64 13 S 82 6, 92 14 S 105 23, 118 7" />
+          </svg>
+        </section>
+
+        <section class="wallet-holdings-card">
+          <header class="wallet-holdings-head">
+            <span class="wallet-detail-label">Token Holdings</span>
+            <strong id="wallet-token-count">0 Tokens</strong>
+          </header>
+          <div id="wallet-token-list" class="wallet-token-list">
+            <div class="wallet-token-empty">Connect wallet to view holdings.</div>
+          </div>
+          <a id="wallet-solscan-link" class="wallet-solscan-link" href="https://solscan.io/" target="_blank" rel="noopener noreferrer">View all tokens on Solscan ↗</a>
+        </section>
+
+        <div class="wallet-auto-row">
+          <span id="wallet-auto-status">Auto-updating</span>
+          <span id="wallet-last-updated">Last updated —</span>
         </div>
-        <div class="wallet-detail-row">
-          <span class="wallet-detail-label">Address</span>
-          <code id="wallet-details-address" class="wallet-detail-address">—</code>
-        </div>
-        <div class="wallet-detail-row">
-          <span class="wallet-detail-label">SOL balance</span>
-          <strong id="wallet-details-balance">—</strong>
-        </div>
-        <div class="wallet-detail-row">
-          <span class="wallet-detail-label">Consent</span>
-          <strong id="wallet-details-consent" class="consent-state">—</strong>
-        </div>
+
         <div class="wallet-detail-actions">
-          <button id="wallet-copy-btn"       type="button" class="trade-btn-cancel">Copy address</button>
-          <button id="wallet-refresh-btn"    type="button" class="trade-btn-cancel">Refresh balance</button>
           <button id="wallet-consent-btn"    type="button" class="trade-btn-confirm wallet-consent">Authenticate</button>
-          <button id="wallet-disconnect-btn" type="button" class="trade-btn-confirm wallet-disconnect">Disconnect</button>
+          <button id="wallet-disconnect-btn" type="button" class="trade-btn-confirm wallet-disconnect">Disconnect Wallet</button>
         </div>
       </div>
     </div>

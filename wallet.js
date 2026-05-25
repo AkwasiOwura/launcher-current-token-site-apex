@@ -13,6 +13,18 @@
   var STORAGE_KEY = 'smh:wallet:last';
   var CONSENT_KEY_PREFIX = 'smh:consent:';
   var CONSENT_DOMAIN = 'solmemehub.tech';
+  var RPC_URLS = [
+    'https://solana-rpc.publicnode.com',
+    'https://api.mainnet-beta.solana.com'
+  ];
+  var TOKEN_PROGRAMS = [
+    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    'TokenzQdBNbLqP5VEhdkAS6EPp5G8rE7S8SxPzVh58'
+  ];
+  var JUP_PRICE_URL = 'https://lite-api.jup.ag/price/v3?ids=';
+  var SOL_MINT = 'So11111111111111111111111111111111111111112';
+  var metadataCache = null;
+  var lastRpcUrl = null;
 
   var ADAPTERS = [
     {
@@ -105,6 +117,25 @@
   function shortAddr(s) {
     s = String(s || '');
     return s.length > 12 ? s.slice(0, 4) + '…' + s.slice(-4) : s;
+  }
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtAmount(value, max) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return n.toLocaleString(undefined, { maximumFractionDigits: max == null ? 6 : max });
+  }
+  function fmtUsd(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return '';
+    return '$' + n.toLocaleString(undefined, { minimumFractionDigits: n >= 1 ? 2 : 4, maximumFractionDigits: n >= 1 ? 2 : 6 });
+  }
+  function timeLabel(ts) {
+    if (!ts) return 'Last updated —';
+    return 'Last updated ' + new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   function detectInstalled() {
@@ -264,24 +295,132 @@
     throw new Error('Wallet does not support transaction signing.');
   }
 
-  // Live SOL balance via mainnet RPC (no key). Returns SOL as a Number.
-  var RPC_BALANCE_URL = 'https://api.mainnet-beta.solana.com';
+  async function rpcRequest(payload) {
+    var lastError = null;
+    for (var i = 0; i < RPC_URLS.length; i += 1) {
+      var url = RPC_URLS[i];
+      try {
+        var resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) throw new Error('RPC ' + resp.status);
+        var json = await resp.json();
+        if (json && json.error) throw new Error(json.error.message || 'RPC error');
+        lastRpcUrl = url;
+        return json.result;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError || new Error('RPC unavailable');
+  }
+
   async function fetchSolBalance() {
     if (!state.address) throw new Error('Wallet not connected.');
-    var resp = await fetch(RPC_BALANCE_URL, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0', id: 1, method: 'getBalance',
-        params: [state.address, { commitment: 'confirmed' }]
-      })
+    var result = await rpcRequest({
+      jsonrpc: '2.0', id: 1, method: 'getBalance',
+      params: [state.address, { commitment: 'confirmed' }]
     });
-    if (!resp.ok) throw new Error('RPC ' + resp.status);
-    var j = await resp.json();
-    if (j && j.error) throw new Error(j.error.message || 'RPC error');
-    var lamports = j && j.result && (typeof j.result.value === 'number' ? j.result.value : j.result);
+    var lamports = result && (typeof result.value === 'number' ? result.value : result);
     if (!Number.isFinite(Number(lamports))) throw new Error('RPC: unexpected balance response');
     return Number(lamports) / 1e9;
+  }
+
+  async function fetchTokenAccounts() {
+    if (!state.address) throw new Error('Wallet not connected.');
+    var all = [];
+    for (var i = 0; i < TOKEN_PROGRAMS.length; i += 1) {
+      try {
+        var result = await rpcRequest({
+          jsonrpc: '2.0', id: 'tokens-' + i, method: 'getTokenAccountsByOwner',
+          params: [
+            state.address,
+            { programId: TOKEN_PROGRAMS[i] },
+            { encoding: 'jsonParsed', commitment: 'confirmed' }
+          ]
+        });
+        all = all.concat((result && result.value) || []);
+      } catch (_e) {}
+    }
+    return all.map(function (entry) {
+      var info = entry && entry.account && entry.account.data && entry.account.data.parsed && entry.account.data.parsed.info;
+      var amount = info && info.tokenAmount;
+      return {
+        mint: info && info.mint,
+        amount: amount && amount.uiAmount != null ? Number(amount.uiAmount) : Number(amount && amount.uiAmountString),
+        decimals: amount && amount.decimals
+      };
+    }).filter(function (token) {
+      return token.mint && Number.isFinite(token.amount) && token.amount > 0;
+    }).sort(function (a, b) { return b.amount - a.amount; });
+  }
+
+  async function loadLocalMetadata() {
+    if (metadataCache) return metadataCache;
+    metadataCache = Object.create(null);
+    function ingest(item) {
+      if (!item) return;
+      var mint = item.mint || item.address || item.contract || item.tokenAddress;
+      if (!mint) return;
+      metadataCache[mint] = {
+        name: item.name || item.tokenName || item.title || 'SPL Token',
+        symbol: String(item.symbol || item.ticker || '').replace(/^\$/, '').toUpperCase() || shortAddr(mint),
+        imageUrl: item.imageUrl || item.image || item.logo || item.icon || '',
+        url: item.url || item.href || item.pumpfunUrl || item.fallbackUrl || ('https://solscan.io/token/' + mint)
+      };
+    }
+    try {
+      var meme = await fetch('./meme-coins.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; });
+      [].concat(meme && meme.dailyRadar || [], meme && meme.trending || [], meme && meme.highCap || [], meme && meme.highcap || [], meme && meme.lowCap || [], meme && meme.lowcap || [], meme && meme.coins || [], Array.isArray(meme) ? meme : []).forEach(ingest);
+    } catch (_e) {}
+    try {
+      var tokens = await fetch('./tokens.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; });
+      [].concat(tokens && tokens.tokens || [], tokens && tokens.pages || [], Array.isArray(tokens) ? tokens : []).forEach(ingest);
+    } catch (_e2) {}
+    return metadataCache;
+  }
+
+  async function fetchTokenPrices(mints) {
+    var prices = Object.create(null);
+    var ids = mints.filter(Boolean).slice(0, 50);
+    if (!ids.length) return prices;
+    try {
+      var data = await fetch(JUP_PRICE_URL + ids.map(encodeURIComponent).join(','), { headers: { accept: 'application/json' }, cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; });
+      ids.forEach(function (mint) {
+        var item = data && data[mint];
+        var price = item && Number(item.usdPrice || item.price);
+        if (Number.isFinite(price)) prices[mint] = price;
+      });
+    } catch (_e) {}
+    return prices;
+  }
+
+  async function fetchWalletPortfolio() {
+    var sol = await fetchSolBalance();
+    var tokens = await fetchTokenAccounts();
+    var meta = await loadLocalMetadata();
+    var priceIds = [SOL_MINT].concat(tokens.map(function (t) { return t.mint; }));
+    var prices = await fetchTokenPrices(priceIds);
+    tokens = tokens.map(function (token) {
+      var m = meta[token.mint] || {};
+      var price = prices[token.mint];
+      return {
+        mint: token.mint,
+        amount: token.amount,
+        name: m.name || 'SPL Token',
+        symbol: m.symbol || shortAddr(token.mint),
+        imageUrl: m.imageUrl || '',
+        url: m.url || ('https://solscan.io/token/' + token.mint),
+        usdValue: Number.isFinite(price) ? price * token.amount : null
+      };
+    }).sort(function (a, b) {
+      var av = Number.isFinite(a.usdValue) ? a.usdValue : 0;
+      var bv = Number.isFinite(b.usdValue) ? b.usdValue : 0;
+      return bv - av || b.amount - a.amount;
+    });
+    return { sol: sol, solUsdValue: Number.isFinite(prices[SOL_MINT]) ? prices[SOL_MINT] * sol : null, tokens: tokens, rpcUrl: lastRpcUrl, updatedAt: Date.now() };
   }
 
   // Best-effort silent reconnect on page load.
@@ -342,11 +481,11 @@
         if (snap.consentPending) {
           if (label) label.textContent = 'Authenticating…';
         } else if (!snap.consentSigned) {
-          if (label) label.textContent = snap.shortAddress + ' · Authenticate';
+          if (label) label.textContent = 'Wallet';
         } else {
-          if (label) label.textContent = snap.shortAddress;
+          if (label) label.textContent = 'Wallet';
         }
-        if (dot) dot.classList.toggle('is-on', !!snap.consentSigned);
+        if (dot) dot.classList.add('is-on');
         btn.setAttribute('title', snap.address + ' (' + snap.adapterName + ')'
           + (snap.consentSigned ? ' — click for wallet menu' : ' — consent required'));
       } else {
@@ -420,9 +559,14 @@
     var dAdapter    = document.getElementById('wallet-details-adapter');
     var dAddress    = document.getElementById('wallet-details-address');
     var dBalance    = document.getElementById('wallet-details-balance');
+    var dUsd        = document.getElementById('wallet-details-usd');
     var dConsent    = document.getElementById('wallet-details-consent');
-    var copyBtn     = document.getElementById('wallet-copy-btn');
-    var refreshBtn  = document.getElementById('wallet-refresh-btn');
+    var dNetwork    = document.getElementById('wallet-mainnet-status');
+    var tokenCount  = document.getElementById('wallet-token-count');
+    var tokenList   = document.getElementById('wallet-token-list');
+    var solscanLink = document.getElementById('wallet-solscan-link');
+    var autoStatus  = document.getElementById('wallet-auto-status');
+    var lastUpdated = document.getElementById('wallet-last-updated');
     var consentBtn  = document.getElementById('wallet-consent-btn');
     var disconBtn   = document.getElementById('wallet-disconnect-btn');
 
@@ -430,24 +574,58 @@
       if (!detailsModal) return;
       if (!snap.connected) { closeDetails(); return; }
       if (dAdapter) dAdapter.textContent = snap.adapterName || '—';
-      if (dAddress) { dAddress.textContent = snap.address || '—'; dAddress.title = snap.address || ''; }
+      if (dAddress) { dAddress.textContent = snap.shortAddress || shortAddr(snap.address) || '—'; dAddress.title = snap.address || ''; }
       if (dConsent) {
         dConsent.textContent = snap.consentSigned ? 'Authenticated' : 'Required';
         dConsent.className = 'consent-state ' + (snap.consentSigned ? 'is-ok' : 'is-warn');
       }
+      if (dNetwork) dNetwork.textContent = 'Solana Mainnet';
+      if (solscanLink && snap.address) solscanLink.href = 'https://solscan.io/account/' + encodeURIComponent(snap.address) + '#portfolio';
       if (consentBtn) {
         consentBtn.hidden = !!snap.consentSigned;
       }
     }
 
-    async function loadBalance() {
-      if (!dBalance) return;
-      dBalance.textContent = 'Loading…';
+    function tokenAvatar(token) {
+      var symbol = String(token.symbol || '?').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase() || '?';
+      if (token.imageUrl) {
+        return '<span class="wallet-token-avatar"><img src="' + escapeHtml(token.imageUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();"></span>';
+      }
+      return '<span class="wallet-token-avatar wallet-token-fallback">' + escapeHtml(symbol) + '</span>';
+    }
+
+    function renderTokens(tokens) {
+      if (!tokenList || !tokenCount) return;
+      tokenCount.textContent = tokens.length + (tokens.length === 1 ? ' Token' : ' Tokens');
+      if (!tokens.length) {
+        tokenList.innerHTML = '<div class="wallet-token-empty">No SPL token balances found.</div>';
+        return;
+      }
+      tokenList.innerHTML = tokens.slice(0, 8).map(function (token) {
+        return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
+          tokenAvatar(token) +
+          '<span class="wallet-token-meta"><strong>' + escapeHtml(token.symbol) + '</strong><small>' + escapeHtml(token.name) + '</small></span>' +
+          '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
+            (Number.isFinite(token.usdValue) ? '<small>' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
+          '</span><span class="wallet-token-arrow">›</span></a>';
+      }).join('');
+    }
+
+    async function refreshPortfolio() {
+      if (!api.getState().connected) return;
+      if (autoStatus) autoStatus.textContent = 'Updating…';
       try {
-        var sol = await fetchSolBalance();
-        dBalance.textContent = (Math.round(sol * 10000) / 10000).toFixed(4) + ' SOL';
+        var portfolio = await fetchWalletPortfolio();
+        if (dBalance) dBalance.textContent = fmtAmount(portfolio.sol, 4) + ' SOL';
+        if (dUsd) dUsd.textContent = Number.isFinite(portfolio.solUsdValue) ? fmtUsd(portfolio.solUsdValue) + ' USD' : '';
+        renderTokens(portfolio.tokens);
+        if (lastUpdated) lastUpdated.textContent = timeLabel(portfolio.updatedAt);
+        if (autoStatus) autoStatus.textContent = 'Auto-updating';
+        if (dNetwork) dNetwork.textContent = portfolio.rpcUrl && portfolio.rpcUrl.indexOf('publicnode') !== -1 ? 'Solana Mainnet' : 'Solana Mainnet';
       } catch (err) {
-        dBalance.textContent = 'Unavailable (' + (err && err.message ? err.message : 'rpc error') + ')';
+        if (dBalance) dBalance.textContent = 'Unavailable';
+        if (autoStatus) autoStatus.textContent = err && err.message ? err.message : 'Update failed';
+        if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable.</div>';
       }
     }
 
@@ -456,7 +634,7 @@
       paintDetails(api.getState());
       detailsModal.hidden = false;
       detailsModal.setAttribute('aria-hidden', 'false');
-      loadBalance();
+      refreshPortfolio();
     }
     function closeDetails() {
       if (!detailsModal) return;
@@ -471,17 +649,6 @@
       });
     }
 
-    if (copyBtn) copyBtn.addEventListener('click', function () {
-      var addr = api.getState().address;
-      if (!addr) return;
-      var done = function () { copyBtn.textContent = 'Copied'; setTimeout(function () { copyBtn.textContent = 'Copy address'; }, 1400); };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(addr).then(done, function () { window.prompt('Copy address:', addr); });
-      } else {
-        window.prompt('Copy address:', addr);
-      }
-    });
-    if (refreshBtn) refreshBtn.addEventListener('click', loadBalance);
     if (consentBtn) consentBtn.addEventListener('click', function () {
       var snap = api.getState();
       if (!snap.connected) return;
@@ -504,6 +671,11 @@
       // Live-paint the open details modal on account/disconnect events.
       if (detailsModal && !detailsModal.hidden) paintDetails(snap);
     });
+
+    window.addEventListener('smh:wallet-refresh', refreshPortfolio);
+    setInterval(function () {
+      if (api.getState().connected) refreshPortfolio();
+    }, 25000);
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && detailsModal && !detailsModal.hidden) closeDetails();
