@@ -59,7 +59,7 @@
       <span class="cyber-corner-tl" aria-hidden="true"></span>
       <span class="cyber-corner-br" aria-hidden="true"></span>
       <header class="modal-head wallet-modal-head">
-        <h3 id="wallet-details-title">My Wallet</h3>
+        <h3 id="wallet-details-title">Solana Mainnet</h3>
         <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
       </header>
       <div class="wallet-details wallet-dashboard">
@@ -72,7 +72,7 @@
           </div>
           <div class="wallet-status-stack">
             <strong id="wallet-details-consent" class="wallet-status-pill consent-state">—</strong>
-            <span id="wallet-mainnet-status" class="network-state">Solana Mainnet</span>
+            <button id="wallet-disconnect-btn" type="button" class="wallet-disconnect-inline" aria-label="Disconnect wallet">Disconnect</button>
           </div>
         </section>
 
@@ -95,12 +95,10 @@
           <div id="wallet-token-list" class="wallet-token-list">
             <div class="wallet-token-empty">Connect wallet to view holdings.</div>
           </div>
-          <a id="wallet-solscan-link" class="wallet-solscan-link" href="https://solscan.io/" target="_blank" rel="noopener noreferrer">View all tokens on Solscan ↗</a>
         </section>
 
-        <div class="wallet-detail-actions">
+        <div class="wallet-detail-actions" id="wallet-detail-actions">
           <button id="wallet-consent-btn"    type="button" class="trade-btn-confirm wallet-consent">Authenticate</button>
-          <button id="wallet-disconnect-btn" type="button" class="trade-btn-confirm wallet-disconnect">Disconnect Wallet</button>
         </div>
       </div>
     </div>

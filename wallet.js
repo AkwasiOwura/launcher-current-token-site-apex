@@ -663,7 +663,7 @@
       }
       if (dConsent) {
         dConsent.textContent = snap.consentSigned ? 'Authenticated' : 'Required';
-        dConsent.className = 'consent-state ' + (snap.consentSigned ? 'is-ok' : 'is-warn');
+        dConsent.className = 'wallet-status-pill consent-state ' + (snap.consentSigned ? 'is-ok' : 'is-warn');
       }
       if (dNetwork) dNetwork.textContent = 'Solana Mainnet';
       if (solscanLink && snap.address) solscanLink.href = 'https://solscan.io/account/' + encodeURIComponent(snap.address) + '#portfolio';
