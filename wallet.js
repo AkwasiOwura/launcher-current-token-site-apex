@@ -656,7 +656,11 @@
       if (!detailsModal) return;
       if (!snap.connected) { closeDetails(); return; }
       if (dAdapter) dAdapter.textContent = snap.adapterName || '—';
-      if (dAddress) { dAddress.textContent = snap.shortAddress || shortAddr(snap.address) || '—'; dAddress.title = snap.address || ''; }
+      if (dAddress) {
+        dAddress.innerHTML = escapeHtml(snap.shortAddress || shortAddr(snap.address) || '—') + ' <span aria-hidden="true">⧉</span>';
+        dAddress.title = snap.address || 'Copy wallet address';
+        dAddress.setAttribute('data-address', snap.address || '');
+      }
       if (dConsent) {
         dConsent.textContent = snap.consentSigned ? 'Authenticated' : 'Required';
         dConsent.className = 'consent-state ' + (snap.consentSigned ? 'is-ok' : 'is-warn');
@@ -693,14 +697,14 @@
           valueTone = token.usdValue > previousTokenValues[token.mint] ? ' value-up' : ' value-down';
         }
         if (Number.isFinite(token.usdValue)) nextValues[token.mint] = token.usdValue;
-        return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
+        return '<div class="wallet-token-row">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
-            '<span class="wallet-token-contract"><button class="wallet-token-mint" type="button" data-mint="' + escapeHtml(token.mint) + '" title="Copy contract address">' + escapeHtml(mintLabel) + '</button>' +
+            '<span class="wallet-token-contract"><button class="wallet-token-mint" type="button" data-mint="' + escapeHtml(token.mint) + '" title="Copy contract address">' + escapeHtml(mintLabel) + ' <span aria-hidden="true">⧉</span></button>' +
             '<a class="wallet-token-solscan" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer" title="Open on Solscan">↗</a></span></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
             (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
-          '</span></a>';
+          '</span><button class="wallet-token-sell-all" type="button" disabled title="Sell All coming soon">Sell All</button></div>';
       }).join('');
       previousTokenValues = nextValues;
     }
@@ -762,8 +766,27 @@
     if (disconBtn)  disconBtn.addEventListener('click', function () {
       api.disconnect().finally(closeDetails);
     });
+    if (dAddress) dAddress.addEventListener('click', function () {
+      var address = dAddress.getAttribute('data-address') || api.getState().address || '';
+      var original = dAddress.innerHTML;
+      function copied() {
+        dAddress.innerHTML = 'Copied <span aria-hidden="true">⧉</span>';
+        dAddress.classList.add('is-copied');
+        setTimeout(function () {
+          dAddress.innerHTML = original;
+          dAddress.classList.remove('is-copied');
+        }, 1200);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(address).then(copied).catch(copied);
+      else copied();
+    });
     if (tokenList) tokenList.addEventListener('click', function (e) {
       if (e.target && e.target.closest && e.target.closest('.wallet-token-solscan')) {
+        e.stopPropagation();
+        return;
+      }
+      if (e.target && e.target.closest && e.target.closest('.wallet-token-sell-all')) {
+        e.preventDefault();
         e.stopPropagation();
         return;
       }
