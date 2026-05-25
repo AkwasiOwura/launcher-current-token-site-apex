@@ -72,6 +72,7 @@
   var quoteSeq = 0;          // monotonic id to discard stale Jupiter responses
   var quoteDebounceTimer = null;
   var BUY_DEFAULT_SOL = 0.1; // pre-fill for BUY (denominated in SOL)
+  var executedAmountLabel = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -87,6 +88,12 @@
 
   function buyOrSellLabel() {
     return currentSide === 'buy' ? 'Buy' : 'Sell';
+  }
+  function tradeAmountLabel() {
+    var symbol = currentSide === 'buy'
+      ? (currentCoin && (currentCoin.symbol || 'TOKEN'))
+      : (currentCoin && (currentCoin.symbol || 'TOKEN'));
+    return fmt(Number(els.amount.value), 6) + ' ' + String(symbol || 'TOKEN').toUpperCase().replace(/^\$/, '');
   }
   function walletSnap() {
     return (window.SMHWallet && window.SMHWallet.getState && window.SMHWallet.getState()) || {};
@@ -283,23 +290,28 @@
       var tx = window.solanaWeb3.VersionedTransaction.deserialize(raw);
 
       var connection = new window.solanaWeb3.Connection(RPC_FALLBACKS[0], 'confirmed');
+      executedAmountLabel = tradeAmountLabel();
 
       setStatus('info', 'Awaiting wallet signature…');
       var sig = await window.SMHWallet.signAndSend(tx, connection);
 
       setStatus('info', 'Submitted. Confirming on-chain…');
       var solscan = 'https://solscan.io/tx/' + sig;
+      var latest = await connection.getLatestBlockhash('confirmed');
+      var confirmation;
       try {
-        var latest = await connection.getLatestBlockhash('confirmed');
-        await connection.confirmTransaction({
+        confirmation = await connection.confirmTransaction({
           signature: sig,
           blockhash: latest.blockhash,
           lastValidBlockHeight: latest.lastValidBlockHeight
         }, 'confirmed');
-        setStatus('ok', 'Trade confirmed on-chain.', solscan);
-      } catch (_confErr) {
-        setStatus('ok', 'Trade submitted. Confirmation pending — check Solscan.', solscan);
+      } catch (confErr) {
+        throw new Error('Transaction confirmation timed out or failed: ' + (confErr && confErr.message ? confErr.message : confErr));
       }
+      var value = confirmation && confirmation.value;
+      if (!value) throw new Error('Transaction confirmation returned no result.');
+      if (value.err) throw new Error('Transaction failed on-chain: ' + JSON.stringify(value.err));
+      setStatus('ok', (currentSide === 'buy' ? 'Bought ' : 'Sold ') + executedAmountLabel, solscan);
       // success: refreshConfirmState() in finally will re-label the button
     } catch (err) {
       var msg = err && err.message ? err.message : String(err);
@@ -307,6 +319,8 @@
         setStatus('warn', 'Transaction rejected in wallet.');
       } else if (/insufficient/i.test(msg)) {
         setStatus('error', 'Insufficient balance for this trade.');
+      } else if (/confirm|timeout|block height|expired|failed on-chain/i.test(msg)) {
+        setStatus('error', msg, typeof sig !== 'undefined' && sig ? 'https://solscan.io/tx/' + sig : null);
       } else {
         setStatus('error', 'Trade failed: ' + msg);
       }
