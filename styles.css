@@ -1602,12 +1602,17 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 /* Token-card sparkline (slightly taller for the SolMemeHub pages) */
 .token-card .coin-sparkline{height:32px}
 
-.chart-modal-card{
-  width:min(1100px,calc(100% - 28px));
-  min-height:min(720px,calc(100vh - 36px));
+.modal-root.chart-modal-root{
+  padding:12px;
+}
+.modal-card.chart-modal-card{
+  width:min(1480px,calc(100vw - 24px));
+  height:min(900px,calc(100vh - 24px));
+  max-width:none;
+  min-height:0;
   display:flex;
   flex-direction:column;
-  padding:18px;
+  padding:14px;
 }
 .chart-modal-head{margin-bottom:14px}
 .chart-modal-head h3{font-size:20px}
@@ -1619,16 +1624,18 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   overflow-wrap:anywhere;
 }
 .chart-modal-body{
-  flex:1;
+  flex:1 1 auto;
   display:flex;
   flex-direction:column;
-  min-height:520px;
-  gap:12px;
+  min-height:0;
+  gap:10px;
 }
 .chart-frame{
-  flex:1;
+  flex:1 1 auto;
   width:100%;
-  min-height:500px;
+  height:100%;
+  min-height:0;
+  aspect-ratio:16/9;
   border:1px solid rgba(255,255,255,.1);
   background:#030604;
 }
@@ -1647,12 +1654,12 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   text-transform:uppercase;
 }
 .chart-fallback-panel{
-  flex:1;
+  flex:1 1 auto;
   display:grid;
   align-content:center;
   justify-items:center;
   gap:12px;
-  min-height:500px;
+  min-height:0;
   padding:22px;
   border:1px solid rgba(255,255,255,.1);
   background:rgba(8,18,12,.52);
