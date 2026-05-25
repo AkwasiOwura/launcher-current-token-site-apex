@@ -206,6 +206,69 @@
     ].join('');
   }
 
+  function chartUrlType(url) {
+    var raw = String(url || '').toLowerCase();
+    if (/dexscreener\.com\/solana\//.test(raw)) return 'dexscreener';
+    if (/geckoterminal\.com\/solana\/pools\//.test(raw)) return 'geckoterminal';
+    if (/birdeye\.so\//.test(raw)) return 'birdeye';
+    if (/photon-sol\.tinyastro\.io\//.test(raw)) return 'photon';
+    if (/dextools\.io\//.test(raw)) return 'dextools';
+    if (/pump\.fun\/coin\//.test(raw) || /pump\.swap|pumpswap/.test(raw)) return 'pump';
+    return '';
+  }
+
+  function withParams(url, params) {
+    try {
+      var next = new URL(url, window.location.href);
+      Object.keys(params).forEach(function (key) { next.searchParams.set(key, params[key]); });
+      return next.href;
+    } catch (_err) {
+      return url;
+    }
+  }
+
+  function chartSourceForCoin(coin) {
+    var mint = String(coin && (coin.mint || coin.contract || coin.address) || '').trim();
+    var providerUrls = [
+      coin && coin.chartUrl,
+      coin && coin.tradingViewUrl,
+      coin && coin.dexScreenerUrl,
+      coin && coin.geckoTerminalUrl,
+      coin && coin.birdeyeUrl,
+      coin && coin.photonUrl,
+      coin && coin.dextoolsUrl,
+      coin && coin.fallbackUrl,
+      coin && coin.url
+    ].map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
+
+    for (var i = 0; i < providerUrls.length; i += 1) {
+      var url = providerUrls[i];
+      var type = chartUrlType(url);
+      if (type === 'dexscreener') {
+        return { provider: 'DexScreener', mode: 'iframe', embedUrl: withParams(url, { embed: '1', theme: 'dark' }), externalUrl: url };
+      }
+      if (type === 'geckoterminal') {
+        return { provider: 'GeckoTerminal', mode: 'iframe', embedUrl: withParams(url, { embed: '1', info: '0', swaps: '0' }), externalUrl: url };
+      }
+      if (type === 'birdeye') return { provider: 'Birdeye', mode: 'external', externalUrl: url };
+      if (type === 'photon') return { provider: 'Photon', mode: 'external', externalUrl: url };
+      if (type === 'dextools') return { provider: 'DEXTools', mode: 'external', externalUrl: url };
+    }
+
+    if (coin && coin.pumpFunUrl) {
+      return { provider: 'Pump.fun', mode: 'external', externalUrl: safeUrl(coin.pumpFunUrl, '') };
+    }
+    if (mint && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) {
+      return {
+        provider: 'DexScreener',
+        mode: 'iframe',
+        embedUrl: 'https://dexscreener.com/solana/' + encodeURIComponent(mint) + '?embed=1&theme=dark',
+        externalUrl: 'https://dexscreener.com/solana/' + encodeURIComponent(mint)
+      };
+    }
+    return { provider: 'Sparkline', mode: 'fallback', externalUrl: '' };
+  }
+
   function coinCard(coin, index, mode) {
     var name = escapeHtml(coin.name || coin.symbol || 'Unnamed coin');
     var symbol = escapeHtml(String(coin.symbol || '').replace(/^\$/, '').toUpperCase());
@@ -226,12 +289,23 @@
     if (!marketCap && !volume) meta.push('Market radar');
 
     var sparkSvg = sparklineSvg(coin);
+    var chartSource = chartSourceForCoin(coin);
     var changeNum = Number(coin && (coin.priceChange24h || coin.change24h || coin.priceChange));
     var changeDir = Number.isFinite(changeNum) ? (changeNum > 1 ? 'is-up' : changeNum < -1 ? 'is-down' : 'is-flat') : 'is-flat';
     var changeClass = Number.isFinite(changeNum) ? (changeNum > 1 ? 'up' : changeNum < -1 ? 'down' : 'flat') : 'flat';
     var changeText = Number.isFinite(changeNum) ? (changeNum > 0 ? '▲ ' : changeNum < 0 ? '▼ ' : '') + Math.abs(changeNum).toFixed(2) + '%' : '';
+    var chartPayload = {
+      name: coin.name || '',
+      symbol: coin.symbol || '',
+      mint: coin.mint || coin.contract || '',
+      provider: chartSource.provider,
+      mode: chartSource.mode,
+      embedUrl: chartSource.embedUrl || '',
+      externalUrl: chartSource.externalUrl || '',
+      sparkSvg: sparkSvg
+    };
     var sparkBlock = sparkSvg ? [
-      '<div class="coin-spark-wrap">',
+      '<div class="coin-spark-wrap" role="button" tabindex="0" title="Click to reveal chart" aria-label="Click to reveal chart for ' + (symbol || name) + '" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">',
       sparkSvg,
       '<div class="spark-meta"><span class="label">24h trend</span>' + (changeText ? '<span class="delta ' + changeClass + '">' + changeText + '</span>' : '') + '</div>',
       '</div>'
@@ -459,6 +533,103 @@
       memeState.tab
     );
     setupCoinImages();
+    setupChartReveal();
+  }
+
+  function ensureChartModal() {
+    var modal = document.getElementById('chart-reveal-modal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'chart-reveal-modal';
+    modal.className = 'modal-root chart-modal-root';
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = [
+      '<div class="modal-backdrop" data-chart-close></div>',
+      '<div class="modal-card chart-modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="chart-modal-title">',
+      '<span class="cyber-corner-tl" aria-hidden="true"></span>',
+      '<span class="cyber-corner-br" aria-hidden="true"></span>',
+      '<header class="modal-head chart-modal-head">',
+      '<div><h3 id="chart-modal-title">Token chart</h3><p id="chart-modal-subtitle"></p></div>',
+      '<button class="modal-close" type="button" data-chart-close aria-label="Close">×</button>',
+      '</header>',
+      '<div id="chart-modal-body" class="chart-modal-body"></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function (event) {
+      var close = event.target && event.target.closest && event.target.closest('[data-chart-close]');
+      if (close) closeChartModal();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !modal.hidden) closeChartModal();
+    });
+    return modal;
+  }
+
+  function closeChartModal() {
+    var modal = document.getElementById('chart-reveal-modal');
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    var body = document.getElementById('chart-modal-body');
+    if (body) body.innerHTML = '';
+  }
+
+  function openChartModal(payload) {
+    var modal = ensureChartModal();
+    var title = document.getElementById('chart-modal-title');
+    var subtitle = document.getElementById('chart-modal-subtitle');
+    var body = document.getElementById('chart-modal-body');
+    var symbol = String(payload.symbol || '').replace(/^\$/, '').toUpperCase();
+    var name = payload.name || symbol || 'Token';
+    var mint = payload.mint || '';
+    title.textContent = name + (symbol ? ' · $' + symbol : '');
+    subtitle.textContent = [mint, payload.provider].filter(Boolean).join(' · ');
+    if (payload.mode === 'iframe' && payload.embedUrl) {
+      body.innerHTML = [
+        '<iframe class="chart-frame" src="' + escapeHtml(payload.embedUrl) + '" title="' + escapeHtml(name) + ' full chart" loading="lazy" referrerpolicy="no-referrer"></iframe>',
+        '<a class="chart-open-link" href="' + escapeHtml(payload.externalUrl || payload.embedUrl) + '" target="_blank" rel="noopener noreferrer">Open full chart</a>'
+      ].join('');
+    } else if (payload.mode === 'external' && payload.externalUrl) {
+      body.innerHTML = [
+        '<div class="chart-fallback-panel">',
+        '<strong>' + escapeHtml(payload.provider || 'External chart') + ' chart opens externally</strong>',
+        '<p>Embedded chart unavailable for this provider.</p>',
+        '<a class="chart-open-link" href="' + escapeHtml(payload.externalUrl) + '" target="_blank" rel="noopener noreferrer">Open full chart</a>',
+        '</div>'
+      ].join('');
+    } else {
+      body.innerHTML = [
+        '<div class="chart-fallback-panel">',
+        '<strong>Full chart unavailable</strong>',
+        '<p>Showing enlarged 24H sparkline for this token.</p>',
+        '<div class="chart-spark-large">' + (payload.sparkSvg || '') + '</div>',
+        '</div>'
+      ].join('');
+    }
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function setupChartReveal() {
+    if (setupChartReveal.bound) return;
+    setupChartReveal.bound = true;
+    document.addEventListener('click', function (event) {
+      var trigger = event.target && event.target.closest && event.target.closest('[data-chart]');
+      if (!trigger) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}')); } catch (_err) {}
+    }, true);
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var trigger = event.target && event.target.closest && event.target.closest('[data-chart]');
+      if (!trigger) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}')); } catch (_err) {}
+    }, true);
   }
 
   function setupControls() {
