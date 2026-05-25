@@ -87,7 +87,7 @@
     els.route.textContent = '—';
     els.impact.textContent = '—';
     els.confirm.textContent = 'Get quote';
-    els.confirm.disabled = !connected();
+    els.confirm.disabled = false; // quote is always available; wallet only needed at swap
     lastQuote = null;
   }
 
@@ -134,7 +134,6 @@
       setStatus('warn', 'Enter an amount above zero.');
       return;
     }
-    if (!connected()) { setStatus('warn', 'Connect a wallet first.'); return; }
     busy = true;
     els.confirm.disabled = true;
     setStatus('info', 'Fetching live Jupiter quote…');
@@ -178,7 +177,8 @@
       els.impact.textContent = Number.isFinite(impact) ? (impact * 100).toFixed(3) + '%' : '—';
       els.confirm.textContent = 'Confirm ' + (currentSide === 'buy' ? 'Buy' : 'Sell');
       els.confirm.disabled = false;
-      setStatus('ok', 'Quote ready. Review and confirm to sign.');
+      var connHint = connected() ? '' : ' Connect a wallet to sign.';
+      setStatus('ok', 'Quote ready.' + connHint);
     } catch (err) {
       lastQuote = null;
       els.confirm.textContent = 'Get quote';
@@ -289,20 +289,26 @@
     function onChangeDebounced() {
       lastQuote = null;
       els.confirm.textContent = 'Get quote';
-      els.confirm.disabled = !connected();
+      els.confirm.disabled = false; // can quote without a wallet
       els.receive.textContent = '—';
       els.route.textContent = '—';
       els.impact.textContent = '—';
+      setStatus('', '');
     }
     els.amount.addEventListener('input', onChangeDebounced);
     els.slippage.addEventListener('change', onChangeDebounced);
+    // pressing Enter inside the amount field triggers Get Quote
+    els.amount.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); els.confirm.click(); }
+    });
 
     els.confirm.addEventListener('click', function () {
       if (!lastQuote) fetchQuote();
       else executeSwap();
     });
 
-    // delegated buy/sell from coin cards
+    // delegated buy/sell from coin cards. Use capture-phase + preventDefault
+    // so the click does not also follow the parent <a class="coin-card">.
     document.addEventListener('click', function (e) {
       var btn = e.target && e.target.closest && e.target.closest('[data-trade]');
       if (!btn) return;
@@ -314,14 +320,7 @@
       try { coin = JSON.parse(card.getAttribute('data-coin')); } catch (_e) { coin = null; }
       if (!coin) return;
       openTrade(coin, btn.getAttribute('data-trade'));
-    });
-
-    // react to wallet connect/disconnect to enable/disable confirm
-    if (window.SMHWallet && typeof window.SMHWallet.on === 'function') {
-      window.SMHWallet.on(function (snap) {
-        if (!modal.hidden) els.confirm.disabled = !snap.connected;
-      });
-    }
+    }, true);
   }
 
   window.SMHTrade = { open: openTrade, close: closeTrade };
