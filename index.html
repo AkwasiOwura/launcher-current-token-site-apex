@@ -52,6 +52,38 @@
     </div>
   </div>
 
+  <!-- Connected-wallet details modal -->
+  <div id="wallet-details-modal" class="modal-root" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="wallet-details-title">
+      <span class="cyber-corner-tl" aria-hidden="true"></span>
+      <span class="cyber-corner-br" aria-hidden="true"></span>
+      <header class="modal-head">
+        <h3 id="wallet-details-title">Wallet</h3>
+        <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
+      </header>
+      <div class="wallet-details">
+        <div class="wallet-detail-row">
+          <span class="wallet-detail-label">Adapter</span>
+          <strong id="wallet-details-adapter">—</strong>
+        </div>
+        <div class="wallet-detail-row">
+          <span class="wallet-detail-label">Address</span>
+          <code id="wallet-details-address" class="wallet-detail-address">—</code>
+        </div>
+        <div class="wallet-detail-row">
+          <span class="wallet-detail-label">SOL balance</span>
+          <strong id="wallet-details-balance">—</strong>
+        </div>
+        <div class="wallet-detail-actions">
+          <button id="wallet-copy-btn"       type="button" class="trade-btn-cancel">Copy address</button>
+          <button id="wallet-refresh-btn"    type="button" class="trade-btn-cancel">Refresh balance</button>
+          <button id="wallet-disconnect-btn" type="button" class="trade-btn-confirm wallet-disconnect">Disconnect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Trade modal -->
   <div id="trade-modal" class="modal-root" hidden aria-hidden="true">
     <div class="modal-backdrop" data-modal-close></div>

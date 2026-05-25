@@ -1502,6 +1502,29 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .trade-btn-confirm:hover:not([disabled]){background:rgba(22,242,139,.22);color:var(--text)}
 .trade-btn-confirm[disabled]{opacity:.55;cursor:not-allowed}
 
+.wallet-details{display:flex;flex-direction:column;gap:10px}
+.wallet-detail-row{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:11px 12px;background:rgba(8,18,12,.5);border:1px solid var(--border);
+}
+.wallet-detail-label{
+  color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+}
+.wallet-detail-row strong{font-weight:800;font-variant-numeric:tabular-nums}
+.wallet-detail-address{
+  font-family:var(--mono);font-size:12px;color:var(--mint);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;
+}
+.wallet-detail-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;
+}
+.wallet-detail-actions .trade-btn-cancel,
+.wallet-detail-actions .trade-btn-confirm{padding:10px 12px;font-size:12px;letter-spacing:.12em}
+.wallet-detail-actions .wallet-disconnect{
+  grid-column:1 / -1;color:#ff6464;border-color:rgba(255,100,100,.55);background:rgba(255,100,100,.10);
+}
+.wallet-detail-actions .wallet-disconnect:hover{background:rgba(255,100,100,.22);color:var(--text)}
+
 @media (max-width:840px){
   .nav{flex-wrap:wrap}
   .wallet-btn{margin-left:0}

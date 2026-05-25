@@ -158,6 +158,26 @@
     throw new Error('Wallet does not support transaction signing.');
   }
 
+  // Live SOL balance via mainnet RPC (no key). Returns SOL as a Number.
+  var RPC_BALANCE_URL = 'https://api.mainnet-beta.solana.com';
+  async function fetchSolBalance() {
+    if (!state.address) throw new Error('Wallet not connected.');
+    var resp = await fetch(RPC_BALANCE_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'getBalance',
+        params: [state.address, { commitment: 'confirmed' }]
+      })
+    });
+    if (!resp.ok) throw new Error('RPC ' + resp.status);
+    var j = await resp.json();
+    if (j && j.error) throw new Error(j.error.message || 'RPC error');
+    var lamports = j && j.result && (typeof j.result.value === 'number' ? j.result.value : j.result);
+    if (!Number.isFinite(Number(lamports))) throw new Error('RPC: unexpected balance response');
+    return Number(lamports) / 1e9;
+  }
+
   // Best-effort silent reconnect on page load.
   async function autoReconnect() {
     var last;
@@ -172,7 +192,19 @@
     connect: connect,
     disconnect: disconnect,
     signAndSend: signAndSend,
-    getState: function () { return Object.assign({}, state, { shortAddress: state.address ? shortAddr(state.address) : null }); },
+    getState: function () {
+      return {
+        connected: !!state.publicKey,
+        adapter: state.adapter,
+        adapterId: state.adapter ? state.adapter.id : null,
+        adapterName: state.adapter ? state.adapter.name : null,
+        provider: state.provider,
+        publicKey: state.publicKey,
+        address: state.address,
+        shortAddress: state.address ? shortAddr(state.address) : null
+      };
+    },
+    fetchSolBalance: fetchSolBalance,
     on: function (fn) { if (typeof fn === 'function') listeners.push(fn); return function () { listeners = listeners.filter(function (x) { return x !== fn; }); }; },
     shortAddr: shortAddr,
     adapters: ADAPTERS
@@ -222,7 +254,7 @@
 
     btn.addEventListener('click', function () {
       if (api.getState().connected) {
-        if (confirm('Disconnect wallet ' + api.getState().shortAddress + '?')) api.disconnect();
+        openDetails();
         return;
       }
       openModal();
@@ -247,6 +279,77 @@
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+
+    // ── Wallet details modal ───────────────────────────────────────
+    var detailsModal = document.getElementById('wallet-details-modal');
+    var dAdapter    = document.getElementById('wallet-details-adapter');
+    var dAddress    = document.getElementById('wallet-details-address');
+    var dBalance    = document.getElementById('wallet-details-balance');
+    var copyBtn     = document.getElementById('wallet-copy-btn');
+    var refreshBtn  = document.getElementById('wallet-refresh-btn');
+    var disconBtn   = document.getElementById('wallet-disconnect-btn');
+
+    function paintDetails(snap) {
+      if (!detailsModal) return;
+      if (!snap.connected) { closeDetails(); return; }
+      if (dAdapter) dAdapter.textContent = snap.adapterName || '—';
+      if (dAddress) { dAddress.textContent = snap.address || '—'; dAddress.title = snap.address || ''; }
+    }
+
+    async function loadBalance() {
+      if (!dBalance) return;
+      dBalance.textContent = 'Loading…';
+      try {
+        var sol = await fetchSolBalance();
+        dBalance.textContent = (Math.round(sol * 10000) / 10000).toFixed(4) + ' SOL';
+      } catch (err) {
+        dBalance.textContent = 'Unavailable (' + (err && err.message ? err.message : 'rpc error') + ')';
+      }
+    }
+
+    function openDetails() {
+      if (!detailsModal) return;
+      paintDetails(api.getState());
+      detailsModal.hidden = false;
+      detailsModal.setAttribute('aria-hidden', 'false');
+      loadBalance();
+    }
+    function closeDetails() {
+      if (!detailsModal) return;
+      detailsModal.hidden = true;
+      detailsModal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (detailsModal) {
+      detailsModal.addEventListener('click', function (e) {
+        var t = e.target;
+        if (t && t.matches && t.matches('[data-modal-close]')) closeDetails();
+      });
+    }
+
+    if (copyBtn) copyBtn.addEventListener('click', function () {
+      var addr = api.getState().address;
+      if (!addr) return;
+      var done = function () { copyBtn.textContent = 'Copied'; setTimeout(function () { copyBtn.textContent = 'Copy address'; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addr).then(done, function () { window.prompt('Copy address:', addr); });
+      } else {
+        window.prompt('Copy address:', addr);
+      }
+    });
+    if (refreshBtn) refreshBtn.addEventListener('click', loadBalance);
+    if (disconBtn)  disconBtn.addEventListener('click', function () {
+      api.disconnect().finally(closeDetails);
+    });
+
+    api.on(function (snap) {
+      // Live-paint the open details modal on account/disconnect events.
+      if (detailsModal && !detailsModal.hidden) paintDetails(snap);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && detailsModal && !detailsModal.hidden) closeDetails();
     });
 
     // attempt silent reconnect after providers have time to inject
