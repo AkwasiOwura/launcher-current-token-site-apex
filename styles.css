@@ -1418,7 +1418,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   border:1px solid var(--border);
   box-shadow:0 30px 80px rgba(0,0,0,.6);
 }
-#wallet-details-modal .modal-card{width:min(610px,calc(100% - 24px));padding:15px 15px 14px}
+#wallet-details-modal .modal-card{width:min(560px,calc(100% - 24px));padding:15px 15px 14px}
 .modal-card.trade-card{width:min(480px,calc(100% - 24px))}
 .modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 .modal-head h3{margin:0;font-size:18px;font-weight:900;letter-spacing:.005em}
@@ -1580,7 +1580,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .wallet-holdings-head strong{color:var(--mint);font-size:13px}
 .wallet-token-list{display:flex;flex-direction:column;gap:0;max-height:300px;overflow:auto;padding-right:2px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.12)}
 .wallet-token-row{
-  display:grid;grid-template-columns:38px minmax(0,1fr) minmax(95px,auto) 68px;gap:10px;align-items:start;
+  display:grid;grid-template-columns:38px minmax(0,1fr) minmax(88px,auto) 62px;gap:8px;align-items:start;
   padding:9px 8px;color:#fff;text-decoration:none;border-top:1px solid rgba(255,255,255,.055);
 }
 .wallet-token-row:first-child{border-top:0}
