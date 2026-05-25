@@ -690,10 +690,11 @@
         return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
-            '<button class="wallet-token-mint" type="button" data-mint="' + escapeHtml(token.mint) + '" title="Copy contract address">' + escapeHtml(mintLabel) + '</button></span>' +
+            '<span class="wallet-token-contract"><button class="wallet-token-mint" type="button" data-mint="' + escapeHtml(token.mint) + '" title="Copy contract address">' + escapeHtml(mintLabel) + '</button>' +
+            '<a class="wallet-token-solscan" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer" title="Open on Solscan">↗</a></span></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
             (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
-          '</span><span class="wallet-token-arrow">›</span></a>';
+          '</span></a>';
       }).join('');
     }
 
@@ -755,6 +756,10 @@
       api.disconnect().finally(closeDetails);
     });
     if (tokenList) tokenList.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('.wallet-token-solscan')) {
+        e.stopPropagation();
+        return;
+      }
       var btn = e.target && e.target.closest && e.target.closest('.wallet-token-mint');
       if (!btn) return;
       e.preventDefault();
