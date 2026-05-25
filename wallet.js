@@ -26,8 +26,12 @@
     'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
   ];
   var JUP_PRICE_URL = 'https://lite-api.jup.ag/price/v3?ids=';
+  var JUP_QUOTE_URL = 'https://lite-api.jup.ag/swap/v1/quote';
+  var JUP_SWAP_URL = 'https://lite-api.jup.ag/swap/v1/swap';
   var WALLET_PORTFOLIO_ENDPOINT = 'https://solmemehub-kolscan-proxy.solmemehub.workers.dev/api/wallet/portfolio/';
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
+  var TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+  var TOKEN_2022_PROGRAM_ID = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
   var metadataCache = null;
   var lastRpcUrl = null;
   var previousTokenValues = Object.create(null);
@@ -205,21 +209,26 @@
   }
 
   async function disconnect() {
+    var provider = state.provider;
+    var address = state.address;
+    handleDisconnect();
+    if (address) clearStoredConsent(address);
     try {
-      if (state.provider && typeof state.provider.disconnect === 'function') {
-        await state.provider.disconnect();
+      if (provider && typeof provider.disconnect === 'function') {
+        await provider.disconnect();
       }
     } catch (_e) {}
-    handleDisconnect();
   }
 
   function handleDisconnect() {
+    var address = state.address;
     state.adapter = null;
     state.provider = null;
     state.publicKey = null;
     state.address = null;
     state.consent = null;
     try { localStorage.removeItem(STORAGE_KEY); } catch (_e) {}
+    if (address) clearStoredConsent(address);
     emit();
   }
 
@@ -402,6 +411,9 @@
         amount: uiAmount,
         rawAmount: rawAmount,
         decimals: amount && amount.decimals,
+        state: info && info.state,
+        owner: info && info.owner,
+        tokenProgram: entry && entry.account && entry.account.owner && entry.account.owner.toString ? entry.account.owner.toString() : entry && entry.account && entry.account.owner,
         account: entry && entry.pubkey && entry.pubkey.toString ? entry.pubkey.toString() : entry && entry.pubkey
       };
     }).filter(function (token) {
@@ -461,6 +473,10 @@
       mint: mint,
       amount: amount,
       decimals: token.decimals,
+      rawAmount: token.rawAmount != null ? String(token.rawAmount) : null,
+      account: token.account || token.tokenAccount || null,
+      tokenProgram: token.tokenProgram || null,
+      state: token.state || null,
       name: token.name || shortAddr(mint),
       symbol: String(token.symbol || '').replace(/^\$/, '').toUpperCase() || shortAddr(mint),
       imageUrl: token.imageUrl || token.image || '',
@@ -501,10 +517,184 @@
 
   async function fetchWalletPortfolio() {
     try {
-      return await fetchIndexedWalletPortfolio();
+      var indexed = await fetchIndexedWalletPortfolio();
+      try {
+        var chain = await fetchTokenAccounts();
+        var byMint = Object.create(null);
+        chain.forEach(function (token) { if (!byMint[token.mint]) byMint[token.mint] = token; });
+        indexed.tokens = indexed.tokens.map(function (token) {
+          var live = byMint[token.mint];
+          return live ? Object.assign({}, token, {
+            amount: live.amount,
+            rawAmount: live.rawAmount,
+            decimals: live.decimals,
+            account: live.account,
+            tokenProgram: live.tokenProgram,
+            state: live.state,
+            owner: live.owner
+          }) : token;
+        });
+      } catch (_chainErr) {}
+      return indexed;
     } catch (err) {
-      throw new Error('Wallet portfolio unavailable: ' + (err && err.message ? err.message : err));
+      try {
+        var accounts = await fetchTokenAccounts();
+        var meta = await loadLocalMetadata();
+        var prices = await fetchTokenPrices(accounts.map(function (token) { return token.mint; }));
+        return {
+          sol: await fetchSolBalance().catch(function () { return NaN; }),
+          solUsdValue: null,
+          tokens: accounts.map(function (token) {
+            var item = meta[token.mint] || {};
+            var price = prices[token.mint];
+            return Object.assign({}, token, {
+              name: item.name || shortAddr(token.mint),
+              symbol: item.symbol || shortAddr(token.mint),
+              imageUrl: item.imageUrl || '',
+              url: item.url || ('https://solscan.io/token/' + token.mint),
+              usdValue: Number.isFinite(price) ? price * token.amount : null
+            });
+          }),
+          tokenError: null,
+          rpcUrl: lastRpcUrl || 'public rpc',
+          updatedAt: Date.now()
+        };
+      } catch (fallbackErr) {
+        throw new Error('Wallet portfolio unavailable: ' + (fallbackErr && fallbackErr.message ? fallbackErr.message : err && err.message ? err.message : err));
+      }
     }
+  }
+
+  function isValidMint(s) {
+    return typeof s === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
+  }
+
+  function solscanTx(signature) {
+    return 'https://solscan.io/tx/' + encodeURIComponent(signature);
+  }
+
+  function rawAmountToUi(rawAmount, decimals) {
+    return lamportsToUiAmount(rawAmount, decimals);
+  }
+
+  async function getJupiterSellQuote(token) {
+    if (!token || !isValidMint(token.mint)) throw new Error('Token mint is invalid.');
+    if (!/^\d+$/.test(String(token.rawAmount || ''))) throw new Error('Live raw token balance is required before selling.');
+    if (String(token.rawAmount) === '0') throw new Error('Token balance is already zero.');
+    if (String(token.state || '').toLowerCase() === 'frozen') throw new Error('Token account is frozen. Sell All is blocked.');
+    var url = JUP_QUOTE_URL
+      + '?inputMint=' + encodeURIComponent(token.mint)
+      + '&outputMint=' + encodeURIComponent(SOL_MINT)
+      + '&amount=' + encodeURIComponent(String(token.rawAmount))
+      + '&slippageBps=100';
+    var resp = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
+    if (!resp.ok) {
+      var body = await resp.text();
+      throw new Error('Jupiter quote ' + resp.status + ': ' + body.slice(0, 200));
+    }
+    var quote = await resp.json();
+    if (!quote || !quote.outAmount) throw new Error('Jupiter returned no sell quote.');
+    return quote;
+  }
+
+  async function confirmSignature(connection, signature) {
+    var latest = await connection.getLatestBlockhash('confirmed');
+    var confirmation = await connection.confirmTransaction({
+      signature: signature,
+      blockhash: latest.blockhash,
+      lastValidBlockHeight: latest.lastValidBlockHeight
+    }, 'confirmed');
+    if (!confirmation || !confirmation.value) throw new Error('Transaction confirmation returned no result.');
+    if (confirmation.value.err) throw new Error('Transaction failed on-chain: ' + JSON.stringify(confirmation.value.err));
+    return confirmation;
+  }
+
+  async function fetchTokenAccountRawAmount(account) {
+    var result = await rpcRequest({
+      jsonrpc: '2.0', id: 'token-account-check', method: 'getTokenAccountBalance',
+      params: [account, { commitment: 'confirmed' }]
+    }, TOKEN_RPC_URLS);
+    return result && result.value && result.value.amount != null ? String(result.value.amount) : null;
+  }
+
+  async function closeEmptyTokenAccount(token, connection) {
+    if (!window.solanaWeb3) throw new Error('Solana web3 library failed to load.');
+    if (!token.account) throw new Error('Rent reclaim blocked: token account address is missing.');
+    if (token.tokenProgram !== TOKEN_PROGRAM_ID) {
+      if (token.tokenProgram === TOKEN_2022_PROGRAM_ID) {
+        throw new Error('Rent reclaim blocked: Token-2022 close-account support requires extension-aware handling.');
+      }
+      throw new Error('Rent reclaim blocked: unsupported token program ' + (token.tokenProgram || 'unknown') + '.');
+    }
+    var remaining = await fetchTokenAccountRawAmount(token.account);
+    if (remaining !== '0') throw new Error('Rent reclaim blocked: token account balance is not zero.');
+
+    var wallet = api.getState();
+    var tokenProgram = new window.solanaWeb3.PublicKey(TOKEN_PROGRAM_ID);
+    var tokenAccount = new window.solanaWeb3.PublicKey(token.account);
+    var owner = new window.solanaWeb3.PublicKey(wallet.address);
+    var closeIx = new window.solanaWeb3.TransactionInstruction({
+      programId: tokenProgram,
+      keys: [
+        { pubkey: tokenAccount, isSigner: false, isWritable: true },
+        { pubkey: owner, isSigner: false, isWritable: true },
+        { pubkey: owner, isSigner: true, isWritable: false }
+      ],
+      data: new Uint8Array([9])
+    });
+    var latest = await connection.getLatestBlockhash('confirmed');
+    var tx = new window.solanaWeb3.Transaction({
+      feePayer: owner,
+      recentBlockhash: latest.blockhash
+    }).add(closeIx);
+    var sig = await signAndSend(tx, connection);
+    await confirmSignature(connection, sig);
+    return sig;
+  }
+
+  async function executeSellAll(token, quote, onStatus) {
+    if (!window.solanaWeb3) throw new Error('Solana web3 library failed to load.');
+    if (!consentSigned()) throw new Error('Wallet authentication is required before selling.');
+    var wallet = api.getState();
+    if (!wallet.connected || !wallet.address) throw new Error('Wallet is not connected.');
+    var connection = new window.solanaWeb3.Connection(RPC_URLS[0], 'confirmed');
+    onStatus('info', 'Building Jupiter sell transaction...');
+    var swapResp = await fetch(JUP_SWAP_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        quoteResponse: quote,
+        userPublicKey: wallet.address,
+        wrapAndUnwrapSol: true,
+        dynamicComputeUnitLimit: true,
+        prioritizationFeeLamports: 'auto'
+      })
+    });
+    if (!swapResp.ok) {
+      var body = await swapResp.text();
+      throw new Error('Jupiter swap ' + swapResp.status + ': ' + body.slice(0, 200));
+    }
+    var swap = await swapResp.json();
+    if (!swap.swapTransaction) throw new Error('Jupiter returned no swap transaction.');
+    var swBytes = atob(swap.swapTransaction);
+    var raw = new Uint8Array(swBytes.length);
+    for (var i = 0; i < swBytes.length; i += 1) raw[i] = swBytes.charCodeAt(i);
+    var tx = window.solanaWeb3.VersionedTransaction.deserialize(raw);
+
+    onStatus('info', 'Awaiting wallet approval...');
+    var sellSig = await signAndSend(tx, connection);
+    onStatus('info', 'Sell submitted. Confirming on-chain...', solscanTx(sellSig));
+    await confirmSignature(connection, sellSig);
+
+    var closeSig = null;
+    var closeBlocked = '';
+    try {
+      onStatus('info', 'Sell confirmed. Checking token account for rent reclaim...', solscanTx(sellSig));
+      closeSig = await closeEmptyTokenAccount(token, connection);
+    } catch (closeErr) {
+      closeBlocked = closeErr && closeErr.message ? closeErr.message : String(closeErr);
+    }
+    return { sellSignature: sellSig, closeSignature: closeSig, closeBlocked: closeBlocked };
   }
 
   // Best-effort silent reconnect on page load.
@@ -651,6 +841,10 @@
     var solscanLink = document.getElementById('wallet-solscan-link');
     var consentBtn  = document.getElementById('wallet-consent-btn');
     var disconBtn   = document.getElementById('wallet-disconnect-btn');
+    var currentPortfolioTokens = [];
+    var sellAllBusy = false;
+    var sellAllModal = null;
+    var sellAllEls = null;
 
     function paintDetails(snap) {
       if (!detailsModal) return;
@@ -684,11 +878,13 @@
       if (!tokenList || !tokenCount) return;
       tokenCount.textContent = tokens.length + (tokens.length === 1 ? ' Token' : ' Tokens');
       if (!tokens.length) {
+        currentPortfolioTokens = [];
         tokenList.innerHTML = '<div class="wallet-token-empty">No SPL token balances found.</div>';
         return;
       }
       var nextValues = Object.create(null);
-      tokenList.innerHTML = tokens.map(function (token) {
+      currentPortfolioTokens = tokens.slice();
+      tokenList.innerHTML = tokens.map(function (token, index) {
         var mintLabel = shortAddr(token.mint);
         var valueTone = ' value-neutral';
         if (Number.isFinite(token.changeUsd) && token.changeUsd !== 0) valueTone = token.changeUsd > 0 ? ' value-up' : ' value-down';
@@ -697,6 +893,7 @@
           valueTone = token.usdValue > previousTokenValues[token.mint] ? ' value-up' : ' value-down';
         }
         if (Number.isFinite(token.usdValue)) nextValues[token.mint] = token.usdValue;
+        var sellReady = !!(token.account && token.rawAmount && token.rawAmount !== '0');
         return '<div class="wallet-token-row">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
@@ -704,7 +901,7 @@
             '<a class="wallet-token-solscan" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer" title="Open on Solscan">↗</a></span></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
             (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
-          '</span><button class="wallet-token-sell-all" type="button" disabled title="Sell All coming soon">Sell All</button></div>';
+          '</span><button class="wallet-token-sell-all" type="button" data-token-index="' + index + '"' + (sellReady ? ' title="Sell full balance to SOL"' : ' disabled title="Live token account details required"') + '>Sell All</button></div>';
       }).join('');
       previousTokenValues = nextValues;
     }
@@ -742,6 +939,117 @@
       detailsModal.setAttribute('aria-hidden', 'true');
     }
 
+    function ensureSellAllModal() {
+      if (sellAllModal) return;
+      sellAllModal = document.createElement('div');
+      sellAllModal.id = 'wallet-sell-all-modal';
+      sellAllModal.className = 'modal-root';
+      sellAllModal.hidden = true;
+      sellAllModal.setAttribute('aria-hidden', 'true');
+      sellAllModal.innerHTML =
+        '<div class="modal-backdrop" data-sell-all-close></div>' +
+        '<div class="modal-card sell-all-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="sell-all-title">' +
+          '<span class="cyber-corner-tl" aria-hidden="true"></span>' +
+          '<span class="cyber-corner-br" aria-hidden="true"></span>' +
+          '<header class="modal-head"><h3 id="sell-all-title">Sell All</h3><button class="modal-close" type="button" data-sell-all-close aria-label="Close">×</button></header>' +
+          '<div class="sell-all-summary">' +
+            '<strong id="sell-all-token">Token</strong>' +
+            '<span id="sell-all-amount">Amount: —</span>' +
+            '<span id="sell-all-receive">Estimated receive: —</span>' +
+          '</div>' +
+          '<p class="sell-all-warning">This sells the full token balance to SOL using Jupiter. Meme tokens are volatile and the wallet must approve the transaction.</p>' +
+          '<div id="sell-all-status" class="trade-status" hidden></div>' +
+          '<div class="trade-actions"><button class="trade-btn-cancel" type="button" data-sell-all-close>Cancel</button><button class="trade-btn-confirm" id="sell-all-confirm" type="button" disabled>Confirm Sell All</button></div>' +
+        '</div>';
+      document.body.appendChild(sellAllModal);
+      sellAllEls = {
+        token: sellAllModal.querySelector('#sell-all-token'),
+        amount: sellAllModal.querySelector('#sell-all-amount'),
+        receive: sellAllModal.querySelector('#sell-all-receive'),
+        status: sellAllModal.querySelector('#sell-all-status'),
+        confirm: sellAllModal.querySelector('#sell-all-confirm')
+      };
+      sellAllModal.addEventListener('click', function (event) {
+        var t = event.target;
+        if (t && t.matches && t.matches('[data-sell-all-close]') && !sellAllBusy) closeSellAllModal();
+      });
+    }
+
+    function setSellAllStatus(kind, text, link) {
+      if (!sellAllEls || !sellAllEls.status) return;
+      sellAllEls.status.hidden = !text;
+      if (!text) { sellAllEls.status.className = 'trade-status'; sellAllEls.status.innerHTML = ''; return; }
+      sellAllEls.status.className = 'trade-status is-' + kind;
+      sellAllEls.status.innerHTML = escapeHtml(text) + (link ? ' <a href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">View on Solscan ↗</a>' : '');
+    }
+
+    function closeSellAllModal() {
+      if (!sellAllModal) return;
+      sellAllModal.hidden = true;
+      sellAllModal.setAttribute('aria-hidden', 'true');
+    }
+
+    async function openSellAllModal(token) {
+      ensureSellAllModal();
+      var snap = api.getState();
+      if (!snap.connected) { alert('Connect wallet before selling.'); return; }
+      if (!token || !token.account || !token.rawAmount) {
+        alert('Sell All blocked: live token account details are required.');
+        return;
+      }
+      sellAllModal.hidden = false;
+      sellAllModal.setAttribute('aria-hidden', 'false');
+      sellAllEls.token.textContent = token.name || token.symbol || shortAddr(token.mint);
+      sellAllEls.amount.textContent = 'Amount: ' + fmtAmount(rawAmountToUi(token.rawAmount, token.decimals), 6) + ' ' + String(token.symbol || 'TOKEN').toUpperCase();
+      sellAllEls.receive.textContent = 'Estimated receive: loading…';
+      sellAllEls.confirm.disabled = true;
+      if (!snap.consentSigned) {
+        setSellAllStatus('info', 'Awaiting wallet authentication…');
+        try {
+          await api.signConsent();
+        } catch (err) {
+          if (err && err.code === 'USER_REJECTED') setSellAllStatus('warn', 'Authentication rejected — signature required before selling.');
+          else setSellAllStatus('error', 'Authentication failed: ' + (err && err.message ? err.message : err));
+          return;
+        }
+      }
+      setSellAllStatus('info', 'Fetching full-balance Jupiter quote…');
+      try {
+        var quote = await getJupiterSellQuote(token);
+        var outSol = Number(quote.outAmount) / 1e9;
+        sellAllEls.receive.textContent = 'Estimated receive: ' + fmtAmount(outSol, 6) + ' SOL';
+        setSellAllStatus('warn', 'Quote ready. Confirm only if you want to sell the full balance.');
+        sellAllEls.confirm.disabled = false;
+        sellAllEls.confirm.onclick = async function () {
+          if (sellAllBusy) return;
+          sellAllBusy = true;
+          sellAllEls.confirm.disabled = true;
+          try {
+            var result = await executeSellAll(token, quote, setSellAllStatus);
+            var message = 'Sell confirmed.';
+            if (result.closeSignature) {
+              message += ' Empty token account closed and rent reclaim submitted.';
+            } else if (result.closeBlocked) {
+              message += ' ' + result.closeBlocked;
+            }
+            setSellAllStatus('ok', message, solscanTx(result.sellSignature));
+            refreshPortfolio();
+            [2500, 6500, 12000].forEach(function (delay) { setTimeout(refreshPortfolio, delay); });
+          } catch (err) {
+            var msg = err && err.message ? err.message : String(err);
+            if (/reject|denied|user|cancel/i.test(msg)) setSellAllStatus('warn', 'Transaction rejected in wallet.');
+            else setSellAllStatus('error', msg);
+          } finally {
+            sellAllBusy = false;
+            sellAllEls.confirm.disabled = false;
+          }
+        };
+      } catch (err) {
+        sellAllEls.receive.textContent = 'Estimated receive: unavailable';
+        setSellAllStatus('error', err && err.message ? err.message : String(err));
+      }
+    }
+
     if (detailsModal) {
       detailsModal.addEventListener('click', function (e) {
         var t = e.target;
@@ -764,7 +1072,8 @@
       });
     });
     if (disconBtn)  disconBtn.addEventListener('click', function () {
-      api.disconnect().finally(closeDetails);
+      closeDetails();
+      api.disconnect();
     });
     if (dAddress) dAddress.addEventListener('click', function () {
       var address = dAddress.getAttribute('data-address') || api.getState().address || '';
@@ -788,6 +1097,10 @@
       if (e.target && e.target.closest && e.target.closest('.wallet-token-sell-all')) {
         e.preventDefault();
         e.stopPropagation();
+        var sellBtn = e.target.closest('.wallet-token-sell-all');
+        var index = Number(sellBtn.getAttribute('data-token-index'));
+        var token = currentPortfolioTokens[index];
+        if (token) openSellAllModal(token);
         return;
       }
       var btn = e.target && e.target.closest && e.target.closest('.wallet-token-mint');

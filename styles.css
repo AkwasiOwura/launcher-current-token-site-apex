@@ -1861,9 +1861,28 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .wallet-solscan-link{display:none}
 .wallet-token-sell-all{
   align-self:start;justify-self:end;padding:5px 8px;border:1px solid #ff3b3b;background:rgba(255,59,59,.05);
-  color:#ff4d4d;font-size:10px;font-weight:900;cursor:not-allowed;
+  color:#ff4d4d;font-size:10px;font-weight:900;cursor:pointer;
 }
-.wallet-token-sell-all:disabled{opacity:1}
+.wallet-token-sell-all:hover{background:rgba(255,59,59,.16);color:#fff}
+.wallet-token-sell-all:disabled{opacity:.5;cursor:not-allowed}
+.wallet-token-sell-all:disabled:hover{background:rgba(255,59,59,.05);color:#ff4d4d}
+.sell-all-card{width:min(500px,calc(100% - 24px))}
+.sell-all-summary{
+  display:grid;
+  gap:8px;
+  padding:12px 14px;
+  margin:0 0 12px;
+  border:1px solid var(--border);
+  background:rgba(8,18,12,.5);
+}
+.sell-all-summary strong{font-size:16px}
+.sell-all-summary span{color:var(--muted);font-family:var(--mono);font-size:12px}
+.sell-all-warning{
+  margin:0 0 12px;
+  color:#ffcf5a;
+  font-size:12px;
+  line-height:1.45;
+}
 .wallet-detail-row{
   display:flex;justify-content:space-between;align-items:center;gap:10px;
   padding:11px 12px;background:rgba(8,18,12,.5);border:1px solid var(--border);
