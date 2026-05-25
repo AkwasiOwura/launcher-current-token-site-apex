@@ -464,7 +464,9 @@
       symbol: String(token.symbol || '').replace(/^\$/, '').toUpperCase() || shortAddr(mint),
       imageUrl: token.imageUrl || token.image || '',
       url: token.url || ('https://solscan.io/token/' + mint),
-      usdValue: Number.isFinite(Number(token.usdValue != null ? token.usdValue : token.value)) ? Number(token.usdValue != null ? token.usdValue : token.value) : null
+      usdValue: Number.isFinite(Number(token.usdValue != null ? token.usdValue : token.value)) ? Number(token.usdValue != null ? token.usdValue : token.value) : null,
+      changeUsd: Number.isFinite(Number(token.changeUsd)) ? Number(token.changeUsd) : null,
+      changePercent: Number.isFinite(Number(token.changePercent)) ? Number(token.changePercent) : null
     };
   }
 
@@ -480,7 +482,12 @@
       throw new Error(message || ('Wallet portfolio API ' + resp.status));
     }
     var data = payload.data || {};
-    var tokens = (Array.isArray(data.tokens) ? data.tokens : []).map(normalizeIndexedToken).filter(Boolean);
+    var tokens = (Array.isArray(data.tokens) ? data.tokens : []).map(normalizeIndexedToken).filter(Boolean).sort(function (a, b) {
+      var av = Number.isFinite(a.usdValue) ? a.usdValue : null;
+      var bv = Number.isFinite(b.usdValue) ? b.usdValue : null;
+      if (av !== null || bv !== null) return (bv || 0) - (av || 0);
+      return b.amount - a.amount;
+    });
     return {
       sol: Number(data.sol && data.sol.amount),
       solUsdValue: Number.isFinite(Number(data.sol && data.sol.usdValue)) ? Number(data.sol.usdValue) : null,
@@ -675,14 +682,17 @@
         tokenList.innerHTML = '<div class="wallet-token-empty">No SPL token balances found.</div>';
         return;
       }
-      tokenList.innerHTML = tokens.slice(0, 12).map(function (token) {
+      tokenList.innerHTML = tokens.map(function (token) {
         var mintLabel = shortAddr(token.mint);
-        var detail = mintLabel + (token.decimals != null ? ' · ' + token.decimals + ' dec' : '');
+        var valueTone = '';
+        if (Number.isFinite(token.changeUsd) && token.changeUsd !== 0) valueTone = token.changeUsd > 0 ? ' value-up' : ' value-down';
+        else if (Number.isFinite(token.changePercent) && token.changePercent !== 0) valueTone = token.changePercent > 0 ? ' value-up' : ' value-down';
         return '<a class="wallet-token-row" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer">' +
           tokenAvatar(token) +
-          '<span class="wallet-token-meta"><strong>' + escapeHtml(token.symbol) + '</strong><small title="' + escapeHtml(token.mint) + '">' + escapeHtml(token.name) + ' · ' + escapeHtml(detail) + '</small></span>' +
+          '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
+            '<button class="wallet-token-mint" type="button" data-mint="' + escapeHtml(token.mint) + '" title="Copy contract address">' + escapeHtml(mintLabel) + '</button></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
-            (Number.isFinite(token.usdValue) ? '<small>' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
+            (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
           '</span><span class="wallet-token-arrow">›</span></a>';
       }).join('');
     }
@@ -743,6 +753,27 @@
     });
     if (disconBtn)  disconBtn.addEventListener('click', function () {
       api.disconnect().finally(closeDetails);
+    });
+    if (tokenList) tokenList.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest && e.target.closest('.wallet-token-mint');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var mint = btn.getAttribute('data-mint') || '';
+      var original = btn.textContent;
+      function copied() {
+        btn.textContent = 'Copied';
+        btn.classList.add('is-copied');
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove('is-copied');
+        }, 1200);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mint).then(copied).catch(copied);
+      } else {
+        copied();
+      }
     });
 
     api.on(function (snap) {

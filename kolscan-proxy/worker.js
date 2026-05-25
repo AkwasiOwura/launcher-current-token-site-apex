@@ -156,6 +156,17 @@ function normalizeWalletToken(row, basicByMint) {
   if (!(amount > 0)) return null;
   const priceUsd = toNumber(row?.price?.usd) ?? toNumber(primaryPool?.price?.usd) ?? toNumber(basic?.price?.usd);
   const usdValue = toNumber(row?.value) ?? toNumber(basic.value) ?? (priceUsd !== null ? priceUsd * amount : null);
+  const changeUsd = toNumber(row?.change?.usd)
+    ?? toNumber(row?.changeUsd)
+    ?? toNumber(row?.profit)
+    ?? toNumber(row?.pnl)
+    ?? toNumber(row?.unrealized)
+    ?? null;
+  const changePercent = toNumber(row?.change?.percent)
+    ?? toNumber(row?.changePercent)
+    ?? toNumber(row?.priceChange24h)
+    ?? toNumber(primaryPool?.events?.['24h']?.priceChangePercentage)
+    ?? null;
   return {
     mint,
     amount,
@@ -165,6 +176,8 @@ function normalizeWalletToken(row, basicByMint) {
     imageUrl: token?.image || token?.imageUrl || token?.logoURI || null,
     usdValue,
     priceUsd,
+    changeUsd,
+    changePercent,
     url: `https://solscan.io/token/${mint}`
   };
 }
