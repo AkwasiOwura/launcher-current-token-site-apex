@@ -1198,7 +1198,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 }
 .footer-disclaimer-copy{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   gap:10px;
 }
 .footer-shield{
@@ -1214,10 +1214,10 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 }
 .footer-shield svg{width:22px;height:22px}
 .footer-disclaimer p{
-  margin-top:4px;
-  max-width:560px;
-  font-size:13px;
-  line-height:1.5;
+  margin-top:3px;
+  max-width:660px;
+  font-size:12.5px;
+  line-height:1.45;
 }
 .footer-powered{
   flex:0 0 auto;
