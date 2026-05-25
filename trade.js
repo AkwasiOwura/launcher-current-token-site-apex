@@ -69,6 +69,9 @@
 
   // ── modal state ──────────────────────────────────────────────────
   var modal, els, currentCoin, currentSide, lastQuote, busy = false;
+  var quoteSeq = 0;          // monotonic id to discard stale Jupiter responses
+  var quoteDebounceTimer = null;
+  var BUY_DEFAULT_SOL = 0.1; // pre-fill for BUY (denominated in SOL)
 
   function $(id) { return document.getElementById(id); }
 
@@ -82,13 +85,27 @@
       : '');
   }
 
+  function buyOrSellLabel() {
+    return currentSide === 'buy' ? 'Buy' : 'Sell';
+  }
+  function refreshConfirmState() {
+    var label = buyOrSellLabel().toUpperCase();
+    if (!connected()) {
+      els.confirm.textContent = currentSide === 'buy' ? 'Connect wallet to buy' : 'Connect wallet to sell';
+      els.confirm.disabled = true;
+      return;
+    }
+    if (busy)        { els.confirm.textContent = label; els.confirm.disabled = true;  return; }
+    if (!lastQuote)  { els.confirm.textContent = label; els.confirm.disabled = true;  return; }
+    els.confirm.textContent = label;
+    els.confirm.disabled = false;
+  }
   function resetQuoteDisplay() {
     els.receive.textContent = '—';
     els.route.textContent = '—';
     els.impact.textContent = '—';
-    els.confirm.textContent = 'Get quote';
-    els.confirm.disabled = false; // quote is always available; wallet only needed at swap
     lastQuote = null;
+    refreshConfirmState();
   }
 
   function connected() {
@@ -112,30 +129,44 @@
       .replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase() || '?';
     els.tokenLogo.textContent = initials;
     els.tokenLogo.style.backgroundImage = coin.imageUrl ? 'url("' + coin.imageUrl + '")' : 'none';
-    els.amount.value = '';
+    // Pre-fill BUY with a sensible default so the quote panel populates
+    // immediately on open. SELL has no safe default (we don't know the
+    // user's token balance), so leave it blank and let onChange drive it.
+    els.amount.value = currentSide === 'buy' ? String(BUY_DEFAULT_SOL) : '';
     els.amountLabel.textContent = currentSide === 'buy' ? 'Amount (SOL)' : 'Amount (' + (coin.symbol || 'TOKEN').toUpperCase() + ')';
     resetQuoteDisplay();
     setStatus('', '');
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
-    setTimeout(function () { els.amount.focus(); }, 60);
+    setTimeout(function () { els.amount.focus(); els.amount.select && els.amount.select(); }, 60);
+    if (currentSide === 'buy') scheduleQuote(0);
   }
   function closeTrade() {
     modal.hidden = true;
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  // ── Jupiter quote ────────────────────────────────────────────────
+  // ── Jupiter quote (auto, race-safe) ──────────────────────────────
+  function scheduleQuote(delayMs) {
+    if (quoteDebounceTimer) { clearTimeout(quoteDebounceTimer); quoteDebounceTimer = null; }
+    quoteDebounceTimer = setTimeout(fetchQuote, Number.isFinite(delayMs) ? delayMs : 350);
+  }
+
   async function fetchQuote() {
-    if (busy) return;
     if (!currentCoin) return;
+    if (modal.hidden) return;
     var amount = Number(els.amount.value);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setStatus('warn', 'Enter an amount above zero.');
+      lastQuote = null;
+      els.receive.textContent = '—';
+      els.route.textContent = '—';
+      els.impact.textContent = '—';
+      refreshConfirmState();
       return;
     }
+    var seq = ++quoteSeq;
     busy = true;
-    els.confirm.disabled = true;
+    refreshConfirmState();
     setStatus('info', 'Fetching live Jupiter quote…');
     try {
       var inputMint, outputMint, decimals;
@@ -148,6 +179,7 @@
         outputMint = SOL_MINT;
         decimals = await getDecimals(currentCoin.mint);
       }
+      if (seq !== quoteSeq) return; // stale: a newer quote was kicked off
       var rawAmount = Math.floor(amount * Math.pow(10, decimals));
       if (!Number.isFinite(rawAmount) || rawAmount <= 0) throw new Error('Amount too small.');
       var slip = Math.max(10, Math.min(5000, Number(els.slippage.value) || 100));
@@ -156,17 +188,21 @@
         + '&outputMint=' + encodeURIComponent(outputMint)
         + '&amount=' + rawAmount
         + '&slippageBps=' + slip;
-      var r = await fetch(url, { headers: { accept: 'application/json' } });
+      var r = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
+      if (seq !== quoteSeq) return;
       if (!r.ok) {
         var t = await r.text();
-        throw new Error('Jupiter quote ' + r.status + ': ' + t.slice(0, 200));
+        throw new Error('Jupiter ' + r.status + ': ' + t.slice(0, 200));
       }
       var quote = await r.json();
-      lastQuote = quote;
+      if (seq !== quoteSeq) return;
+      if (!quote || !quote.outAmount) throw new Error('Jupiter returned no quote.');
       var outDecimals = currentSide === 'buy' ? await getDecimals(currentCoin.mint) : SOL_DECIMALS;
+      if (seq !== quoteSeq) return;
+      lastQuote = quote;
       var outAmount = Number(quote.outAmount) / Math.pow(10, outDecimals);
       var outSym = currentSide === 'buy'
-        ? (currentCoin.symbol || 'TOKEN').toUpperCase()
+        ? (currentCoin.symbol || 'TOKEN').toUpperCase().replace(/^\$/, '')
         : 'SOL';
       els.receive.textContent = fmt(outAmount, 6) + ' ' + outSym;
       var hops = (quote.routePlan || []).map(function (h) {
@@ -175,26 +211,31 @@
       els.route.textContent = hops.length ? hops.join(' → ') : 'Jupiter';
       var impact = Number(quote.priceImpactPct);
       els.impact.textContent = Number.isFinite(impact) ? (impact * 100).toFixed(3) + '%' : '—';
-      els.confirm.textContent = 'Confirm ' + (currentSide === 'buy' ? 'Buy' : 'Sell');
-      els.confirm.disabled = false;
-      var connHint = connected() ? '' : ' Connect a wallet to sign.';
-      setStatus('ok', 'Quote ready.' + connHint);
+      setStatus(connected() ? 'ok' : 'warn',
+        connected() ? 'Quote ready.' : 'Quote ready — connect a wallet to sign.');
     } catch (err) {
+      if (seq !== quoteSeq) return;
       lastQuote = null;
-      els.confirm.textContent = 'Get quote';
+      els.receive.textContent = '—';
+      els.route.textContent = '—';
+      els.impact.textContent = '—';
       setStatus('error', 'Quote failed: ' + (err && err.message ? err.message : err));
     } finally {
-      busy = false;
+      if (seq === quoteSeq) {
+        busy = false;
+        refreshConfirmState();
+      }
     }
   }
 
   // ── Jupiter swap → wallet sign → RPC send ────────────────────────
   async function executeSwap() {
-    if (busy || !lastQuote) { fetchQuote(); return; }
-    if (!connected()) { setStatus('warn', 'Connect a wallet first.'); return; }
+    if (busy) return;
+    if (!lastQuote) { setStatus('warn', 'No quote loaded yet — change the amount to refresh.'); return; }
+    if (!connected()) { setStatus('warn', 'Connect a wallet first.'); refreshConfirmState(); return; }
     if (!window.solanaWeb3) { setStatus('error', 'Solana web3 library failed to load. Refresh the page.'); return; }
     busy = true;
-    els.confirm.disabled = true;
+    refreshConfirmState();
     setStatus('info', 'Building transaction…');
     try {
       var wallet = window.SMHWallet.getState();
@@ -239,7 +280,7 @@
       } catch (_confErr) {
         setStatus('ok', 'Trade submitted. Confirmation pending — check Solscan.', solscan);
       }
-      els.confirm.textContent = 'Done';
+      // success: refreshConfirmState() in finally will re-label the button
     } catch (err) {
       var msg = err && err.message ? err.message : String(err);
       if (/reject|denied|user|cancel/i.test(msg)) {
@@ -249,10 +290,9 @@
       } else {
         setStatus('error', 'Trade failed: ' + msg);
       }
-      els.confirm.textContent = 'Retry';
-      els.confirm.disabled = false;
     } finally {
       busy = false;
+      refreshConfirmState();
     }
   }
 
@@ -286,26 +326,43 @@
       if (e.key === 'Escape' && !modal.hidden && !busy) closeTrade();
     });
 
-    function onChangeDebounced() {
+    function onAmountInput() {
       lastQuote = null;
-      els.confirm.textContent = 'Get quote';
-      els.confirm.disabled = false; // can quote without a wallet
       els.receive.textContent = '—';
       els.route.textContent = '—';
       els.impact.textContent = '—';
-      setStatus('', '');
+      refreshConfirmState();
+      var amount = Number(els.amount.value);
+      if (Number.isFinite(amount) && amount > 0) {
+        setStatus('info', 'Fetching live Jupiter quote…');
+        scheduleQuote(350);
+      } else {
+        setStatus('', '');
+        if (quoteDebounceTimer) { clearTimeout(quoteDebounceTimer); quoteDebounceTimer = null; }
+      }
     }
-    els.amount.addEventListener('input', onChangeDebounced);
-    els.slippage.addEventListener('change', onChangeDebounced);
-    // pressing Enter inside the amount field triggers Get Quote
+    function onSlippageChange() {
+      if (!Number.isFinite(Number(els.amount.value)) || Number(els.amount.value) <= 0) return;
+      lastQuote = null;
+      refreshConfirmState();
+      setStatus('info', 'Fetching live Jupiter quote…');
+      scheduleQuote(150);
+    }
+    els.amount.addEventListener('input', onAmountInput);
+    els.slippage.addEventListener('change', onSlippageChange);
     els.amount.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); els.confirm.click(); }
+      if (e.key === 'Enter') { e.preventDefault(); if (lastQuote && connected()) executeSwap(); }
     });
 
     els.confirm.addEventListener('click', function () {
-      if (!lastQuote) fetchQuote();
-      else executeSwap();
+      if (!lastQuote || !connected() || busy) return;
+      executeSwap();
     });
+
+    // Re-render confirm state whenever wallet connects/disconnects.
+    if (window.SMHWallet && typeof window.SMHWallet.on === 'function') {
+      window.SMHWallet.on(function () { if (!modal.hidden) refreshConfirmState(); });
+    }
 
     // delegated buy/sell from coin cards. Use capture-phase + preventDefault
     // so the click does not also follow the parent <a class="coin-card">.
