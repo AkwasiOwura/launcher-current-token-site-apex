@@ -26,6 +26,7 @@
     'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
   ];
   var JUP_PRICE_URL = 'https://lite-api.jup.ag/price/v3?ids=';
+  var WALLET_PORTFOLIO_ENDPOINT = 'https://solmemehub-kolscan-proxy.solmemehub.workers.dev/api/wallet/portfolio/';
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
   var metadataCache = null;
   var lastRpcUrl = null;
@@ -450,37 +451,52 @@
     return prices;
   }
 
-  async function fetchWalletPortfolio() {
-    var sol = await fetchSolBalance();
-    var tokens = [];
-    var tokenError = null;
-    try {
-      tokens = await fetchTokenAccounts();
-    } catch (err) {
-      tokenError = err;
-    }
-    var meta = await loadLocalMetadata();
-    var priceIds = [SOL_MINT].concat(tokens.map(function (t) { return t.mint; }));
-    var prices = await fetchTokenPrices(priceIds);
-    tokens = tokens.map(function (token) {
-      var m = meta[token.mint] || {};
-      var price = prices[token.mint];
-      return {
-        mint: token.mint,
-        amount: token.amount,
-        decimals: token.decimals,
-        name: m.name || shortAddr(token.mint),
-        symbol: m.symbol || shortAddr(token.mint),
-        imageUrl: m.imageUrl || '',
-        url: m.url || ('https://solscan.io/token/' + token.mint),
-        usdValue: Number.isFinite(price) ? price * token.amount : null
-      };
-    }).sort(function (a, b) {
-      var av = Number.isFinite(a.usdValue) ? a.usdValue : 0;
-      var bv = Number.isFinite(b.usdValue) ? b.usdValue : 0;
-      return bv - av || b.amount - a.amount;
+  function normalizeIndexedToken(token) {
+    var mint = token && (token.mint || token.address);
+    if (!mint) return null;
+    var amount = Number(token.amount != null ? token.amount : token.balance);
+    if (!(amount > 0)) return null;
+    return {
+      mint: mint,
+      amount: amount,
+      decimals: token.decimals,
+      name: token.name || shortAddr(mint),
+      symbol: String(token.symbol || '').replace(/^\$/, '').toUpperCase() || shortAddr(mint),
+      imageUrl: token.imageUrl || token.image || '',
+      url: token.url || ('https://solscan.io/token/' + mint),
+      usdValue: Number.isFinite(Number(token.usdValue != null ? token.usdValue : token.value)) ? Number(token.usdValue != null ? token.usdValue : token.value) : null
+    };
+  }
+
+  async function fetchIndexedWalletPortfolio() {
+    if (!state.address) throw new Error('Wallet not connected.');
+    var resp = await fetch(WALLET_PORTFOLIO_ENDPOINT + encodeURIComponent(state.address), {
+      headers: { accept: 'application/json' },
+      cache: 'no-store'
     });
-    return { sol: sol, solUsdValue: Number.isFinite(prices[SOL_MINT]) ? prices[SOL_MINT] * sol : null, tokens: tokens, tokenError: tokenError, rpcUrl: lastRpcUrl, updatedAt: Date.now() };
+    var payload = await resp.json().catch(function () { return null; });
+    if (!resp.ok || !payload || payload.ok === false) {
+      var message = payload && (payload.message || payload.error || payload.upstreamBodyExcerpt);
+      throw new Error(message || ('Wallet portfolio API ' + resp.status));
+    }
+    var data = payload.data || {};
+    var tokens = (Array.isArray(data.tokens) ? data.tokens : []).map(normalizeIndexedToken).filter(Boolean);
+    return {
+      sol: Number(data.sol && data.sol.amount),
+      solUsdValue: Number.isFinite(Number(data.sol && data.sol.usdValue)) ? Number(data.sol.usdValue) : null,
+      tokens: tokens,
+      tokenError: null,
+      rpcUrl: payload.source || 'solana-tracker',
+      updatedAt: Date.now()
+    };
+  }
+
+  async function fetchWalletPortfolio() {
+    try {
+      return await fetchIndexedWalletPortfolio();
+    } catch (err) {
+      throw new Error('Wallet portfolio unavailable: ' + (err && err.message ? err.message : err));
+    }
   }
 
   // Best-effort silent reconnect on page load.
@@ -675,7 +691,7 @@
       if (!api.getState().connected) return;
       try {
         var portfolio = await fetchWalletPortfolio();
-        if (dBalance) dBalance.textContent = fmtAmount(portfolio.sol, 4) + ' SOL';
+        if (dBalance) dBalance.textContent = Number.isFinite(portfolio.sol) ? fmtAmount(portfolio.sol, 4) + ' SOL' : 'Unavailable';
         if (dUsd) dUsd.textContent = Number.isFinite(portfolio.solUsdValue) ? fmtUsd(portfolio.solUsdValue) + ' USD' : '';
         if (portfolio.tokenError) {
           if (tokenCount) tokenCount.textContent = 'Unavailable';

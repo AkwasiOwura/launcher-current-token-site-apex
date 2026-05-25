@@ -4,9 +4,11 @@ const TIMEOUT_MS = 12000;
 const ERROR_EXCERPT_LIMIT = 700;
 const WALLET_STATS_TTL_MS = 15 * 60 * 1000;
 const LAST_TRADE_TTL_MS = 10 * 60 * 1000;
+const WALLET_PORTFOLIO_TTL_MS = 30 * 1000;
 const walletStatsCache = new Map();
 const walletLastTradeCache = new Map();
 const leaderboardEnrichmentCache = new Map();
+const walletPortfolioCache = new Map();
 
 const ROUTES = [
   {
@@ -136,6 +138,135 @@ function tradeRows(payload) {
   if (Array.isArray(payload?.data?.trades)) return payload.data.trades;
   if (Array.isArray(payload?.data)) return payload.data;
   return [];
+}
+
+function isSolMint(mint) {
+  return mint === 'So11111111111111111111111111111111111111111'
+    || mint === 'So11111111111111111111111111111111111111112';
+}
+
+function normalizeWalletToken(row, basicByMint) {
+  const token = row?.token || row;
+  const pools = Array.isArray(row?.pools) ? row.pools : [];
+  const primaryPool = pools[0] || {};
+  const mint = token?.mint || token?.address || row?.address || row?.mint || primaryPool?.tokenAddress;
+  if (!mint) return null;
+  const basic = basicByMint.get(mint) || {};
+  const amount = toNumber(row?.balance) ?? toNumber(token?.balance) ?? toNumber(basic.balance);
+  if (!(amount > 0)) return null;
+  const priceUsd = toNumber(row?.price?.usd) ?? toNumber(primaryPool?.price?.usd) ?? toNumber(basic?.price?.usd);
+  const usdValue = toNumber(row?.value) ?? toNumber(basic.value) ?? (priceUsd !== null ? priceUsd * amount : null);
+  return {
+    mint,
+    amount,
+    decimals: toNumber(token?.decimals),
+    name: token?.name || null,
+    symbol: token?.symbol || null,
+    imageUrl: token?.image || token?.imageUrl || token?.logoURI || null,
+    usdValue,
+    priceUsd,
+    url: `https://solscan.io/token/${mint}`
+  };
+}
+
+async function fetchSolanaTrackerJson(path, env, timeoutMs = TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const upstream = await fetch(API_BASE + path, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'cache-control': 'no-cache',
+        'x-api-key': env.SOLANA_TRACKER_API_KEY
+      },
+      signal: controller.signal,
+      cf: { cacheTtl: 0, cacheEverything: false }
+    });
+    const text = await upstream.text();
+    if (!upstream.ok) {
+      const error = new Error('upstream_error');
+      error.status = upstream.status;
+      error.statusText = upstream.statusText;
+      error.bodyExcerpt = safeJsonExcerpt(text);
+      throw error;
+    }
+    return JSON.parse(text);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function walletPortfolioResponse(wallet, env, origin) {
+  const cached = walletPortfolioCache.get(wallet);
+  if (cached && Date.now() - cached.cachedAt < WALLET_PORTFOLIO_TTL_MS) {
+    return jsonResponse({ ...cached.body, cached: true }, 200, origin);
+  }
+  if (!env.SOLANA_TRACKER_API_KEY) {
+    return jsonResponse({ ok: false, error: 'missing_secret', message: 'Missing Cloudflare secret: SOLANA_TRACKER_API_KEY.' }, 500, origin);
+  }
+  try {
+    const basic = await fetchSolanaTrackerJson(`/wallet/${wallet}/basic`, env);
+    const basicTokens = Array.isArray(basic?.tokens) ? basic.tokens : [];
+    const basicByMint = new Map();
+    basicTokens.forEach((token) => {
+      const mint = token?.address || token?.mint;
+      if (mint) basicByMint.set(mint, token);
+    });
+
+    let page = 1;
+    let totalPages = 1;
+    let detailedRows = [];
+    do {
+      const pageData = await fetchSolanaTrackerJson(`/wallet/${wallet}/page/${page}`, env);
+      if (Array.isArray(pageData?.tokens)) detailedRows = detailedRows.concat(pageData.tokens);
+      totalPages = Math.max(1, Math.min(4, Number(pageData?.totalPages) || 1));
+      if (!pageData?.hasMore) break;
+      page += 1;
+    } while (page <= totalPages);
+
+    const sourceRows = detailedRows.length ? detailedRows : basicTokens;
+    const seen = new Set();
+    const tokens = sourceRows.map((row) => normalizeWalletToken(row, basicByMint)).filter(Boolean).filter((token) => {
+      if (isSolMint(token.mint) || seen.has(token.mint)) return false;
+      seen.add(token.mint);
+      return true;
+    }).sort((a, b) => {
+      const av = Number.isFinite(a.usdValue) ? a.usdValue : 0;
+      const bv = Number.isFinite(b.usdValue) ? b.usdValue : 0;
+      return bv - av || b.amount - a.amount;
+    });
+
+    const solToken = basicTokens.find((token) => isSolMint(token?.address || token?.mint));
+    const solAmount = toNumber(basic?.totalSol) ?? toNumber(solToken?.balance);
+    const solUsdValue = toNumber(solToken?.value);
+    const body = {
+      ok: true,
+      source: 'solana-tracker',
+      route: `/api/wallet/portfolio/${wallet}`,
+      updatedAt: new Date().toISOString(),
+      data: {
+        wallet,
+        sol: {
+          amount: solAmount,
+          usdValue: solUsdValue
+        },
+        totalUsd: toNumber(basic?.total),
+        tokenCount: tokens.length,
+        tokens
+      }
+    };
+    walletPortfolioCache.set(wallet, { cachedAt: Date.now(), body });
+    return jsonResponse(body, 200, origin);
+  } catch (error) {
+    return jsonResponse({
+      ok: false,
+      error: error && error.name === 'AbortError' ? 'timeout' : error?.message || 'request_failed',
+      upstreamStatus: error?.status || null,
+      upstreamBodyExcerpt: error?.bodyExcerpt || null,
+      message: error && error.name === 'AbortError' ? 'Solana Tracker wallet portfolio request timed out.' : 'Wallet portfolio request failed.'
+    }, error?.status ? 502 : 504, origin);
+  }
 }
 
 function deriveLastTrade(payload, wallet) {
@@ -341,6 +472,11 @@ export default {
     const lastTradeMatch = url.pathname.match(/^\/api\/kolscan\/wallet\/([1-9A-HJ-NP-Za-km-z]{32,44})\/last-trade\/?$/);
     if (lastTradeMatch) {
       return walletLastTradeResponse(lastTradeMatch[1], env, origin);
+    }
+
+    const portfolioMatch = url.pathname.match(/^\/api\/wallet\/portfolio\/([1-9A-HJ-NP-Za-km-z]{32,44})\/?$/);
+    if (portfolioMatch) {
+      return walletPortfolioResponse(portfolioMatch[1], env, origin);
     }
 
     const upstreamPath = resolveRoute(url.pathname, url.searchParams);
