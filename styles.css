@@ -1851,8 +1851,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   flex:0 0 auto;color:var(--mint);font-size:12px;line-height:1;text-decoration:none;display:inline-flex;align-items:center;
 }
 .wallet-token-solscan:hover{color:var(--mint)}
-.wallet-token-amount{text-align:right;font-variant-numeric:tabular-nums;align-self:start;padding-top:0}
-.wallet-token-amount small{font-size:11px;font-weight:900}
+.wallet-token-amount{text-align:right;font-variant-numeric:tabular-nums;align-self:start;padding-top:0;line-height:1}
+.wallet-token-amount strong{line-height:1.15}
+.wallet-token-amount small{font-size:11px;font-weight:900;line-height:1.15;margin-top:2px}
 .wallet-token-amount small.value-neutral{color:#ffcf5a}
 .wallet-token-amount .value-up{color:var(--mint)}
 .wallet-token-amount .value-down{color:#ff6464}
@@ -1860,8 +1861,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .wallet-token-empty{padding:12px 0;color:rgba(244,255,249,.7);font-size:12px}
 .wallet-solscan-link{display:none}
 .wallet-token-sell-all{
-  align-self:start;justify-self:end;padding:5px 8px;border:1px solid #ff3b3b;background:rgba(255,59,59,.05);
-  color:#ff4d4d;font-size:10px;font-weight:900;cursor:pointer;
+  align-self:start;justify-self:end;display:inline-flex;align-items:center;justify-content:center;
+  min-height:31px;padding:0 8px;border:1px solid #ff3b3b;background:rgba(255,59,59,.05);
+  color:#ff4d4d;font-size:10px;font-weight:900;line-height:1;cursor:pointer;
 }
 .wallet-token-sell-all:hover{background:rgba(255,59,59,.16);color:#fff}
 .wallet-token-sell-all:disabled{opacity:.5;cursor:not-allowed}
@@ -1929,5 +1931,5 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   .wallet-token-meta strong,.wallet-token-amount strong{font-size:15px}
   .wallet-token-mint{font-size:12px}
   .wallet-token-amount small{font-size:12px}
-  .wallet-token-sell-all{grid-column:3;grid-row:2;padding:6px 8px;font-size:11px}
+  .wallet-token-sell-all{grid-column:3;grid-row:2;min-height:34px;padding:0 8px;font-size:11px}
 }
