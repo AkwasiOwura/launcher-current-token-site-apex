@@ -223,9 +223,12 @@
       els.route.textContent = hops.length ? hops.join(' → ') : 'Jupiter';
       var impact = Number(quote.priceImpactPct);
       els.impact.textContent = Number.isFinite(impact) ? (impact * 100).toFixed(3) + '%' : '—';
-      if (!connected()) {
+      var snap = walletSnap();
+      if (!snap.connected) {
         setStatus('warn', 'Quote ready — connect a wallet to sign.');
-      } else if (!consentReady()) {
+      } else if (snap.consentPending) {
+        setStatus('info', 'Quote ready — awaiting wallet consent signature…');
+      } else if (!snap.consentSigned) {
         setStatus('warn', 'Quote ready — sign wallet consent to trade.');
       } else {
         setStatus('ok', 'Quote ready.');

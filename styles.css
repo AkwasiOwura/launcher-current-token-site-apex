@@ -1385,6 +1385,17 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 }
 .wallet-btn .wallet-dot.is-on{background:var(--mint);box-shadow:0 0 8px rgba(22,242,139,.7)}
 .wallet-btn.is-connected{font-family:var(--mono);font-size:12px;letter-spacing:.05em}
+.wallet-btn.is-pending,
+.wallet-btn.is-consent-required{
+  border-color:rgba(255,200,77,.55);
+  background:rgba(255,200,77,.08);
+  color:#ffcf5a;
+}
+.wallet-btn.is-pending .wallet-dot,
+.wallet-btn.is-consent-required .wallet-dot{
+  background:#ffcf5a;box-shadow:0 0 8px rgba(255,200,77,.6);
+  animation:pulse 1.6s ease-in-out infinite;
+}
 
 .modal-root{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
 .modal-root[hidden]{display:none}

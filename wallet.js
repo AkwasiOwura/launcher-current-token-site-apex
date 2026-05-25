@@ -55,7 +55,8 @@
     provider: null,        // window-injected provider
     publicKey: null,       // PublicKey instance
     address: null,         // base58 string
-    consent: null          // { address, signatureHex, nonce, timestamp, domain }
+    consent: null,         // { address, signatureHex, nonce, timestamp, domain }
+    consentPending: false  // true while a signMessage prompt is open
   };
 
   function bytesToHex(u8) {
@@ -95,7 +96,8 @@
       shortAddress: state.address ? shortAddr(state.address) : null,
       adapterId: state.adapter ? state.adapter.id : null,
       adapterName: state.adapter ? state.adapter.name : null,
-      consentSigned: consentSigned()
+      consentSigned: consentSigned(),
+      consentPending: !!state.consentPending
     };
     listeners.forEach(function (fn) { try { fn(snap); } catch (_e) {} });
   }
@@ -135,6 +137,20 @@
       try { localStorage.setItem(STORAGE_KEY, entry.adapter.id); } catch (_e) {}
       attachProviderListeners(provider);
       emit();
+
+      // Explicit (user-initiated) connect + no existing consent for this
+      // address → immediately request the off-chain consent signature.
+      // Skipped for silent onlyIfTrusted reconnects so we never auto-prompt
+      // on a quiet page load.
+      if (!opts.onlyIfTrusted && !consentSigned() && typeof provider.signMessage === 'function') {
+        try { await signConsent(); } catch (e) {
+          if (!(e && e.code === 'USER_REJECTED')) {
+            // surface non-rejection errors to the caller via console; state
+            // stays "connected, consent required" and the UI gates trading.
+            try { console.warn('[smh-wallet] consent error:', e && e.message || e); } catch (_e2) {}
+          }
+        }
+      }
       return state.address;
     } catch (err) {
       if (err && (err.code === 4001 || /reject|denied|user|cancel/i.test(err.message || ''))) {
@@ -154,6 +170,14 @@
         state.address = pk.toString();
         state.consent = loadStoredConsent(state.address); // wallet changed → re-check
         emit();
+        // user-initiated account swap → prompt fresh consent if needed
+        if (!consentSigned() && typeof state.provider.signMessage === 'function') {
+          signConsent().catch(function (e) {
+            if (!(e && (e.code === 'USER_REJECTED' || e.code === 'CONSENT_PENDING'))) {
+              try { console.warn('[smh-wallet] consent error on accountChanged:', e && e.message || e); } catch (_e2) {}
+            }
+          });
+        }
       });
     } catch (_e) {}
   }
@@ -186,6 +210,13 @@
     if (typeof state.provider.signMessage !== 'function') {
       throw new Error(state.adapter.name + ' does not support message signing.');
     }
+    if (state.consentPending) {
+      // Another consent prompt is already in flight — Phantom/Solflare
+      // serialize prompts so a duplicate would queue up. Refuse cleanly.
+      var e = new Error('Consent prompt already open.'); e.code = 'CONSENT_PENDING'; throw e;
+    }
+    state.consentPending = true;
+    emit();
     var nonce = (function () {
       try {
         var buf = new Uint8Array(16);
@@ -205,32 +236,36 @@
       'Timestamp: ' + ts + '\n' +
       'Nonce: '    + nonce;
     var bytes = new TextEncoder().encode(message);
-    var resp;
     try {
-      // Phantom + Solflare: signMessage(uint8array, 'utf8'). Backpack: signMessage(uint8array).
-      resp = await state.provider.signMessage(bytes, 'utf8');
-    } catch (err) {
-      if (err && (err.code === 4001 || /reject|denied|user|cancel/i.test(err.message || ''))) {
-        var e = new Error('User rejected consent signature.'); e.code = 'USER_REJECTED'; throw e;
+      var resp;
+      try {
+        // Phantom + Solflare: signMessage(uint8array, 'utf8'). Backpack: signMessage(uint8array).
+        resp = await state.provider.signMessage(bytes, 'utf8');
+      } catch (err) {
+        if (err && (err.code === 4001 || /reject|denied|user|cancel/i.test(err.message || ''))) {
+          var e = new Error('User rejected consent signature.'); e.code = 'USER_REJECTED'; throw e;
+        }
+        throw err;
       }
-      throw err;
+      var sigBytes = resp && (resp.signature || resp) ;
+      if (sigBytes && sigBytes.signature) sigBytes = sigBytes.signature;
+      if (!sigBytes || typeof sigBytes.length !== 'number') throw new Error('Wallet returned no signature.');
+      var consent = {
+        address:     state.address,
+        adapterId:   state.adapter && state.adapter.id,
+        domain:      CONSENT_DOMAIN,
+        nonce:       nonce,
+        timestamp:   ts,
+        messagePreview: message.split('\n').slice(0, 1)[0],
+        signatureHex: bytesToHex(sigBytes instanceof Uint8Array ? sigBytes : new Uint8Array(sigBytes))
+      };
+      state.consent = consent;
+      storeConsent(consent);
+      return consent;
+    } finally {
+      state.consentPending = false;
+      emit();
     }
-    var sigBytes = resp && (resp.signature || resp) ;
-    if (sigBytes && sigBytes.signature) sigBytes = sigBytes.signature;
-    if (!sigBytes || typeof sigBytes.length !== 'number') throw new Error('Wallet returned no signature.');
-    var consent = {
-      address:     state.address,
-      adapterId:   state.adapter && state.adapter.id,
-      domain:      CONSENT_DOMAIN,
-      nonce:       nonce,
-      timestamp:   ts,
-      messagePreview: message.split('\n').slice(0, 1)[0],
-      signatureHex: bytesToHex(sigBytes instanceof Uint8Array ? sigBytes : new Uint8Array(sigBytes))
-    };
-    state.consent = consent;
-    storeConsent(consent);
-    emit();
-    return consent;
   }
 
   // Sign + send a Versioned/legacy transaction. Uses signAndSendTransaction
@@ -322,13 +357,21 @@
     function paint(snap) {
       var label = btn.querySelector('.wallet-label');
       var dot = btn.querySelector('.wallet-dot');
+      btn.classList.toggle('is-connected', !!snap.connected);
+      btn.classList.toggle('is-pending', !!snap.consentPending);
+      btn.classList.toggle('is-consent-required', !!(snap.connected && !snap.consentSigned && !snap.consentPending));
       if (snap.connected) {
-        btn.classList.add('is-connected');
-        if (label) label.textContent = snap.shortAddress;
-        if (dot) dot.classList.add('is-on');
-        btn.setAttribute('title', snap.address + ' (' + snap.adapterName + ') — click to disconnect');
+        if (snap.consentPending) {
+          if (label) label.textContent = 'Awaiting consent…';
+        } else if (!snap.consentSigned) {
+          if (label) label.textContent = snap.shortAddress + ' · Consent required';
+        } else {
+          if (label) label.textContent = snap.shortAddress;
+        }
+        if (dot) dot.classList.toggle('is-on', !!snap.consentSigned);
+        btn.setAttribute('title', snap.address + ' (' + snap.adapterName + ')'
+          + (snap.consentSigned ? ' — click for wallet menu' : ' — consent required'));
       } else {
-        btn.classList.remove('is-connected');
         if (label) label.textContent = 'Connect Wallet';
         if (dot) dot.classList.remove('is-on');
         btn.removeAttribute('title');
@@ -367,7 +410,21 @@
       var opt = t && t.closest && t.closest('[data-wallet]');
       if (!opt) return;
       var id = opt.getAttribute('data-wallet');
-      api.connect(id).then(function () { closeModal(); }).catch(function (err) {
+      api.connect(id).then(function () {
+        closeModal();
+        // Connect resolves once the consent step finishes (success OR rejection).
+        // If consent ended up rejected, surface a one-line non-modal hint.
+        var snap = api.getState();
+        if (snap.connected && !snap.consentSigned && !snap.consentPending) {
+          try {
+            var hint = document.createElement('div');
+            hint.textContent = 'Wallet connected, but consent was rejected. Trading disabled until consent is signed.';
+            hint.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:200;padding:10px 16px;border:1px solid rgba(255,200,77,.55);background:rgba(255,200,77,.08);color:#ffcf5a;font-size:13px;font-weight:800;max-width:560px;text-align:center';
+            document.body.appendChild(hint);
+            setTimeout(function () { hint.remove(); }, 6000);
+          } catch (_e) {}
+        }
+      }).catch(function (err) {
         if (err && err.code === 'NOT_INSTALLED') {
           if (confirm(err.message + ' Open install page?')) window.open(err.installUrl, '_blank', 'noopener');
         } else if (err && err.code === 'USER_REJECTED') {
