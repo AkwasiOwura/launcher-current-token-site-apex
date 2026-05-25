@@ -1089,8 +1089,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 }
 .footer-main{
   display:grid;
-  grid-template-columns:minmax(250px,1.18fr) repeat(3,minmax(140px,.72fr));
-  gap:54px;
+  grid-template-columns:minmax(230px,1.22fr) repeat(3,minmax(120px,.68fr));
+  gap:42px;
   align-items:start;
 }
 .footer-brand p,
@@ -1102,9 +1102,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .footer-logo{
   display:inline-flex;
   align-items:center;
-  gap:12px;
+  gap:10px;
   color:#fff;
-  font-size:24px;
+  font-size:20px;
   font-weight:900;
   letter-spacing:0;
 }
@@ -1112,33 +1112,33 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .footer-logo-mark{
   display:grid;
   place-items:center;
-  width:42px;
-  height:42px;
+  width:36px;
+  height:36px;
   border:1px solid rgba(22,242,139,.58);
   background:rgba(22,242,139,.08);
   color:var(--mint);
   font-family:var(--mono);
-  font-size:11px;
+  font-size:10px;
   line-height:1;
-  box-shadow:0 0 24px rgba(22,242,139,.14);
+  box-shadow:0 0 22px rgba(22,242,139,.14);
 }
 .footer-brand p{
-  max-width:310px;
-  margin-top:28px;
-  font-size:17px;
-  line-height:1.85;
+  max-width:280px;
+  margin-top:22px;
+  font-size:14px;
+  line-height:1.65;
 }
 .footer-socials{
   display:flex;
   align-items:center;
-  gap:22px;
-  margin-top:34px;
+  gap:18px;
+  margin-top:26px;
 }
 .footer-socials a{
   display:grid;
   place-items:center;
-  width:26px;
-  height:26px;
+  width:22px;
+  height:22px;
   color:var(--mint);
   transition:color .2s var(--ease),transform .2s var(--ease),filter .2s var(--ease);
 }
@@ -1158,17 +1158,17 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .footer-column{
   display:flex;
   flex-direction:column;
-  gap:20px;
+  gap:14px;
 }
 .footer-column h2,
 .footer-disclaimer h2{
-  margin:0;
+  margin:0 0 4px;
   color:var(--mint);
   font-family:var(--sans);
-  font-size:18px;
+  font-size:14px;
   line-height:1.1;
   font-weight:900;
-  letter-spacing:0;
+  letter-spacing:.04em;
   text-transform:uppercase;
 }
 .footer-column a{
@@ -1176,59 +1176,62 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   width:max-content;
   max-width:100%;
   color:rgba(255,255,255,.9);
-  font-size:16px;
+  font-size:14px;
   line-height:1.35;
   transition:color .2s var(--ease),text-shadow .2s var(--ease);
 }
+.footer-column a::before,
+.footer-column a::after{content:none !important;display:none !important}
 .footer-column a:hover{
   color:var(--mint);
   text-shadow:0 0 14px rgba(22,242,139,.28);
 }
 .footer-disclaimer{
   display:flex;
-  align-items:stretch;
+  align-items:center;
   justify-content:space-between;
-  gap:32px;
-  margin-top:64px;
-  padding:34px 0;
+  gap:24px;
+  margin-top:42px;
+  padding:22px 0;
   border-top:1px solid rgba(255,255,255,.12);
   border-bottom:1px solid rgba(255,255,255,.12);
 }
 .footer-disclaimer-copy{
   display:flex;
-  align-items:stretch;
-  gap:14px;
+  align-items:center;
+  gap:10px;
 }
 .footer-shield{
   flex:0 0 auto;
   display:grid;
   place-items:center;
-  width:50px;
-  min-height:100%;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(22,242,139,.4);
+  background:rgba(22,242,139,.06);
   color:var(--mint);
-  background:transparent;
   box-shadow:none;
 }
-.footer-shield svg{width:36px;height:100%}
+.footer-shield svg{width:22px;height:22px}
 .footer-disclaimer p{
-  margin-top:7px;
-  max-width:640px;
-  font-size:15px;
-  line-height:1.55;
+  margin-top:4px;
+  max-width:560px;
+  font-size:13px;
+  line-height:1.5;
 }
 .footer-powered{
   flex:0 0 auto;
   display:grid;
   align-content:center;
-  gap:8px;
-  justify-items:start;
-  min-height:100%;
+  gap:6px;
+  justify-items:end;
   color:inherit;
+  text-decoration:none;
 }
 .footer-powered span{
   color:var(--mint);
   font-family:var(--mono);
-  font-size:12px;
+  font-size:11px;
   font-weight:900;
   letter-spacing:.1em;
   text-transform:uppercase;
@@ -1236,54 +1239,51 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .footer-powered strong{
   display:flex;
   align-items:center;
-  gap:11px;
+  gap:8px;
   color:#fff;
-  font-size:24px;
+  font-size:18px;
   line-height:1;
   font-weight:900;
   letter-spacing:.08em;
   text-transform:uppercase;
   transition:color .2s var(--ease),filter .2s var(--ease);
 }
+.footer-powered strong::after{content:none !important;display:none !important}
 .footer-powered:hover strong{
   color:#f7fffb;
   filter:drop-shadow(0 0 10px rgba(22,242,139,.25));
 }
 .solana-bars{
   position:relative;
-  width:42px;
-  height:26px;
+  width:34px;
+  height:22px;
   display:inline-block;
-}
-.solana-bars::before,
-.solana-bars::after,
-.solana-bars{
   border-radius:999px;
   background:linear-gradient(90deg,#9945ff 0%,#14f195 100%);
+  height:5px;
+  transform:skewX(-18deg);
 }
 .solana-bars::before,
 .solana-bars::after{
   content:"";
   position:absolute;
   left:0;
-  width:42px;
-  height:6px;
+  width:34px;
+  height:5px;
+  border-radius:999px;
 }
-.solana-bars{
-  height:6px;
-  transform:skewX(-18deg);
-}
-.solana-bars::before{top:10px;background:linear-gradient(90deg,#14f195 0%,#80ecff 100%)}
-.solana-bars::after{top:20px;background:linear-gradient(90deg,#9945ff 0%,#80ecff 100%)}
+.solana-bars::before{top:8px;background:linear-gradient(90deg,#14f195 0%,#80ecff 100%)}
+.solana-bars::after{top:16px;background:linear-gradient(90deg,#9945ff 0%,#80ecff 100%)}
 .footer-bottom{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:20px;
-  padding-top:34px;
+  padding-top:20px;
 }
 .footer-bottom p{
-  font-size:15px;
+  font-size:13px;
+  margin:0;
 }
 .footer-bottom p span{color:var(--mint)}
 .footer-security{
