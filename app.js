@@ -227,6 +227,21 @@
     }
   }
 
+  function dexScreenerChartOnlyUrl(url) {
+    return withParams(url, {
+      embed: '1',
+      loadChartSettings: '0',
+      chartLeftToolbar: '0',
+      chartTheme: 'dark',
+      theme: 'dark',
+      chartStyle: '0',
+      chartType: 'usd',
+      interval: '15',
+      info: '0',
+      trades: '0'
+    });
+  }
+
   function chartSourceForCoin(coin) {
     var mint = String(coin && (coin.mint || coin.contract || coin.address) || '').trim();
     var providerUrls = [
@@ -245,7 +260,7 @@
       var url = providerUrls[i];
       var type = chartUrlType(url);
       if (type === 'dexscreener') {
-        return { provider: 'DexScreener', mode: 'iframe', embedUrl: withParams(url, { embed: '1', theme: 'dark' }), externalUrl: url };
+        return { provider: 'DexScreener', mode: 'iframe', embedUrl: dexScreenerChartOnlyUrl(url), externalUrl: url };
       }
       if (type === 'geckoterminal') {
         return { provider: 'GeckoTerminal', mode: 'iframe', embedUrl: withParams(url, { embed: '1', info: '0', swaps: '0' }), externalUrl: url };
@@ -262,7 +277,7 @@
       return {
         provider: 'DexScreener',
         mode: 'iframe',
-        embedUrl: 'https://dexscreener.com/solana/' + encodeURIComponent(mint) + '?embed=1&theme=dark',
+        embedUrl: dexScreenerChartOnlyUrl('https://dexscreener.com/solana/' + encodeURIComponent(mint)),
         externalUrl: 'https://dexscreener.com/solana/' + encodeURIComponent(mint)
       };
     }
