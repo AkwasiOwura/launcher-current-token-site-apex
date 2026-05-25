@@ -29,8 +29,73 @@
       <a href="/kolscan/">KOL Scanner</a>
       <a href="#pages">List Tokens</a>
       <a href="#verify">Verify</a>
+      <button id="wallet-connect-btn" class="wallet-btn" type="button" aria-haspopup="dialog">
+        <span class="wallet-dot" aria-hidden="true"></span>
+        <span class="wallet-label">Connect Wallet</span>
+      </button>
     </nav>
   </header>
+
+  <!-- Wallet picker modal -->
+  <div id="wallet-modal" class="modal-root" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="wallet-modal-title">
+      <span class="cyber-corner-tl" aria-hidden="true"></span>
+      <span class="cyber-corner-br" aria-hidden="true"></span>
+      <header class="modal-head">
+        <h3 id="wallet-modal-title">Connect a Solana wallet</h3>
+        <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
+      </header>
+      <p class="modal-sub">Choose a wallet to sign trades with. SolMemeHub never sees your private key.</p>
+      <ul id="wallet-list" class="wallet-list"></ul>
+      <p class="modal-foot-note">Don't have a wallet? Install one from its official site — never paste a seed phrase here.</p>
+    </div>
+  </div>
+
+  <!-- Trade modal -->
+  <div id="trade-modal" class="modal-root" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card trade-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="trade-modal-title">
+      <span class="cyber-corner-tl" aria-hidden="true"></span>
+      <span class="cyber-corner-br" aria-hidden="true"></span>
+      <header class="modal-head">
+        <h3 id="trade-modal-title"><span id="trade-side-label">Buy</span> <span id="trade-symbol-label">TOKEN</span></h3>
+        <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
+      </header>
+      <div class="trade-token-row">
+        <span id="trade-token-logo" class="trade-token-logo">??</span>
+        <div class="trade-token-meta">
+          <strong id="trade-token-name">Token</strong>
+          <code id="trade-token-mint">…</code>
+        </div>
+      </div>
+      <label class="trade-field">
+        <span class="trade-field-label" id="trade-amount-label">Amount (SOL)</span>
+        <input id="trade-amount-input" type="number" min="0" step="any" inputmode="decimal" placeholder="0.0" autocomplete="off">
+      </label>
+      <label class="trade-field">
+        <span class="trade-field-label">Max slippage</span>
+        <select id="trade-slippage">
+          <option value="50">0.5%</option>
+          <option value="100" selected>1.0%</option>
+          <option value="200">2.0%</option>
+          <option value="500">5.0%</option>
+          <option value="1000">10.0%</option>
+        </select>
+      </label>
+      <div id="trade-quote-box" class="trade-quote">
+        <div class="trade-quote-row"><span>Estimated receive</span><strong id="trade-receive">—</strong></div>
+        <div class="trade-quote-row"><span>Route</span><strong id="trade-route">—</strong></div>
+        <div class="trade-quote-row"><span>Price impact</span><strong id="trade-impact">—</strong></div>
+        <div class="trade-quote-row"><span>Provider</span><strong>Jupiter</strong></div>
+      </div>
+      <div class="trade-status" id="trade-status" hidden></div>
+      <div class="trade-actions">
+        <button class="trade-btn-cancel" type="button" data-modal-close>Cancel</button>
+        <button class="trade-btn-confirm" id="trade-confirm" type="button" disabled>Get quote</button>
+      </div>
+    </div>
+  </div>
 
   <main>
     <section class="hero" data-reveal>
@@ -210,6 +275,9 @@
     <p>© 2026 SolMemeHub. All rights reserved.</p>
   </footer>
 
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js" defer></script>
+  <script src="wallet.js" defer></script>
+  <script src="trade.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

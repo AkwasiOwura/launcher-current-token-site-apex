@@ -1364,3 +1364,146 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 
 /* Killing the old token-card diamond ::after (clashes with square edges + cyber corners) */
 .token-card::after{display:none !important;content:none !important}
+
+/* ────── Wallet connect button + modal ────── */
+.wallet-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-left:8px;
+  padding:8px 14px;
+  border:1px solid rgba(22,242,139,.4);
+  background:rgba(22,242,139,.08);
+  color:var(--mint);
+  font-size:13px;font-weight:900;
+  cursor:pointer;
+  transition:background .2s var(--ease),border-color .2s var(--ease),color .2s var(--ease);
+}
+.wallet-btn:hover{background:rgba(22,242,139,.18);color:var(--text);border-color:var(--mint)}
+.wallet-btn .wallet-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--soft);
+  transition:background .2s var(--ease),box-shadow .2s var(--ease);
+}
+.wallet-btn .wallet-dot.is-on{background:var(--mint);box-shadow:0 0 8px rgba(22,242,139,.7)}
+.wallet-btn.is-connected{font-family:var(--mono);font-size:12px;letter-spacing:.05em}
+
+.modal-root{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal-root[hidden]{display:none}
+.modal-backdrop{position:absolute;inset:0;background:rgba(2,5,3,.78);backdrop-filter:blur(6px);cursor:pointer}
+.modal-card{
+  position:relative;z-index:1;
+  width:min(440px,calc(100% - 24px));
+  padding:24px 22px 20px;
+  background:linear-gradient(180deg,rgba(10,26,16,.96),rgba(3,6,4,.92));
+  border:1px solid var(--border);
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+.modal-card.trade-card{width:min(480px,calc(100% - 24px))}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.modal-head h3{margin:0;font-size:18px;font-weight:900;letter-spacing:.005em}
+.modal-close{
+  width:30px;height:30px;border:1px solid var(--border);background:transparent;color:var(--muted);
+  font-size:18px;line-height:1;cursor:pointer;
+}
+.modal-close:hover{color:var(--text);border-color:var(--mint)}
+.modal-sub{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
+.modal-foot-note{margin:14px 0 0;color:var(--soft);font-size:11.5px;letter-spacing:.04em}
+
+.wallet-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.wallet-option{
+  width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:13px 16px;
+  background:rgba(8,18,12,.6);
+  border:1px solid var(--border);
+  color:var(--text);font-size:14px;font-weight:800;cursor:pointer;
+  transition:border-color .2s var(--ease),background .2s var(--ease);
+}
+.wallet-option:hover{border-color:rgba(22,242,139,.5);background:rgba(22,242,139,.06)}
+.wallet-option-tag{font-family:var(--mono);font-size:11px;color:var(--mint);letter-spacing:.08em;text-transform:uppercase}
+.wallet-option-tag a{color:var(--mint);text-decoration:underline}
+
+/* ────── Buy / Sell on coin cards ────── */
+.coin-trade{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin:8px 0 0;padding-top:8px;
+  border-top:1px solid rgba(255,255,255,.05);
+}
+.trade-btn{
+  position:relative;
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:34px;padding:0 12px;
+  font-size:12px;font-weight:900;letter-spacing:.18em;
+  cursor:pointer;
+  border:1px solid currentColor;background:rgba(0,0,0,.25);
+  transition:transform .15s var(--ease),background .2s var(--ease),box-shadow .2s var(--ease);
+}
+.trade-btn:hover{transform:translateY(-1px)}
+.trade-buy{color:#16f28b;background:rgba(22,242,139,.12);box-shadow:0 0 16px rgba(22,242,139,.18) inset}
+.trade-buy:hover{background:rgba(22,242,139,.22);box-shadow:0 0 22px rgba(22,242,139,.32) inset,0 6px 22px rgba(22,242,139,.18)}
+.trade-sell{color:#ff6464;background:rgba(255,100,100,.10);box-shadow:0 0 16px rgba(255,100,100,.18) inset}
+.trade-sell:hover{background:rgba(255,100,100,.2);box-shadow:0 0 22px rgba(255,100,100,.32) inset,0 6px 22px rgba(255,100,100,.18)}
+.trade-btn .cyber-corner-tl,.trade-btn .cyber-corner-br{
+  position:absolute;width:10px;height:10px;border:1.5px solid currentColor;pointer-events:none;
+  filter:drop-shadow(0 0 4px currentColor);
+}
+.trade-btn .cyber-corner-tl{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.trade-btn .cyber-corner-br{right:-1px;bottom:-1px;border-left:none;border-top:none}
+
+/* ────── Trade modal ────── */
+.trade-token-row{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;margin-bottom:14px;
+  border:1px solid var(--border);background:rgba(8,18,12,.5);
+}
+.trade-token-logo{
+  width:44px;height:44px;display:grid;place-items:center;
+  background:var(--green-soft);border:1px solid rgba(22,242,139,.32);
+  background-size:cover;background-position:center;
+  color:var(--mint);font-family:var(--mono);font-weight:900;font-size:13px;
+}
+.trade-token-meta{display:flex;flex-direction:column;min-width:0}
+.trade-token-meta strong{font-size:15px;font-weight:800}
+.trade-token-meta code{color:var(--muted);font-family:var(--mono);font-size:11.5px;margin-top:3px}
+
+.trade-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.trade-field-label{color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.trade-field input,.trade-field select{
+  padding:11px 12px;
+  background:rgba(8,18,12,.6);
+  border:1px solid var(--border);
+  color:var(--text);font-size:14px;outline:none;
+  width:100%;
+}
+.trade-field input:focus,.trade-field select:focus{border-color:var(--mint)}
+
+.trade-quote{
+  padding:12px 14px;margin:6px 0 12px;
+  background:rgba(8,18,12,.5);border:1px solid var(--border);
+  display:flex;flex-direction:column;gap:6px;
+}
+.trade-quote-row{display:flex;justify-content:space-between;font-size:13px}
+.trade-quote-row span{color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;align-self:center}
+.trade-quote-row strong{font-weight:800;font-variant-numeric:tabular-nums}
+
+.trade-status{padding:10px 12px;margin-bottom:10px;border:1px solid var(--border);font-size:12.5px;line-height:1.45}
+.trade-status.is-info{border-color:rgba(91,227,255,.45);color:#bff;background:rgba(91,227,255,.06)}
+.trade-status.is-warn{border-color:rgba(255,200,77,.55);color:#ffcf5a;background:rgba(255,200,77,.06)}
+.trade-status.is-ok{border-color:rgba(22,242,139,.55);color:var(--mint);background:rgba(22,242,139,.06)}
+.trade-status.is-error{border-color:rgba(255,100,100,.5);color:#ff6464;background:rgba(255,100,100,.06)}
+.trade-status a{color:inherit;text-decoration:underline;font-weight:800}
+
+.trade-actions{display:flex;justify-content:space-between;gap:10px;margin-top:6px}
+.trade-btn-cancel,.trade-btn-confirm{
+  flex:1;padding:12px 14px;font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);
+  transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease);
+}
+.trade-btn-cancel:hover{color:var(--text);border-color:var(--border-strong)}
+.trade-btn-confirm{color:var(--mint);border-color:rgba(22,242,139,.55);background:rgba(22,242,139,.10)}
+.trade-btn-confirm:hover:not([disabled]){background:rgba(22,242,139,.22);color:var(--text)}
+.trade-btn-confirm[disabled]{opacity:.55;cursor:not-allowed}
+
+@media (max-width:840px){
+  .nav{flex-wrap:wrap}
+  .wallet-btn{margin-left:0}
+  .modal-card{padding:18px 16px}
+}

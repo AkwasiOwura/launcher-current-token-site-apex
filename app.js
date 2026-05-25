@@ -236,8 +236,19 @@
       '<div class="spark-meta"><span class="label">24h trend</span>' + (changeText ? '<span class="delta ' + changeClass + '">' + changeText + '</span>' : '') + '</div>',
       '</div>'
     ].join('') : '';
+    var tradePayload = '';
+    if (coin && coin.mint && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(coin.mint)) {
+      var slim = { mint: coin.mint, name: coin.name || '', symbol: coin.symbol || '', imageUrl: coin.imageUrl || '' };
+      tradePayload = ' data-coin="' + escapeHtml(JSON.stringify(slim)) + '"';
+    }
+    var tradeBlock = tradePayload ? [
+      '<div class="coin-trade">',
+      '<button type="button" class="trade-btn trade-buy" data-trade="buy" aria-label="Buy ' + (symbol || name) + '"><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>BUY</button>',
+      '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '"><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>SELL</button>',
+      '</div>'
+    ].join('') : '';
     return [
-      '<a class="coin-card ' + changeDir + '" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer">',
+      '<a class="coin-card ' + changeDir + '" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer"' + tradePayload + '>',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
       '<span class="cyber-corner-br" aria-hidden="true"></span>',
       '<div class="coin-media">',
@@ -250,6 +261,7 @@
       '<p>' + (symbol ? '$' + symbol : 'Pump.fun coin') + '</p>',
       mint ? '<code>' + mint.slice(0, 6) + '...' + mint.slice(-5) + '</code>' : '',
       sparkBlock,
+      tradeBlock,
       '</div>',
       '<div class="coin-footer"><span>' + (meta.length ? meta.join(' · ') : 'Open page') + '</span><strong>Open ↗</strong></div>',
       '</a>'
