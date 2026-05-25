@@ -1606,18 +1606,20 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   padding:12px;
 }
 .modal-card.chart-modal-card{
-  width:min(1480px,calc(100vw - 24px));
-  height:min(900px,calc(100vh - 24px));
+  width:min(1480px,calc(100vw - 24px),calc((100vh - 24px) * 1.7778));
+  aspect-ratio:16/9;
+  height:auto;
   max-width:none;
   min-height:0;
   display:flex;
   flex-direction:column;
-  padding:14px;
+  padding:10px 12px 12px;
+  background:#000;
 }
-.chart-modal-head{margin-bottom:14px}
-.chart-modal-head h3{font-size:20px}
+.chart-modal-head{margin-bottom:8px}
+.chart-modal-head h3{font-size:18px}
 .chart-modal-head p{
-  margin:5px 0 0;
+  margin:3px 0 0;
   color:var(--soft);
   font-family:var(--mono);
   font-size:11px;
@@ -1628,7 +1630,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   display:flex;
   flex-direction:column;
   min-height:0;
-  gap:10px;
+  gap:0;
+  background:#000;
 }
 .chart-frame{
   flex:1 1 auto;
@@ -1637,7 +1640,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   min-height:0;
   aspect-ratio:16/9;
   border:1px solid rgba(255,255,255,.1);
-  background:#030604;
+  background:#000;
 }
 .chart-open-link{
   align-self:flex-end;

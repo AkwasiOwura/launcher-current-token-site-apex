@@ -603,15 +603,13 @@
     subtitle.textContent = [mint, payload.provider].filter(Boolean).join(' · ');
     if (payload.mode === 'iframe' && payload.embedUrl) {
       body.innerHTML = [
-        '<iframe class="chart-frame" src="' + escapeHtml(payload.embedUrl) + '" title="' + escapeHtml(name) + ' full chart" loading="lazy" referrerpolicy="no-referrer"></iframe>',
-        '<a class="chart-open-link" href="' + escapeHtml(payload.externalUrl || payload.embedUrl) + '" target="_blank" rel="noopener noreferrer">Open full chart</a>'
+        '<iframe class="chart-frame" src="' + escapeHtml(payload.embedUrl) + '" title="' + escapeHtml(name) + ' full chart" loading="lazy" referrerpolicy="no-referrer"></iframe>'
       ].join('');
     } else if (payload.mode === 'external' && payload.externalUrl) {
       body.innerHTML = [
         '<div class="chart-fallback-panel">',
         '<strong>' + escapeHtml(payload.provider || 'External chart') + ' chart opens externally</strong>',
         '<p>Embedded chart unavailable for this provider.</p>',
-        '<a class="chart-open-link" href="' + escapeHtml(payload.externalUrl) + '" target="_blank" rel="noopener noreferrer">Open full chart</a>',
         '</div>'
       ].join('');
     } else {
