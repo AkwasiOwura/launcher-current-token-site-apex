@@ -910,24 +910,130 @@
       previousTokenValues = nextValues;
     }
 
-    async function refreshPortfolio() {
-      if (!api.getState().connected) return;
+    // ── Portfolio cache + background hydration ───────────────────────
+    // Persist the last successful portfolio per wallet address so a
+    // reconnect/refresh paints SOL + token rows instantly while a fresh
+    // fetch runs in the background.
+    var PORTFOLIO_CACHE_PREFIX = 'smh:portfolio:';
+    var portfolioFetchInFlight = null;     // de-duplicates concurrent refreshes
+    var portfolioRefreshTimer = null;       // throttle (>=800ms gap)
+    var portfolioLastFetchAt = 0;
+    var portfolioPaintedAddress = '';       // last address actually painted into the DOM
+
+    function loadCachedPortfolio(address) {
+      if (!address) return null;
       try {
-        var portfolio = await fetchWalletPortfolio();
-        if (dBalance) dBalance.textContent = Number.isFinite(portfolio.sol) ? fmtAmount(portfolio.sol, 4) + ' SOL' : 'Unavailable';
-        if (dUsd) dUsd.textContent = Number.isFinite(portfolio.solUsdValue) ? fmtUsd(portfolio.solUsdValue) + ' USD' : '';
-        if (portfolio.tokenError) {
-          if (tokenCount) tokenCount.textContent = 'Unavailable';
-          if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable. ' + escapeHtml(portfolio.tokenError.message || portfolio.tokenError) + '</div>';
-        } else {
-          renderTokens(portfolio.tokens);
-        }
-        if (dNetwork) dNetwork.textContent = portfolio.rpcUrl && portfolio.rpcUrl.indexOf('publicnode') !== -1 ? 'Solana Mainnet' : 'Solana Mainnet';
-      } catch (err) {
-        if (dBalance) dBalance.textContent = 'Unavailable';
+        var raw = localStorage.getItem(PORTFOLIO_CACHE_PREFIX + address);
+        if (!raw) return null;
+        var obj = JSON.parse(raw);
+        if (!obj || obj.address !== address) return null;
+        return obj;
+      } catch (_e) { return null; }
+    }
+    function saveCachedPortfolio(address, portfolio) {
+      if (!address || !portfolio) return;
+      try {
+        var snapshot = {
+          address: address,
+          ts: Date.now(),
+          sol: portfolio.sol,
+          solUsdValue: portfolio.solUsdValue,
+          rpcUrl: portfolio.rpcUrl,
+          tokens: Array.isArray(portfolio.tokens) ? portfolio.tokens : [],
+          tokenError: portfolio.tokenError ? String(portfolio.tokenError.message || portfolio.tokenError) : ''
+        };
+        localStorage.setItem(PORTFOLIO_CACHE_PREFIX + address, JSON.stringify(snapshot));
+      } catch (_e) {}
+    }
+    function clearCachedPortfolio(address) {
+      if (!address) return;
+      try { localStorage.removeItem(PORTFOLIO_CACHE_PREFIX + address); } catch (_e) {}
+    }
+
+    function paintPortfolio(address, portfolio) {
+      if (!address || !portfolio) return;
+      // Guard: if the active wallet has changed since this paint was
+      // scheduled, drop the result on the floor. NEVER show another
+      // wallet's cached data.
+      var live = api.getState();
+      if (!live.connected || live.address !== address) return;
+      if (dBalance) dBalance.textContent = Number.isFinite(portfolio.sol) ? fmtAmount(portfolio.sol, 4) + ' SOL' : 'Unavailable';
+      if (dUsd) dUsd.textContent = Number.isFinite(portfolio.solUsdValue) ? fmtUsd(portfolio.solUsdValue) + ' USD' : '';
+      if (portfolio.tokenError) {
         if (tokenCount) tokenCount.textContent = 'Unavailable';
-        if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable. ' + escapeHtml(err && err.message ? err.message : '') + '</div>';
+        if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable. ' + escapeHtml(portfolio.tokenError.message || portfolio.tokenError) + '</div>';
+      } else {
+        renderTokens(portfolio.tokens || []);
       }
+      if (dNetwork) dNetwork.textContent = portfolio.rpcUrl && portfolio.rpcUrl.indexOf('publicnode') !== -1 ? 'Solana Mainnet' : 'Solana Mainnet';
+      portfolioPaintedAddress = address;
+    }
+
+    function hydrateFromCache() {
+      var live = api.getState();
+      if (!live.connected || !live.address) return false;
+      if (portfolioPaintedAddress === live.address) return true;
+      var cached = loadCachedPortfolio(live.address);
+      if (!cached) return false;
+      paintPortfolio(live.address, cached);
+      return true;
+    }
+
+    function refreshPortfolio(opts) {
+      opts = opts || {};
+      var live = api.getState();
+      if (!live.connected || !live.address) return Promise.resolve(null);
+      var address = live.address;
+      // De-dupe: if a fetch for the same wallet is already running, return it.
+      if (portfolioFetchInFlight && portfolioFetchInFlight.address === address) {
+        return portfolioFetchInFlight.promise;
+      }
+      // Throttle: ignore refreshes that fire within 800ms of the previous one,
+      // unless opts.force is true (after Buy/Sell/Sell-All).
+      var now = Date.now();
+      if (!opts.force && now - portfolioLastFetchAt < 800) {
+        if (portfolioRefreshTimer) return Promise.resolve(null);
+        portfolioRefreshTimer = setTimeout(function () {
+          portfolioRefreshTimer = null;
+          refreshPortfolio({ force: true });
+        }, 800 - (now - portfolioLastFetchAt));
+        return Promise.resolve(null);
+      }
+      portfolioLastFetchAt = now;
+
+      // Show cache instantly while the background fetch runs. If no
+      // cache and nothing painted yet, surface a 'Loading…' state.
+      if (portfolioPaintedAddress !== address) {
+        if (!hydrateFromCache()) {
+          if (dBalance) dBalance.textContent = 'Loading…';
+          if (tokenCount) tokenCount.textContent = '…';
+          if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Loading wallet holdings…</div>';
+        }
+      }
+
+      var p = fetchWalletPortfolio()
+        .then(function (portfolio) {
+          if (api.getState().address !== address) return null; // wallet changed mid-flight
+          paintPortfolio(address, portfolio);
+          saveCachedPortfolio(address, portfolio);
+          return portfolio;
+        })
+        .catch(function (err) {
+          if (api.getState().address !== address) return null;
+          // Only overwrite the screen with an error if there's nothing painted yet.
+          if (portfolioPaintedAddress !== address) {
+            if (dBalance) dBalance.textContent = 'Unavailable';
+            if (tokenCount) tokenCount.textContent = 'Unavailable';
+            if (tokenList) tokenList.innerHTML = '<div class="wallet-token-empty">Token holdings unavailable. ' + escapeHtml(err && err.message ? err.message : '') + '</div>';
+          }
+          return null;
+        })
+        .then(function (result) {
+          if (portfolioFetchInFlight && portfolioFetchInFlight.address === address) portfolioFetchInFlight = null;
+          return result;
+        });
+      portfolioFetchInFlight = { address: address, promise: p };
+      return p;
     }
 
     function openDetails() {
@@ -935,6 +1041,7 @@
       paintDetails(api.getState());
       detailsModal.hidden = false;
       detailsModal.setAttribute('aria-hidden', 'false');
+      hydrateFromCache();
       refreshPortfolio();
     }
     function closeDetails() {
@@ -1117,8 +1224,8 @@
               message += ' ' + result.closeBlocked;
             }
             setSellAllStatus('ok', message, solscanTx(result.sellSignature));
-            refreshPortfolio();
-            [2500, 6500, 12000].forEach(function (delay) { setTimeout(refreshPortfolio, delay); });
+            refreshPortfolio({ force: true });
+            [2500, 6500, 12000].forEach(function (delay) { setTimeout(function () { refreshPortfolio({ force: true }); }, delay); });
           } catch (err) {
             var msg = err && err.message ? err.message : String(err);
             if (/reject|denied|user|cancel/i.test(msg)) setSellAllStatus('warn', 'Transaction rejected in wallet.');
@@ -1208,12 +1315,26 @@
       }
     });
 
+    var lastSeenAddress = '';
     api.on(function (snap) {
       // Live-paint the open details modal on account/disconnect events.
       if (detailsModal && !detailsModal.hidden) paintDetails(snap);
+      // Wallet connected (or address changed): hydrate from cache instantly
+      // and kick off a background fetch — even if the details modal hasn't
+      // been opened. Disconnect clears the painted-address marker so a
+      // future reconnect always re-renders.
+      if (snap.connected && snap.address && snap.address !== lastSeenAddress) {
+        lastSeenAddress = snap.address;
+        portfolioPaintedAddress = '';
+        hydrateFromCache();
+        refreshPortfolio();
+      } else if (!snap.connected) {
+        lastSeenAddress = '';
+        portfolioPaintedAddress = '';
+      }
     });
 
-    window.addEventListener('smh:wallet-refresh', refreshPortfolio);
+    window.addEventListener('smh:wallet-refresh', function () { refreshPortfolio({ force: true }); });
     setInterval(function () {
       if (api.getState().connected) refreshPortfolio();
     }, 25000);
