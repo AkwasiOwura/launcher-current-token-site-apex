@@ -1775,6 +1775,11 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   transition:transform .15s var(--ease),background .2s var(--ease),box-shadow .2s var(--ease);
 }
 .trade-btn:hover{transform:translateY(-1px)}
+.trade-btn[disabled],.trade-btn[aria-disabled="true"]{
+  opacity:.42;cursor:not-allowed;
+  filter:grayscale(.4);
+}
+.trade-btn[disabled]:hover,.trade-btn[aria-disabled="true"]:hover{transform:none}
 .trade-buy{color:#16f28b;background:rgba(22,242,139,.12);box-shadow:0 0 16px rgba(22,242,139,.18) inset}
 .trade-buy:hover{background:rgba(22,242,139,.22);box-shadow:0 0 22px rgba(22,242,139,.32) inset,0 6px 22px rgba(22,242,139,.18)}
 .trade-sell{color:#ff6464;background:rgba(255,100,100,.10);box-shadow:0 0 16px rgba(255,100,100,.18) inset}

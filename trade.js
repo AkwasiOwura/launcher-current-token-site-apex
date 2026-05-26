@@ -447,11 +447,54 @@
       if (!btn) return;
       e.preventDefault();
       e.stopPropagation();
+      // Disabled buttons surface their reason via title="...". Don't
+      // open the modal; let the native tooltip + alert do the talking.
+      if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') {
+        var reason = btn.getAttribute('title') || 'Trading unavailable for this token.';
+        alert(reason);
+        return;
+      }
       var card = btn.closest('[data-coin]');
       if (!card) return;
       var coin;
       try { coin = JSON.parse(card.getAttribute('data-coin')); } catch (_e) { coin = null; }
       if (!coin) return;
+
+      // CoinGecko-id-only coins arrive without a Solana mint. Resolve
+      // the slug -> contract_address via the public CoinGecko API,
+      // then open the trade modal once we have a real mint.
+      if (!isValidMint(coin.mint) && coin.coingeckoSlug) {
+        var side = btn.getAttribute('data-trade');
+        var origLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '…';
+        fetch('https://api.coingecko.com/api/v3/coins/' + encodeURIComponent(coin.coingeckoSlug)
+              + '?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false',
+              { cache: 'force-cache', credentials: 'omit' })
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function (data) {
+            var platforms = (data && data.platforms) || {};
+            var detail = (data && data.detail_platforms && data.detail_platforms.solana) || {};
+            var mint = String(platforms.solana || detail.contract_address || data.contract_address || '').trim();
+            if (!isValidMint(mint)) throw new Error('No Solana contract listed on CoinGecko for ' + coin.coingeckoSlug);
+            coin.mint = mint;
+            // Cache the resolution on the card so subsequent clicks skip the lookup.
+            try {
+              var existing = JSON.parse(card.getAttribute('data-coin') || '{}');
+              existing.mint = mint;
+              card.setAttribute('data-coin', JSON.stringify(existing));
+            } catch (_e) {}
+            openTrade(coin, side);
+          })
+          .catch(function (err) {
+            alert('Trade unavailable: ' + (err && err.message ? err.message : err));
+          })
+          .then(function () {
+            btn.disabled = false;
+            btn.textContent = origLabel;
+          });
+        return;
+      }
       openTrade(coin, btn.getAttribute('data-trade'));
     }, true);
   }

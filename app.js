@@ -485,17 +485,33 @@
       '<div class="spark-meta"><span class="label">24h trend</span>' + (changeText ? '<span class="delta ' + changeClass + '">' + changeText + '</span>' : '') + '</div>',
       '</div>'
     ].join('') : '';
-    var tradePayload = '';
-    if (coin && coin.mint && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(coin.mint)) {
-      var slim = { mint: coin.mint, name: coin.name || '', symbol: coin.symbol || '', imageUrl: coin.imageUrl || '' };
-      tradePayload = ' data-coin="' + escapeHtml(JSON.stringify(slim)) + '"';
+    // BUY/SELL render policy: every card MUST show both buttons.
+    //   - Real Solana mint (base58 32-44 chars)  -> enabled, direct payload
+    //   - CoinGecko-id-only entry (no native mint) -> enabled, payload
+    //     carries coingeckoSlug so trade.js can resolve it to a mint at
+    //     click time via /coins/<slug>.platforms.solana
+    //   - Neither -> rendered as DISABLED with a hover/tap reason; never
+    //     removed from the card.
+    var rawMint = coin && (coin.mint || coin.contract || coin.address) || '';
+    var validMint = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(rawMint || ''));
+    var cgSlug = !validMint ? coinGeckoSlug(coin) : '';
+    var disabledReason = '';
+    var slim = { name: coin.name || '', symbol: coin.symbol || '', imageUrl: coin.imageUrl || '' };
+    if (validMint) {
+      slim.mint = rawMint;
+    } else if (cgSlug) {
+      slim.coingeckoSlug = cgSlug;
+    } else {
+      disabledReason = 'Trading unavailable — no Solana mint mapped for this token.';
     }
-    var tradeBlock = tradePayload ? [
+    var tradePayload = ' data-coin="' + escapeHtml(JSON.stringify(slim)) + '"';
+    var disAttr = disabledReason ? ' disabled aria-disabled="true" title="' + escapeHtml(disabledReason) + '"' : '';
+    var tradeBlock = [
       '<div class="coin-trade">',
-      '<button type="button" class="trade-btn trade-buy" data-trade="buy" aria-label="Buy ' + (symbol || name) + '"><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>BUY</button>',
-      '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '"><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>SELL</button>',
+      '<button type="button" class="trade-btn trade-buy" data-trade="buy" aria-label="Buy ' + (symbol || name) + '"' + disAttr + '><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>BUY</button>',
+      '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '"' + disAttr + '><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>SELL</button>',
       '</div>'
-    ].join('') : '';
+    ].join('');
     return [
       '<a class="coin-card ' + changeDir + '" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer"' + tradePayload + '>',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
