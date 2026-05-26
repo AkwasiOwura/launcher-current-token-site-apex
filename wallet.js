@@ -29,6 +29,10 @@
   var JUP_QUOTE_URL = 'https://lite-api.jup.ag/swap/v1/quote';
   var JUP_SWAP_URL = 'https://lite-api.jup.ag/swap/v1/swap';
   var WALLET_PORTFOLIO_ENDPOINT = 'https://solmemehub-kolscan-proxy.solmemehub.workers.dev/api/wallet/portfolio/';
+  var SOL_CHART_URL = 'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=1';
+  var SOL_CHART_CACHE_KEY = 'smh:sol-chart:24h';
+  var SOL_CHART_TTL_MS = 5 * 60 * 1000;
+  var SOL_CHART_MAX_CACHE_MS = 60 * 60 * 1000;
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
   var TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
   var TOKEN_2022_PROGRAM_ID = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
@@ -873,10 +877,110 @@
     var solscanLink = document.getElementById('wallet-solscan-link');
     var consentBtn  = document.getElementById('wallet-consent-btn');
     var disconBtn   = document.getElementById('wallet-disconnect-btn');
+    var solChartPath = document.getElementById('wallet-sol-chart-path');
     var currentPortfolioTokens = [];
     var sellAllBusy = false;
     var sellAllModal = null;
     var sellAllEls = null;
+    var solChartFetchInFlight = null;
+    var solChartLastFetchAt = 0;
+
+    function readCachedSolChart(maxAge) {
+      try {
+        var raw = localStorage.getItem(SOL_CHART_CACHE_KEY);
+        if (!raw) return null;
+        var cached = JSON.parse(raw);
+        if (!cached || !Array.isArray(cached.prices) || cached.prices.length < 2) return null;
+        if (maxAge && Date.now() - Number(cached.ts || 0) > maxAge) return null;
+        return cached;
+      } catch (_e) { return null; }
+    }
+
+    function writeCachedSolChart(prices) {
+      try {
+        localStorage.setItem(SOL_CHART_CACHE_KEY, JSON.stringify({ ts: Date.now(), prices: prices }));
+      } catch (_e) {}
+    }
+
+    function smoothChartPath(points) {
+      if (!Array.isArray(points) || points.length < 2) return '';
+      var width = 120;
+      var height = 38;
+      var pad = 3;
+      var sourcePoints = points;
+      if (points.length > 64) {
+        var stride = (points.length - 1) / 63;
+        sourcePoints = [];
+        for (var s = 0; s < 64; s += 1) sourcePoints.push(points[Math.round(s * stride)]);
+      }
+      var values = sourcePoints.map(function (point) { return Number(point[1]); }).filter(function (value) { return Number.isFinite(value) && value > 0; });
+      if (values.length < 2) return '';
+      var min = Math.min.apply(Math, values);
+      var max = Math.max.apply(Math, values);
+      var span = max - min || max * 0.01 || 1;
+      var step = (width - pad * 2) / (values.length - 1);
+      var coords = values.map(function (value, index) {
+        return {
+          x: pad + step * index,
+          y: pad + (height - pad * 2) * (1 - (value - min) / span)
+        };
+      });
+      var d = 'M' + coords[0].x.toFixed(2) + ' ' + coords[0].y.toFixed(2);
+      for (var i = 0; i < coords.length - 1; i += 1) {
+        var current = coords[i];
+        var next = coords[i + 1];
+        var midX = (current.x + next.x) / 2;
+        d += ' C' + midX.toFixed(2) + ' ' + current.y.toFixed(2) + ' ' + midX.toFixed(2) + ' ' + next.y.toFixed(2) + ' ' + next.x.toFixed(2) + ' ' + next.y.toFixed(2);
+      }
+      return d;
+    }
+
+    function renderSolChart(prices) {
+      if (!solChartPath) return false;
+      var d = smoothChartPath(prices);
+      if (!d) return false;
+      solChartPath.setAttribute('d', d);
+      solChartPath.setAttribute('data-source', 'coingecko');
+      solChartPath.setAttribute('data-updated-at', String(Date.now()));
+      return true;
+    }
+
+    function refreshSolChart(opts) {
+      if (!solChartPath) return Promise.resolve(null);
+      var cached = readCachedSolChart(SOL_CHART_MAX_CACHE_MS);
+      if (cached) renderSolChart(cached.prices);
+      var now = Date.now();
+      if (!opts || !opts.force) {
+        if (cached && now - Number(cached.ts || 0) < SOL_CHART_TTL_MS) return Promise.resolve(cached);
+        if (now - solChartLastFetchAt < SOL_CHART_TTL_MS) return Promise.resolve(cached);
+      }
+      if (solChartFetchInFlight) return solChartFetchInFlight;
+      solChartLastFetchAt = now;
+      solChartFetchInFlight = fetch(SOL_CHART_URL, { cache: 'no-store', credentials: 'omit', headers: { accept: 'application/json' } })
+        .then(function (response) {
+          if (!response.ok) throw new Error('SOL chart HTTP ' + response.status);
+          return response.json();
+        })
+        .then(function (data) {
+          var prices = Array.isArray(data && data.prices) ? data.prices.filter(function (point) {
+            return Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
+          }) : [];
+          if (prices.length < 2) throw new Error('SOL chart data unavailable');
+          writeCachedSolChart(prices);
+          renderSolChart(prices);
+          return { ts: Date.now(), prices: prices };
+        })
+        .catch(function () {
+          var fallback = readCachedSolChart(SOL_CHART_MAX_CACHE_MS);
+          if (fallback) renderSolChart(fallback.prices);
+          return fallback;
+        })
+        .then(function (result) {
+          solChartFetchInFlight = null;
+          return result;
+        });
+      return solChartFetchInFlight;
+    }
 
     function paintDetails(snap) {
       if (!detailsModal) return;
@@ -1069,6 +1173,7 @@
       paintDetails(api.getState());
       detailsModal.hidden = false;
       detailsModal.setAttribute('aria-hidden', 'false');
+      refreshSolChart();
       hydrateFromCache();
       refreshPortfolio();
     }
@@ -1366,6 +1471,10 @@
     setInterval(function () {
       if (api.getState().connected) refreshPortfolio();
     }, 25000);
+    refreshSolChart();
+    setInterval(function () {
+      if (api.getState().connected || (detailsModal && !detailsModal.hidden)) refreshSolChart();
+    }, SOL_CHART_TTL_MS);
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && detailsModal && !detailsModal.hidden) closeDetails();
