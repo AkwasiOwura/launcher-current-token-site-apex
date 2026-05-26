@@ -487,6 +487,54 @@
     };
   }
 
+  function sortPortfolioTokens(tokens) {
+    return (Array.isArray(tokens) ? tokens : []).slice().sort(function (a, b) {
+      var av = Number.isFinite(a.usdValue) ? a.usdValue : null;
+      var bv = Number.isFinite(b.usdValue) ? b.usdValue : null;
+      if (av !== null || bv !== null) return (bv || 0) - (av || 0);
+      return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+    });
+  }
+
+  function mergeWalletTokens(indexedTokens, chainTokens, meta, prices) {
+    var byMint = Object.create(null);
+    var merged = [];
+    function attachLive(token, live) {
+      return Object.assign({}, token, live ? {
+        amount: live.amount,
+        rawAmount: live.rawAmount,
+        decimals: live.decimals,
+        account: live.account,
+        tokenProgram: live.tokenProgram,
+        state: live.state,
+        owner: live.owner
+      } : {});
+    }
+    (Array.isArray(chainTokens) ? chainTokens : []).forEach(function (token) {
+      if (token && token.mint && !byMint[token.mint]) byMint[token.mint] = token;
+    });
+    (Array.isArray(indexedTokens) ? indexedTokens : []).forEach(function (token) {
+      if (!token || !token.mint) return;
+      var live = byMint[token.mint];
+      merged.push(attachLive(token, live));
+      if (live) live.__rendered = true;
+    });
+    (Array.isArray(chainTokens) ? chainTokens : []).forEach(function (token) {
+      if (!token || !token.mint || token.__rendered) return;
+      var item = meta && meta[token.mint] || {};
+      var price = prices && prices[token.mint];
+      merged.push(Object.assign({}, token, {
+        name: item.name || shortAddr(token.mint),
+        symbol: item.symbol || shortAddr(token.mint),
+        imageUrl: item.imageUrl || '',
+        url: item.url || ('https://solscan.io/token/' + token.mint),
+        usdValue: Number.isFinite(price) ? price * token.amount : null,
+        unsupportedReason: token.tokenProgram === TOKEN_2022_PROGRAM_ID ? 'Sell All may be blocked: Token-2022 account support depends on Jupiter route and close-account safety.' : ''
+      }));
+    });
+    return sortPortfolioTokens(merged);
+  }
+
   async function fetchIndexedWalletPortfolio() {
     if (!state.address) throw new Error('Wallet not connected.');
     var resp = await fetch(WALLET_PORTFOLIO_ENDPOINT + encodeURIComponent(state.address), {
@@ -499,12 +547,7 @@
       throw new Error(message || ('Wallet portfolio API ' + resp.status));
     }
     var data = payload.data || {};
-    var tokens = (Array.isArray(data.tokens) ? data.tokens : []).map(normalizeIndexedToken).filter(Boolean).sort(function (a, b) {
-      var av = Number.isFinite(a.usdValue) ? a.usdValue : null;
-      var bv = Number.isFinite(b.usdValue) ? b.usdValue : null;
-      if (av !== null || bv !== null) return (bv || 0) - (av || 0);
-      return b.amount - a.amount;
-    });
+    var tokens = sortPortfolioTokens((Array.isArray(data.tokens) ? data.tokens : []).map(normalizeIndexedToken).filter(Boolean));
     return {
       sol: Number(data.sol && data.sol.amount),
       solUsdValue: Number.isFinite(Number(data.sol && data.sol.usdValue)) ? Number(data.sol.usdValue) : null,
@@ -520,20 +563,9 @@
       var indexed = await fetchIndexedWalletPortfolio();
       try {
         var chain = await fetchTokenAccounts();
-        var byMint = Object.create(null);
-        chain.forEach(function (token) { if (!byMint[token.mint]) byMint[token.mint] = token; });
-        indexed.tokens = indexed.tokens.map(function (token) {
-          var live = byMint[token.mint];
-          return live ? Object.assign({}, token, {
-            amount: live.amount,
-            rawAmount: live.rawAmount,
-            decimals: live.decimals,
-            account: live.account,
-            tokenProgram: live.tokenProgram,
-            state: live.state,
-            owner: live.owner
-          }) : token;
-        });
+        var meta = await loadLocalMetadata();
+        var prices = await fetchTokenPrices(chain.map(function (token) { return token.mint; }));
+        indexed.tokens = mergeWalletTokens(indexed.tokens, chain, meta, prices);
       } catch (_chainErr) {}
       return indexed;
     } catch (err) {
@@ -544,7 +576,7 @@
         return {
           sol: await fetchSolBalance().catch(function () { return NaN; }),
           solUsdValue: null,
-          tokens: accounts.map(function (token) {
+          tokens: sortPortfolioTokens(accounts.map(function (token) {
             var item = meta[token.mint] || {};
             var price = prices[token.mint];
             return Object.assign({}, token, {
@@ -554,7 +586,7 @@
               url: item.url || ('https://solscan.io/token/' + token.mint),
               usdValue: Number.isFinite(price) ? price * token.amount : null
             });
-          }),
+          })),
           tokenError: null,
           rpcUrl: lastRpcUrl || 'public rpc',
           updatedAt: Date.now()
@@ -893,19 +925,15 @@
           valueTone = token.usdValue > previousTokenValues[token.mint] ? ' value-up' : ' value-down';
         }
         if (Number.isFinite(token.usdValue)) nextValues[token.mint] = token.usdValue;
-        // NEVER ship a hard-disabled Sell All button: silently-disabled
-        // buttons swallow the click and the user sees no feedback. Always
-        // render enabled; the click handler does just-in-time recovery
-        // (associated-account lookup + getTokenAccountBalance) and only
-        // surfaces a disabled message via the modal if recovery fails.
+        var sellTitle = token.unsupportedReason || 'Sell full balance to SOL';
         return '<div class="wallet-token-row">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
             '<span class="wallet-token-contract"><button class="wallet-token-mint" type="button" data-mint="' + escapeHtml(token.mint) + '" title="Copy contract address">' + escapeHtml(mintLabel) + ' <span aria-hidden="true">⧉</span></button>' +
             '<a class="wallet-token-solscan" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer" title="Open on Solscan">↗</a></span></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
-            (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
-          '</span><button class="wallet-token-sell-all" type="button" data-token-index="' + index + '" title="Sell full balance to SOL">Sell All</button></div>';
+            (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '<small title="USD value unavailable">—</small>') +
+          '</span><button class="wallet-token-sell-all" type="button" data-token-index="' + index + '" title="' + escapeHtml(sellTitle) + '">Sell All</button></div>';
       }).join('');
       previousTokenValues = nextValues;
     }
