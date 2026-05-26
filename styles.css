@@ -577,29 +577,29 @@ h2{
   font-size:20px;
   transition:opacity .25s var(--ease),transform .25s var(--ease);
 }
-.coin-row,.coin-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.coin-row{margin-top:14px}
-.coin-rank,.coin-label{
-  display:inline-flex;
-  align-items:center;
-  min-height:26px;
-  padding:0 9px;
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:999px;
+.coin-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.coin-card h3.coin-title{
+  display:flex;align-items:baseline;gap:6px;
+  margin:10px 0 3px;
+  font-size:16px;line-height:1.15;letter-spacing:0;font-weight:900;
+  min-width:0;
+}
+.coin-card .coin-rank-text{
+  flex:0 0 auto;color:var(--soft);font-family:var(--mono);font-weight:900;font-size:14px;letter-spacing:.02em;
+}
+.coin-card .coin-name{
+  flex:1 1 auto;min-width:0;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.coin-card p.coin-symbol{margin:0;color:var(--mint);font-family:var(--mono);font-size:12px;font-weight:900}
+.coin-card code{
+  display:inline-block;
+  margin-top:4px;
   color:var(--soft);
   font-family:var(--mono);
   font-size:11px;
-  font-weight:900;
-}
-.coin-rank{color:var(--mint);background:rgba(22,242,139,.08)}
-.coin-card h3{margin:12px 0 4px;font-size:22px;line-height:1.05;letter-spacing:0}
-.coin-card p{margin:0;color:var(--mint);font-family:var(--mono);font-size:13px;font-weight:900}
-.coin-card code{
-  display:inline-block;
-  margin-top:10px;
-  color:var(--soft);
-  font-family:var(--mono);
-  font-size:12px;
+  max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .coin-footer{
   margin-top:18px;
