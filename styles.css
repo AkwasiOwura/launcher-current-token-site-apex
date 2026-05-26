@@ -1380,6 +1380,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
   transition:border-color .2s var(--ease),transform .2s var(--ease);
 }
 .radar-row:hover{border-color:rgba(22,242,139,.42);transform:translateX(2px)}
+.radar-row--clickable{cursor:pointer;user-select:none}
+.radar-row--clickable:focus-visible{outline:1px solid var(--mint);outline-offset:2px}
 .radar-row .rank{
   font-family:var(--mono);
   font-size:13px;

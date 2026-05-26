@@ -290,42 +290,40 @@
   }
 
   function chartSourceForCoin(coin) {
+    // GeckoTerminal-first policy: if we have a real Solana mint OR a
+    // CoinGecko id we can resolve to a mint, defer to the async
+    // resolveChartProvider() which queries GeckoTerminal before any
+    // other provider. The modal opens immediately on click and the
+    // resolution paints into it.
     var mint = String(coin && (coin.mint || coin.contract || coin.address) || '').trim();
+    if (isSolanaAddress(mint) || coinGeckoSlug(coin)) {
+      return { provider: 'GeckoTerminal', mode: 'fallback', externalUrl: '', lookupPending: true };
+    }
+    // No usable identifier — try any explicit provider URLs the coin
+    // happens to carry, then external fallbacks.
     var providerUrls = [
       coin && coin.chartUrl,
-      coin && coin.tradingViewUrl,
-      coin && coin.dexScreenerUrl,
       coin && coin.geckoTerminalUrl,
+      coin && coin.dexScreenerUrl,
+      coin && coin.tradingViewUrl,
       coin && coin.birdeyeUrl,
       coin && coin.photonUrl,
       coin && coin.dextoolsUrl
     ].concat(urlsFromValue(coin && coin.sources, [])).map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
-
     for (var i = 0; i < providerUrls.length; i += 1) {
       var source = chartSourceFromUrl(providerUrls[i]);
       if (source) return source;
     }
-
     if (coin && coin.pumpFunUrl) {
       return { provider: 'Pump.fun', mode: 'external', externalUrl: safeUrl(coin.pumpFunUrl, '') };
     }
-    var fallbackUrls = [
-      coin && coin.fallbackUrl,
-      coin && coin.url
-    ].map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
+    var fallbackUrls = [coin && coin.fallbackUrl, coin && coin.url]
+      .map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
     for (var f = 0; f < fallbackUrls.length; f += 1) {
-      var fallbackSource = chartSourceFromUrl(fallbackUrls[f]);
-      if (fallbackSource) return fallbackSource;
+      var fbs = chartSourceFromUrl(fallbackUrls[f]);
+      if (fbs) return fbs;
     }
-    if (mint && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) {
-      return {
-        provider: 'DexScreener',
-        mode: 'iframe',
-        embedUrl: dexScreenerChartOnlyUrl('https://dexscreener.com/solana/' + encodeURIComponent(mint)),
-        externalUrl: 'https://dexscreener.com/solana/' + encodeURIComponent(mint)
-      };
-    }
-    return { provider: 'Sparkline', mode: 'fallback', externalUrl: '', lookupPending: !!coinGeckoSlug(coin) };
+    return { provider: 'Sparkline', mode: 'fallback', externalUrl: '', lookupPending: false };
   }
 
   function chartCacheKey(payload) {
@@ -415,9 +413,10 @@
     var sequence = Promise.resolve(null);
 
     if (isSolanaAddress(mint)) {
+      // GeckoTerminal FIRST per policy; DexScreener only as fallback.
       sequence = sequence
-        .then(function (source) { return source || resolveDexScreenerByMint(mint); })
-        .then(function (source) { return source || resolveGeckoTerminalByMint(mint); });
+        .then(function (source) { return source || resolveGeckoTerminalByMint(mint); })
+        .then(function (source) { return source || resolveDexScreenerByMint(mint); });
     }
 
     if (slug && !isSolanaAddress(mint)) {
@@ -426,8 +425,8 @@
         return resolveCoinGeckoAddress(slug).then(function (resolvedMint) {
           if (!isSolanaAddress(resolvedMint)) return null;
           payload.mint = resolvedMint;
-          return resolveDexScreenerByMint(resolvedMint)
-            .then(function (dexSource) { return dexSource || resolveGeckoTerminalByMint(resolvedMint); });
+          return resolveGeckoTerminalByMint(resolvedMint)
+            .then(function (gt) { return gt || resolveDexScreenerByMint(resolvedMint); });
         });
       });
     }
@@ -678,16 +677,33 @@
         changeText = (change > 0 ? '▲ ' : '▼ ') + Math.abs(change).toFixed(2) + '%';
       }
       var primary = price || (mcap ? 'Cap ' + mcap : '');
-      var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#trending');
-      var external = href !== '#trending';
+      // Same chart-payload shape used by the trending coin cards so the
+      // existing chart-modal handler picks it up. GeckoTerminal-first
+      // resolution runs inside openChartModal -> resolveChartProvider.
+      var chartSource = chartSourceForCoin(coin);
+      var chartPayload = {
+        mint: coin.mint || coin.contract || coin.address || '',
+        contract: coin.contract || '',
+        address: coin.address || '',
+        coingeckoId: coin.coingeckoId || '',
+        fallbackUrl: coin.fallbackUrl || '',
+        symbol: symbol,
+        name: coin.name || coin.symbol || 'Token',
+        provider: chartSource.provider,
+        mode: chartSource.mode,
+        embedUrl: chartSource.embedUrl || '',
+        externalUrl: chartSource.externalUrl || '',
+        lookupPending: !!chartSource.lookupPending,
+        sparkSvg: ''
+      };
       return [
         '<li>',
-        '<a class="radar-row" href="' + href + '"' + (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>',
+        '<div class="radar-row radar-row--clickable" role="button" tabindex="0" title="Click to reveal chart" aria-label="Open chart for ' + name + '" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">',
         '<span class="rank">' + (idx + 1) + '</span>',
         '<span class="logo">' + (image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : initials) + '</span>',
         '<span class="meta"><strong>' + name + '</strong><small>$' + symbol + (mcap && price ? ' · ' + mcap : '') + '</small></span>',
         '<span class="values">' + (primary ? '<span class="price">' + escapeHtml(primary) + '</span>' : '') + (changeText ? '<span class="change ' + changeClass + '">' + escapeHtml(changeText) + '</span>' : '') + '</span>',
-        '</a>',
+        '</div>',
         '</li>'
       ].join('');
     }).join('');
