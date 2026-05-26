@@ -512,8 +512,12 @@
       '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '"' + disAttr + '><span class="cyber-corner-tl" aria-hidden="true"></span><span class="cyber-corner-br" aria-hidden="true"></span>SELL</button>',
       '</div>'
     ].join('');
+    var openHref = safeUrl(href, '');
+    var openLink = openHref
+      ? '<a class="coin-open" href="' + openHref + '" target="_blank" rel="noopener noreferrer" aria-label="Open source page for ' + (symbol || name) + '">Open ↗</a>'
+      : '<span class="coin-open is-disabled" aria-disabled="true" title="No source page available">Open ↗</span>';
     return [
-      '<a class="coin-card ' + changeDir + '" style="animation-delay:' + delay + 'ms" href="' + href + '" target="_blank" rel="noopener noreferrer"' + tradePayload + '>',
+      '<article class="coin-card ' + changeDir + '" style="animation-delay:' + delay + 'ms"' + tradePayload + '>',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
       '<span class="cyber-corner-br" aria-hidden="true"></span>',
       '<div class="coin-media">',
@@ -527,8 +531,8 @@
       sparkBlock,
       tradeBlock,
       '</div>',
-      '<div class="coin-footer"><span>' + (meta.length ? meta.join(' · ') : 'Open page') + '</span><strong>Open ↗</strong></div>',
-      '</a>'
+      '<div class="coin-footer"><span>' + (meta.length ? meta.join(' · ') : 'Open page') + '</span>' + openLink + '</div>',
+      '</article>'
     ].join('');
   }
 

@@ -610,6 +610,16 @@ h2{
   font-size:11px;
 }
 .coin-footer strong{color:var(--text);font-family:var(--sans);font-size:13px}
+.coin-card{cursor:default}
+.coin-open{
+  display:inline-flex;align-items:center;gap:4px;
+  color:var(--text);font-family:var(--sans);font-size:13px;font-weight:700;
+  text-decoration:none;letter-spacing:.02em;
+  padding:2px 4px;margin:-2px -4px;
+  transition:color .15s var(--ease),text-shadow .15s var(--ease);
+}
+.coin-open:hover{color:var(--mint);text-shadow:0 0 12px rgba(22,242,139,.4)}
+.coin-open.is-disabled{color:var(--soft);cursor:not-allowed;text-shadow:none}
 .up{color:var(--mint)}
 .down{color:var(--rose)}
 .empty-card{
