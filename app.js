@@ -398,6 +398,19 @@
     return { provider: 'Sparkline', mode: 'fallback', externalUrl: '', lookupPending: false };
   }
 
+  function hasChartCandidate(payload) {
+    if (!payload) return false;
+    if (payload.embedUrl || payload.externalUrl || payload.fallbackUrl || payload.pumpFunUrl || payload.url) return true;
+    if (isSolanaAddress(payload.mint || payload.contract || payload.address)) return true;
+    return !!normalizeSlug(payload.coingeckoId);
+  }
+
+  function shouldIgnoreChartClick(target, trigger) {
+    if (!target || !trigger || !target.closest) return false;
+    var interactive = target.closest('button, a, input, select, textarea, [data-trade], [data-modal-close], [data-chart-close]');
+    return !!(interactive && trigger.contains(interactive));
+  }
+
   function chartCacheKey(payload) {
     return [
       payload && payload.mint,
@@ -777,8 +790,10 @@
         mint: coin.mint || coin.contract || coin.address || '',
         contract: coin.contract || '',
         address: coin.address || '',
-        coingeckoId: coin.coingeckoId || '',
+        coingeckoId: coin.coingeckoId || coinGeckoSlug(coin),
         fallbackUrl: coin.fallbackUrl || '',
+        pumpFunUrl: coin.pumpFunUrl || '',
+        url: coin.url || '',
         symbol: symbol,
         name: coin.name || coin.symbol || 'Token',
         provider: chartSource.provider,
@@ -786,7 +801,8 @@
         embedUrl: chartSource.embedUrl || '',
         externalUrl: chartSource.externalUrl || '',
         lookupPending: !!chartSource.lookupPending,
-        sparkSvg: ''
+        sparkSvg: '',
+        radarChartRequired: true
       };
       // Trade payload — same shape coin cards use. Disabled state when
       // neither a real Solana mint nor a CoinGecko slug is available.
@@ -803,11 +819,11 @@
 
       return [
         '<li>',
-        '<div class="radar-row"' + coinAttr + '>',
+        '<div class="radar-row" role="button" tabindex="0" title="Click to reveal chart" aria-label="Open chart for ' + name + '"' + coinAttr + ' data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">',
         '<span class="rank">' + (idx + 1) + '</span>',
         '<span class="logo">' + (image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : initials) + '</span>',
         '<span class="meta"><strong>' + name + '</strong><small>$' + symbol + (mcap && price ? ' · ' + mcap : '') + '</small></span>',
-        '<span class="values radar-values-clickable" role="button" tabindex="0" title="Click to reveal chart" aria-label="Open chart for ' + name + '" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">',
+        '<span class="values radar-values-clickable">',
           (primary ? '<span class="price">' + escapeHtml(primary) + '</span>' : '<span class="price">—</span>'),
           (changeText ? '<span class="change ' + changeClass + '">' + escapeHtml(changeText) + '</span>' : '<span class="change">—</span>'),
         '</span>',
@@ -951,17 +967,33 @@
     document.addEventListener('click', function (event) {
       var trigger = event.target && event.target.closest && event.target.closest('[data-chart]');
       if (!trigger) return;
+      if (shouldIgnoreChartClick(event.target, trigger)) return;
       event.preventDefault();
       event.stopPropagation();
-      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}'), trigger); } catch (_err) {}
+      try {
+        var payload = JSON.parse(trigger.getAttribute('data-chart') || '{}');
+        if (payload.radarChartRequired && !hasChartCandidate(payload)) {
+          window.SMHToast('Chart unavailable for this token: no valid mint or chart source found.', { kind: 'warn' });
+          return;
+        }
+        openChartModal(payload, trigger);
+      } catch (_err) {}
     }, true);
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       var trigger = event.target && event.target.closest && event.target.closest('[data-chart]');
       if (!trigger) return;
+      if (shouldIgnoreChartClick(event.target, trigger)) return;
       event.preventDefault();
       event.stopPropagation();
-      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}'), trigger); } catch (_err) {}
+      try {
+        var payload = JSON.parse(trigger.getAttribute('data-chart') || '{}');
+        if (payload.radarChartRequired && !hasChartCandidate(payload)) {
+          window.SMHToast('Chart unavailable for this token: no valid mint or chart source found.', { kind: 'warn' });
+          return;
+        }
+        openChartModal(payload, trigger);
+      } catch (_err) {}
     }, true);
   }
 

@@ -1419,6 +1419,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   background:rgba(8,18,12,.6);
   transition:border-color .2s var(--ease);
 }
+.radar-row[data-chart]{cursor:pointer}
 .radar-row:hover{border-color:rgba(22,242,139,.32)}
 .radar-values-clickable{cursor:pointer;user-select:none}
 .radar-values-clickable:focus-visible{outline:1px solid var(--mint);outline-offset:2px}
