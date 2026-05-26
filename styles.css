@@ -1394,14 +1394,17 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .radar-values-clickable:focus-visible{outline:1px solid var(--mint);outline-offset:2px}
 .radar-trade{
   display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;
-  gap:6px;min-width:56px;
+  gap:2px;min-width:42px;width:42px;
+  margin-left:-4px;
   align-self:stretch;
 }
-.radar-trade-btn{
+.daily-radar .radar-trade-btn{
   position:relative;
   display:inline-flex;align-items:center;justify-content:center;
-  padding:4px 0;min-height:24px;
-  font-size:11px;font-weight:900;letter-spacing:.16em;
+  min-height:18px;
+  padding:0 5px;
+  font-size:9.5px;font-weight:900;letter-spacing:.12em;
+  line-height:1;
   border:1px solid currentColor;background:transparent;
   cursor:pointer;
   transition:background .15s var(--ease),color .15s var(--ease);
@@ -1430,9 +1433,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .radar-row .meta{display:flex;flex-direction:column;min-width:0}
 .radar-row .meta strong{font-size:15px;font-weight:800;line-height:1.1}
 .radar-row .meta small{color:var(--muted);font-size:12px;font-family:var(--mono);margin-top:3px}
-.radar-row .values{text-align:right;display:flex;flex-direction:column;justify-content:space-between;gap:4px;align-self:stretch}
-.radar-row .values .price{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:#fff;line-height:1}
-.radar-row .values .change{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.radar-row .values{text-align:right;display:flex;flex-direction:column;justify-content:space-between;gap:2px;align-self:stretch}
+.radar-row .values .price{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:#fff;line-height:18px}
+.radar-row .values .change{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;line-height:18px}
 .radar-row .values .change.up{color:var(--mint)}
 .radar-row .values .change.down{color:var(--rose,#ff6464)}
 .radar-row--placeholder{
