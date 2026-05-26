@@ -1380,18 +1380,37 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .radar-row{
   position:relative;
   display:grid;
-  grid-template-columns:30px 40px 1fr auto;
-  gap:12px;
+  grid-template-columns:24px 40px minmax(0,1fr) auto auto;
+  gap:10px;
   align-items:center;
-  padding:12px 14px;
+  padding:10px 12px;
   border:1px solid rgba(255,255,255,.08);
   border-radius:0;
   background:rgba(8,18,12,.6);
-  transition:border-color .2s var(--ease),transform .2s var(--ease);
+  transition:border-color .2s var(--ease);
 }
-.radar-row:hover{border-color:rgba(22,242,139,.42);transform:translateX(2px)}
-.radar-row--clickable{cursor:pointer;user-select:none}
-.radar-row--clickable:focus-visible{outline:1px solid var(--mint);outline-offset:2px}
+.radar-row:hover{border-color:rgba(22,242,139,.32)}
+.radar-values-clickable{cursor:pointer;user-select:none}
+.radar-values-clickable:focus-visible{outline:1px solid var(--mint);outline-offset:2px}
+.radar-trade{
+  display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;
+  gap:6px;min-width:56px;
+  align-self:stretch;
+}
+.radar-trade-btn{
+  position:relative;
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:4px 0;min-height:24px;
+  font-size:11px;font-weight:900;letter-spacing:.16em;
+  border:1px solid currentColor;background:transparent;
+  cursor:pointer;
+  transition:background .15s var(--ease),color .15s var(--ease);
+}
+.radar-trade-btn.trade-buy{color:#16f28b}
+.radar-trade-btn.trade-buy:hover:not([disabled]){background:rgba(22,242,139,.16);color:#fff}
+.radar-trade-btn.trade-sell{color:#ff6464}
+.radar-trade-btn.trade-sell:hover:not([disabled]){background:rgba(255,100,100,.18);color:#fff}
+.radar-trade-btn[disabled]{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
 .radar-row .rank{
   font-family:var(--mono);
   font-size:13px;
@@ -1411,9 +1430,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.55)}
 .radar-row .meta{display:flex;flex-direction:column;min-width:0}
 .radar-row .meta strong{font-size:15px;font-weight:800;line-height:1.1}
 .radar-row .meta small{color:var(--muted);font-size:12px;font-family:var(--mono);margin-top:3px}
-.radar-row .values{text-align:right;display:flex;flex-direction:column;gap:2px}
-.radar-row .values .price{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
-.radar-row .values .change{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.radar-row .values{text-align:right;display:flex;flex-direction:column;justify-content:space-between;gap:4px;align-self:stretch}
+.radar-row .values .price{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:#fff;line-height:1}
+.radar-row .values .change{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
 .radar-row .values .change.up{color:var(--mint)}
 .radar-row .values .change.down{color:var(--rose,#ff6464)}
 .radar-row--placeholder{

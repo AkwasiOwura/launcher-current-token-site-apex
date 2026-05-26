@@ -716,13 +716,33 @@
         lookupPending: !!chartSource.lookupPending,
         sparkSvg: ''
       };
+      // Trade payload — same shape coin cards use. Disabled state when
+      // neither a real Solana mint nor a CoinGecko slug is available.
+      var rawMint = coin && (coin.mint || coin.contract || coin.address) || '';
+      var validMint = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(rawMint || ''));
+      var cgSlug = !validMint ? coinGeckoSlug(coin) : '';
+      var disabledReason = '';
+      var slim = { name: coin.name || '', symbol: coin.symbol || '', imageUrl: coin.imageUrl || '' };
+      if (validMint) slim.mint = rawMint;
+      else if (cgSlug) slim.coingeckoSlug = cgSlug;
+      else disabledReason = 'Trading unavailable — no Solana mint mapped for this token.';
+      var disAttr = disabledReason ? ' disabled aria-disabled="true" title="' + escapeHtml(disabledReason) + '"' : '';
+      var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(slim)) + '"';
+
       return [
         '<li>',
-        '<div class="radar-row radar-row--clickable" role="button" tabindex="0" title="Click to reveal chart" aria-label="Open chart for ' + name + '" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">',
+        '<div class="radar-row"' + coinAttr + '>',
         '<span class="rank">' + (idx + 1) + '</span>',
         '<span class="logo">' + (image ? '<img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : initials) + '</span>',
         '<span class="meta"><strong>' + name + '</strong><small>$' + symbol + (mcap && price ? ' · ' + mcap : '') + '</small></span>',
-        '<span class="values">' + (primary ? '<span class="price">' + escapeHtml(primary) + '</span>' : '') + (changeText ? '<span class="change ' + changeClass + '">' + escapeHtml(changeText) + '</span>' : '') + '</span>',
+        '<span class="values radar-values-clickable" role="button" tabindex="0" title="Click to reveal chart" aria-label="Open chart for ' + name + '" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">',
+          (primary ? '<span class="price">' + escapeHtml(primary) + '</span>' : '<span class="price">—</span>'),
+          (changeText ? '<span class="change ' + changeClass + '">' + escapeHtml(changeText) + '</span>' : '<span class="change">—</span>'),
+        '</span>',
+        '<span class="radar-trade">',
+          '<button type="button" class="trade-btn trade-buy radar-trade-btn" data-trade="buy" aria-label="Buy ' + name + '"' + disAttr + '>BUY</button>',
+          '<button type="button" class="trade-btn trade-sell radar-trade-btn" data-trade="sell" aria-label="Sell ' + name + '"' + disAttr + '>SELL</button>',
+        '</span>',
         '</div>',
         '</li>'
       ].join('');
