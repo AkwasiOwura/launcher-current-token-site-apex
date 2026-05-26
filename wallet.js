@@ -893,7 +893,11 @@
           valueTone = token.usdValue > previousTokenValues[token.mint] ? ' value-up' : ' value-down';
         }
         if (Number.isFinite(token.usdValue)) nextValues[token.mint] = token.usdValue;
-        var sellReady = !!(token.account && token.rawAmount && token.rawAmount !== '0');
+        // NEVER ship a hard-disabled Sell All button: silently-disabled
+        // buttons swallow the click and the user sees no feedback. Always
+        // render enabled; the click handler does just-in-time recovery
+        // (associated-account lookup + getTokenAccountBalance) and only
+        // surfaces a disabled message via the modal if recovery fails.
         return '<div class="wallet-token-row">' +
           tokenAvatar(token) +
           '<span class="wallet-token-meta"><strong>' + escapeHtml(token.name || token.symbol || mintLabel) + '</strong>' +
@@ -901,7 +905,7 @@
             '<a class="wallet-token-solscan" href="' + escapeHtml(token.url) + '" target="_blank" rel="noopener noreferrer" title="Open on Solscan">↗</a></span></span>' +
           '<span class="wallet-token-amount"><strong>' + escapeHtml(fmtAmount(token.amount, 6)) + '</strong>' +
             (Number.isFinite(token.usdValue) ? '<small class="' + valueTone.trim() + '">' + escapeHtml(fmtUsd(token.usdValue)) + '</small>' : '') +
-          '</span><button class="wallet-token-sell-all" type="button" data-token-index="' + index + '"' + (sellReady ? ' title="Sell full balance to SOL"' : ' disabled title="Live token account details required"') + '>Sell All</button></div>';
+          '</span><button class="wallet-token-sell-all" type="button" data-token-index="' + index + '" title="Sell full balance to SOL">Sell All</button></div>';
       }).join('');
       previousTokenValues = nextValues;
     }
@@ -989,20 +993,54 @@
       sellAllModal.setAttribute('aria-hidden', 'true');
     }
 
+    async function enrichSellToken(token) {
+      // Just-in-time recovery for tokens that came back from an upstream
+      // index without an `account` / `rawAmount` field. Derives the
+      // owner's Associated Token Account and re-reads the live balance.
+      if (token && token.account && /^\d+$/.test(String(token.rawAmount || ''))) return token;
+      if (!window.solanaWeb3) throw new Error('Solana web3 library failed to load — refresh the page.');
+      var wallet = api.getState();
+      if (!wallet.address) throw new Error('Wallet not connected.');
+      var owner = new window.solanaWeb3.PublicKey(wallet.address);
+      var mintPk = new window.solanaWeb3.PublicKey(token.mint);
+      var programPk = new window.solanaWeb3.PublicKey(token.tokenProgram || TOKEN_PROGRAM_ID);
+      // Compute ATA via PDA: [owner, programId, mint]
+      var ataSeeds = [owner.toBytes(), programPk.toBytes(), mintPk.toBytes()];
+      var ata = window.solanaWeb3.PublicKey.findProgramAddressSync(
+        ataSeeds,
+        new window.solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+      )[0];
+      var account = ata.toString();
+      var rawAmount = await fetchTokenAccountRawAmount(account);
+      if (rawAmount == null) throw new Error('Sell All blocked: token account ' + account.slice(0,6) + '… returned no balance.');
+      if (rawAmount === '0') throw new Error('Sell All blocked: live balance is zero (token may already be sold).');
+      return Object.assign({}, token, { account: account, rawAmount: String(rawAmount) });
+    }
+
     async function openSellAllModal(token) {
       ensureSellAllModal();
       var snap = api.getState();
       if (!snap.connected) { alert('Connect wallet before selling.'); return; }
-      if (!token || !token.account || !token.rawAmount) {
-        alert('Sell All blocked: live token account details are required.');
+      if (!token || !token.mint || !isValidMint(token.mint)) {
+        alert('Sell All blocked: token mint is invalid.');
         return;
       }
       sellAllModal.hidden = false;
       sellAllModal.setAttribute('aria-hidden', 'false');
       sellAllEls.token.textContent = token.name || token.symbol || shortAddr(token.mint);
+      sellAllEls.amount.textContent = 'Amount: resolving…';
+      sellAllEls.receive.textContent = 'Estimated receive: —';
+      sellAllEls.confirm.disabled = true;
+      setSellAllStatus('info', 'Resolving live token account…');
+      try {
+        token = await enrichSellToken(token);
+      } catch (err) {
+        sellAllEls.amount.textContent = 'Amount: unavailable';
+        setSellAllStatus('error', err && err.message ? err.message : String(err));
+        return;
+      }
       sellAllEls.amount.textContent = 'Amount: ' + fmtAmount(rawAmountToUi(token.rawAmount, token.decimals), 6) + ' ' + String(token.symbol || 'TOKEN').toUpperCase();
       sellAllEls.receive.textContent = 'Estimated receive: loading…';
-      sellAllEls.confirm.disabled = true;
       if (!snap.consentSigned) {
         setSellAllStatus('info', 'Awaiting wallet authentication…');
         try {
