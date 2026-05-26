@@ -612,14 +612,14 @@ h2{
 .coin-footer strong{color:var(--text);font-family:var(--sans);font-size:13px}
 .coin-card{cursor:default}
 .coin-open{
-  display:inline-flex;align-items:center;gap:4px;
-  color:var(--text);font-family:var(--sans);font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;gap:2px;
+  color:var(--soft);font-family:var(--mono);font-size:11px;font-weight:700;
   text-decoration:none;letter-spacing:.02em;
-  padding:2px 4px;margin:-2px -4px;
+  padding:1px 3px;margin:-1px -3px;
   transition:color .15s var(--ease),text-shadow .15s var(--ease);
 }
-.coin-open:hover{color:var(--mint);text-shadow:0 0 12px rgba(22,242,139,.4)}
-.coin-open.is-disabled{color:var(--soft);cursor:not-allowed;text-shadow:none}
+.coin-open:hover{color:var(--mint);text-shadow:0 0 10px rgba(22,242,139,.35)}
+.coin-open.is-disabled{color:var(--soft);cursor:not-allowed;text-shadow:none;opacity:.6}
 .up{color:var(--mint)}
 .down{color:var(--rose)}
 .empty-card{
