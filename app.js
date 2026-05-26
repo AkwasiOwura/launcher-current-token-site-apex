@@ -1,6 +1,78 @@
 (function () {
   'use strict';
 
+  // ── Shared modal a11y + toast helpers (used by wallet.js, trade.js, this file)
+  if (!window.SMHModal) {
+    window.SMHModal = (function () {
+      var stack = [];
+      var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      function focusables(modal) {
+        return Array.prototype.slice.call(modal.querySelectorAll(FOCUSABLE)).filter(function (el) {
+          if (el.hasAttribute('hidden')) return false;
+          var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+          if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+          return el.offsetParent !== null || el === document.activeElement;
+        });
+      }
+      function activate(modal, trigger) {
+        if (!modal) return;
+        var keyHandler = function (e) {
+          if (e.key !== 'Tab') return;
+          var items = focusables(modal);
+          if (!items.length) { e.preventDefault(); return; }
+          var first = items[0], last = items[items.length - 1];
+          if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+            e.preventDefault(); last.focus();
+          } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+            e.preventDefault(); first.focus();
+          }
+        };
+        modal.addEventListener('keydown', keyHandler);
+        stack.push({ modal: modal, trigger: trigger || document.activeElement, keyHandler: keyHandler });
+        setTimeout(function () {
+          var items = focusables(modal);
+          if (items.length) { try { items[0].focus(); } catch (_e) {} return; }
+          if (!modal.hasAttribute('tabindex')) modal.setAttribute('tabindex', '-1');
+          try { modal.focus(); } catch (_e) {}
+        }, 0);
+      }
+      function deactivate(modal) {
+        for (var i = stack.length - 1; i >= 0; i -= 1) {
+          if (stack[i].modal !== modal) continue;
+          modal.removeEventListener('keydown', stack[i].keyHandler);
+          var trigger = stack[i].trigger;
+          stack.splice(i, 1);
+          if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) {
+            try { trigger.focus(); } catch (_e) {}
+          }
+          return;
+        }
+      }
+      return { activate: activate, deactivate: deactivate };
+    })();
+  }
+  if (!window.SMHToast) {
+    window.SMHToast = function (message, opts) {
+      opts = opts || {};
+      var kind = opts.kind || 'info';
+      var duration = Number.isFinite(opts.duration) ? opts.duration : 4200;
+      try {
+        var el = document.createElement('div');
+        el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+        el.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+        el.className = 'smh-toast smh-toast-' + kind;
+        el.textContent = String(message == null ? '' : message);
+        var border = 'rgba(22,242,139,.45)';
+        var color = '#e8fff3';
+        if (kind === 'error') { border = 'rgba(255,100,100,.55)'; color = '#ffd2d2'; }
+        else if (kind === 'warn') { border = 'rgba(255,200,77,.6)'; color = '#ffcf5a'; }
+        el.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:1000;padding:10px 16px;border:1px solid ' + border + ';background:rgba(8,12,16,.94);color:' + color + ';font-size:13px;font-weight:700;max-width:560px;text-align:center;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.45);letter-spacing:.2px;';
+        document.body.appendChild(el);
+        setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, duration);
+      } catch (_e) {}
+    };
+  }
+
   var reducedMotion = false;
   var memeState = {
     data: null,
@@ -801,6 +873,7 @@
   function closeChartModal() {
     var modal = document.getElementById('chart-reveal-modal');
     if (!modal) return;
+    if (window.SMHModal) window.SMHModal.deactivate(modal);
     modal.hidden = true;
     modal.setAttribute('aria-hidden', 'true');
     modal.removeAttribute('data-chart-key');
@@ -834,7 +907,7 @@
     }
   }
 
-  function openChartModal(payload) {
+  function openChartModal(payload, trigger) {
     var modal = ensureChartModal();
     var title = document.getElementById('chart-modal-title');
     var subtitle = document.getElementById('chart-modal-subtitle');
@@ -869,6 +942,7 @@
     }
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
+    if (window.SMHModal) window.SMHModal.activate(modal, trigger);
   }
 
   function setupChartReveal() {
@@ -879,7 +953,7 @@
       if (!trigger) return;
       event.preventDefault();
       event.stopPropagation();
-      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}')); } catch (_err) {}
+      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}'), trigger); } catch (_err) {}
     }, true);
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -887,7 +961,7 @@
       if (!trigger) return;
       event.preventDefault();
       event.stopPropagation();
-      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}')); } catch (_err) {}
+      try { openChartModal(JSON.parse(trigger.getAttribute('data-chart') || '{}'), trigger); } catch (_err) {}
     }, true);
   }
 
@@ -1114,7 +1188,10 @@
   }
 
   function loadJson(path) {
-    return fetch(path, { cache: 'no-store', credentials: 'omit' })
+    // Cache freshness is driven by the Cache-Control headers in netlify.toml
+    // (meme-coins.json: 60s, tokens.json: 300s). Avoid forcing no-store so
+    // the 69 KB JSON can be served from the browser cache on repeat visits.
+    return fetch(path, { credentials: 'omit' })
       .then(function (response) {
         if (!response.ok) throw new Error(path + ' unavailable');
         return response.json();
@@ -1160,10 +1237,22 @@
     items.forEach(function (node) { observer.observe(node); });
   }
 
+  function setupComingSoon() {
+    document.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest && event.target.closest('[data-coming-soon]');
+      if (!btn) return;
+      event.preventDefault();
+      var label = btn.getAttribute('data-coming-soon') || 'This';
+      if (window.SMHToast) window.SMHToast(label + ' — coming soon.', { kind: 'info' });
+      else alert(label + ' — coming soon.');
+    });
+  }
+
   function boot() {
     setupReveal();
     setupControls();
     setupRugcheck();
+    setupComingSoon();
     loadData();
   }
 
