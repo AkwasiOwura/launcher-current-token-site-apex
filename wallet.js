@@ -995,26 +995,72 @@
 
     async function enrichSellToken(token) {
       // Just-in-time recovery for tokens that came back from an upstream
-      // index without an `account` / `rawAmount` field. Derives the
-      // owner's Associated Token Account and re-reads the live balance.
-      if (token && token.account && /^\d+$/.test(String(token.rawAmount || ''))) return token;
+      // index without a usable `account` / `rawAmount`. The upstream
+      // sometimes ships the MINT address as `account` by mistake, or
+      // ships no `account` at all. We always do an authoritative RPC
+      // lookup against the wallet -> mint pair to find the real token
+      // account, falling back across token programs if needed.
       if (!window.solanaWeb3) throw new Error('Solana web3 library failed to load — refresh the page.');
       var wallet = api.getState();
       if (!wallet.address) throw new Error('Wallet not connected.');
-      var owner = new window.solanaWeb3.PublicKey(wallet.address);
-      var mintPk = new window.solanaWeb3.PublicKey(token.mint);
-      var programPk = new window.solanaWeb3.PublicKey(token.tokenProgram || TOKEN_PROGRAM_ID);
-      // Compute ATA via PDA: [owner, programId, mint]
-      var ataSeeds = [owner.toBytes(), programPk.toBytes(), mintPk.toBytes()];
-      var ata = window.solanaWeb3.PublicKey.findProgramAddressSync(
-        ataSeeds,
-        new window.solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
-      )[0];
-      var account = ata.toString();
-      var rawAmount = await fetchTokenAccountRawAmount(account);
-      if (rawAmount == null) throw new Error('Sell All blocked: token account ' + account.slice(0,6) + '… returned no balance.');
-      if (rawAmount === '0') throw new Error('Sell All blocked: live balance is zero (token may already be sold).');
-      return Object.assign({}, token, { account: account, rawAmount: String(rawAmount) });
+      var ownerStr = wallet.address;
+
+      // Ask the RPC for every token account this wallet owns for THIS
+      // mint, across both token programs. Pick the account with the
+      // largest non-zero balance (covers wallets that ended up with
+      // multiple ATAs for the same mint).
+      async function listAccounts(programId) {
+        try {
+          var resp = await rpcRequest({
+            jsonrpc: '2.0', id: 'enrich-' + programId, method: 'getTokenAccountsByOwner',
+            params: [
+              ownerStr,
+              { mint: token.mint },
+              { encoding: 'jsonParsed', commitment: 'confirmed' }
+            ]
+          }, TOKEN_RPC_URLS);
+          return (resp && resp.value) || [];
+        } catch (_e) { return []; }
+      }
+
+      var matches = await listAccounts(TOKEN_PROGRAM_ID);
+      var program = TOKEN_PROGRAM_ID;
+      if (!matches.length) {
+        matches = await listAccounts(TOKEN_2022_PROGRAM_ID);
+        if (matches.length) program = TOKEN_2022_PROGRAM_ID;
+      }
+      if (!matches.length) throw new Error('Sell All blocked: no token account found for this mint on the connected wallet.');
+
+      var best = null;
+      var bestRaw = '0';
+      var decimals = token.decimals;
+      var stateFlag = null;
+      for (var i = 0; i < matches.length; i += 1) {
+        var entry = matches[i];
+        var info = entry && entry.account && entry.account.data && entry.account.data.parsed
+          && entry.account.data.parsed.info;
+        var amt = info && info.tokenAmount;
+        var raw = String(amt && amt.amount != null ? amt.amount : '0');
+        if (raw === '0') continue;
+        // pick the highest raw amount (string compare works for equal-length numerics; use BigInt-safe compare)
+        if (best === null || (raw.length > bestRaw.length) || (raw.length === bestRaw.length && raw > bestRaw)) {
+          best = entry;
+          bestRaw = raw;
+          if (amt && Number.isFinite(Number(amt.decimals))) decimals = Number(amt.decimals);
+          stateFlag = info && info.state;
+        }
+      }
+      if (!best) throw new Error('Sell All blocked: every token account for this mint reads zero — token may already be sold.');
+      var account = (best.pubkey && best.pubkey.toString ? best.pubkey.toString() : best.pubkey) || '';
+      if (!account) throw new Error('Sell All blocked: RPC returned no usable token account address.');
+      if (String(stateFlag || '').toLowerCase() === 'frozen') throw new Error('Sell All blocked: token account is frozen.');
+      return Object.assign({}, token, {
+        account: account,
+        rawAmount: bestRaw,
+        decimals: decimals,
+        tokenProgram: program,
+        state: stateFlag || token.state
+      });
     }
 
     async function openSellAllModal(token) {
