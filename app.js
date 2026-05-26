@@ -8,6 +8,7 @@
     query: ''
   };
   var RUGCHECK_REPORT_BASE = 'https://api.rugcheck.xyz/v1/tokens/';
+  var chartResolutionCache = Object.create(null);
   try {
     reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch (_err) {
@@ -242,6 +243,52 @@
     });
   }
 
+  function chartSourceFromUrl(url) {
+    var clean = safeUrl(url, '');
+    var type = chartUrlType(clean);
+    if (type === 'dexscreener') {
+      return { provider: 'DexScreener', mode: 'iframe', embedUrl: dexScreenerChartOnlyUrl(clean), externalUrl: clean };
+    }
+    if (type === 'geckoterminal') {
+      return { provider: 'GeckoTerminal', mode: 'iframe', embedUrl: withParams(clean, { embed: '1', info: '0', swaps: '0' }), externalUrl: clean };
+    }
+    if (type === 'birdeye') return { provider: 'Birdeye', mode: 'external', externalUrl: clean };
+    if (type === 'photon') return { provider: 'Photon', mode: 'external', externalUrl: clean };
+    if (type === 'dextools') return { provider: 'DEXTools', mode: 'external', externalUrl: clean };
+    if (type === 'pump') return { provider: 'Pump.fun', mode: 'external', externalUrl: clean };
+    return null;
+  }
+
+  function urlsFromValue(value, list) {
+    if (!value) return list;
+    if (Array.isArray(value)) {
+      value.forEach(function (item) { urlsFromValue(item, list); });
+      return list;
+    }
+    if (typeof value === 'object') {
+      Object.keys(value).forEach(function (key) { urlsFromValue(value[key], list); });
+      return list;
+    }
+    String(value).replace(/https?:\/\/[^\s"'<>]+/g, function (url) {
+      list.push(url);
+      return url;
+    });
+    return list;
+  }
+
+  function coinGeckoSlug(coin) {
+    var explicit = normalizeSlug(coin && coin.coingeckoId);
+    if (explicit) return explicit;
+    var fallback = String(coin && coin.fallbackUrl || '');
+    var match = fallback.match(/coingecko\.com\/en\/coins\/([^/?#]+)/i);
+    if (match) return normalizeSlug(match[1]);
+    var mint = normalizeSlug(coin && coin.mint);
+    if (mint && !isSolanaAddress(mint) && (coin && (coin.sourceName === 'CoinGecko' || String(coin.label || '').toLowerCase().indexOf('coingecko') !== -1))) {
+      return mint;
+    }
+    return '';
+  }
+
   function chartSourceForCoin(coin) {
     var mint = String(coin && (coin.mint || coin.contract || coin.address) || '').trim();
     var providerUrls = [
@@ -251,27 +298,24 @@
       coin && coin.geckoTerminalUrl,
       coin && coin.birdeyeUrl,
       coin && coin.photonUrl,
-      coin && coin.dextoolsUrl,
-      coin && coin.fallbackUrl,
-      coin && coin.url
-    ].map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
+      coin && coin.dextoolsUrl
+    ].concat(urlsFromValue(coin && coin.sources, [])).map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
 
     for (var i = 0; i < providerUrls.length; i += 1) {
-      var url = providerUrls[i];
-      var type = chartUrlType(url);
-      if (type === 'dexscreener') {
-        return { provider: 'DexScreener', mode: 'iframe', embedUrl: dexScreenerChartOnlyUrl(url), externalUrl: url };
-      }
-      if (type === 'geckoterminal') {
-        return { provider: 'GeckoTerminal', mode: 'iframe', embedUrl: withParams(url, { embed: '1', info: '0', swaps: '0' }), externalUrl: url };
-      }
-      if (type === 'birdeye') return { provider: 'Birdeye', mode: 'external', externalUrl: url };
-      if (type === 'photon') return { provider: 'Photon', mode: 'external', externalUrl: url };
-      if (type === 'dextools') return { provider: 'DEXTools', mode: 'external', externalUrl: url };
+      var source = chartSourceFromUrl(providerUrls[i]);
+      if (source) return source;
     }
 
     if (coin && coin.pumpFunUrl) {
       return { provider: 'Pump.fun', mode: 'external', externalUrl: safeUrl(coin.pumpFunUrl, '') };
+    }
+    var fallbackUrls = [
+      coin && coin.fallbackUrl,
+      coin && coin.url
+    ].map(function (url) { return safeUrl(url, ''); }).filter(Boolean);
+    for (var f = 0; f < fallbackUrls.length; f += 1) {
+      var fallbackSource = chartSourceFromUrl(fallbackUrls[f]);
+      if (fallbackSource) return fallbackSource;
     }
     if (mint && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) {
       return {
@@ -281,7 +325,118 @@
         externalUrl: 'https://dexscreener.com/solana/' + encodeURIComponent(mint)
       };
     }
-    return { provider: 'Sparkline', mode: 'fallback', externalUrl: '' };
+    return { provider: 'Sparkline', mode: 'fallback', externalUrl: '', lookupPending: !!coinGeckoSlug(coin) };
+  }
+
+  function chartCacheKey(payload) {
+    return [
+      payload && payload.mint,
+      payload && payload.contract,
+      payload && payload.address,
+      payload && payload.coingeckoId,
+      payload && payload.fallbackUrl,
+      payload && payload.symbol,
+      payload && payload.name
+    ].filter(Boolean).join('|').toLowerCase();
+  }
+
+  function fetchChartJson(url) {
+    return fetch(url, { cache: 'force-cache', credentials: 'omit' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Chart lookup HTTP ' + response.status);
+        return response.json();
+      });
+  }
+
+  function bestDexScreenerPair(pairs) {
+    return (Array.isArray(pairs) ? pairs : [])
+      .filter(function (pair) { return pair && pair.chainId === 'solana' && pair.url; })
+      .sort(function (a, b) {
+        var bl = Number(b && b.liquidity && b.liquidity.usd) || 0;
+        var al = Number(a && a.liquidity && a.liquidity.usd) || 0;
+        var bv = Number(b && b.volume && b.volume.h24) || 0;
+        var av = Number(a && a.volume && a.volume.h24) || 0;
+        return (bl + bv) - (al + av);
+      })[0] || null;
+  }
+
+  function resolveDexScreenerByMint(mint) {
+    if (!isSolanaAddress(mint)) return Promise.resolve(null);
+    return fetchChartJson('https://api.dexscreener.com/latest/dex/tokens/' + encodeURIComponent(mint))
+      .then(function (data) {
+        var pair = bestDexScreenerPair(data && data.pairs);
+        return pair && pair.url ? chartSourceFromUrl(pair.url) : null;
+      })
+      .catch(function () { return null; });
+  }
+
+  function bestGeckoPoolUrl(data) {
+    var pools = Array.isArray(data && data.data) ? data.data : [];
+    var pool = pools
+      .filter(function (item) { return item && item.type === 'pool' && item.attributes && item.attributes.address; })
+      .sort(function (a, b) {
+        var br = Number(b.attributes.reserve_in_usd) || 0;
+        var ar = Number(a.attributes.reserve_in_usd) || 0;
+        var bv = Number(b.attributes.volume_usd && b.attributes.volume_usd.h24) || 0;
+        var av = Number(a.attributes.volume_usd && a.attributes.volume_usd.h24) || 0;
+        return (br + bv) - (ar + av);
+      })[0];
+    return pool ? 'https://www.geckoterminal.com/solana/pools/' + encodeURIComponent(pool.attributes.address) : '';
+  }
+
+  function resolveGeckoTerminalByMint(mint) {
+    if (!isSolanaAddress(mint)) return Promise.resolve(null);
+    return fetchChartJson('https://api.geckoterminal.com/api/v2/networks/solana/tokens/' + encodeURIComponent(mint) + '/pools')
+      .then(function (data) {
+        var url = bestGeckoPoolUrl(data);
+        return url ? chartSourceFromUrl(url) : null;
+      })
+      .catch(function () { return null; });
+  }
+
+  function resolveCoinGeckoAddress(slug) {
+    if (!slug) return Promise.resolve('');
+    return fetchChartJson('https://api.coingecko.com/api/v3/coins/' + encodeURIComponent(slug) + '?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false')
+      .then(function (data) {
+        var platforms = data && data.platforms || {};
+        var detail = data && data.detail_platforms && data.detail_platforms.solana || {};
+        return String(platforms.solana || detail.contract_address || data.contract_address || '').trim();
+      })
+      .catch(function () { return ''; });
+  }
+
+  function resolveChartProvider(payload) {
+    var key = chartCacheKey(payload);
+    if (key && chartResolutionCache[key]) return Promise.resolve(chartResolutionCache[key]);
+    var mint = String(payload && (payload.mint || payload.contract || payload.address) || '').trim();
+    var mintKey = isSolanaAddress(mint) ? mint.toLowerCase() : '';
+    if (mintKey && chartResolutionCache[mintKey]) return Promise.resolve(chartResolutionCache[mintKey]);
+    var slug = normalizeSlug(payload && payload.coingeckoId) || coinGeckoSlug(payload);
+    var sequence = Promise.resolve(null);
+
+    if (isSolanaAddress(mint)) {
+      sequence = sequence
+        .then(function (source) { return source || resolveDexScreenerByMint(mint); })
+        .then(function (source) { return source || resolveGeckoTerminalByMint(mint); });
+    }
+
+    if (slug && !isSolanaAddress(mint)) {
+      sequence = sequence.then(function (source) {
+        if (source) return source;
+        return resolveCoinGeckoAddress(slug).then(function (resolvedMint) {
+          if (!isSolanaAddress(resolvedMint)) return null;
+          payload.mint = resolvedMint;
+          return resolveDexScreenerByMint(resolvedMint)
+            .then(function (dexSource) { return dexSource || resolveGeckoTerminalByMint(resolvedMint); });
+        });
+      });
+    }
+
+    return sequence.then(function (source) {
+      if (source && key) chartResolutionCache[key] = source;
+      if (source && isSolanaAddress(payload && payload.mint)) chartResolutionCache[String(payload.mint).toLowerCase()] = source;
+      return source;
+    });
   }
 
   function coinCard(coin, index, mode) {
@@ -313,10 +468,16 @@
       name: coin.name || '',
       symbol: coin.symbol || '',
       mint: coin.mint || coin.contract || '',
+      coingeckoId: coin.coingeckoId || coinGeckoSlug(coin),
+      sourceName: coin.sourceName || '',
+      fallbackUrl: coin.fallbackUrl || '',
+      pumpFunUrl: coin.pumpFunUrl || '',
+      url: coin.url || '',
       provider: chartSource.provider,
       mode: chartSource.mode,
       embedUrl: chartSource.embedUrl || '',
       externalUrl: chartSource.externalUrl || '',
+      lookupPending: !!chartSource.lookupPending,
       sparkSvg: sparkSvg
     };
     var sparkBlock = sparkSvg ? [
@@ -587,20 +748,14 @@
     if (!modal) return;
     modal.hidden = true;
     modal.setAttribute('aria-hidden', 'true');
+    modal.removeAttribute('data-chart-key');
     var body = document.getElementById('chart-modal-body');
     if (body) body.innerHTML = '';
   }
 
-  function openChartModal(payload) {
-    var modal = ensureChartModal();
-    var title = document.getElementById('chart-modal-title');
-    var subtitle = document.getElementById('chart-modal-subtitle');
-    var body = document.getElementById('chart-modal-body');
+  function renderChartModalBody(body, payload) {
     var symbol = String(payload.symbol || '').replace(/^\$/, '').toUpperCase();
     var name = payload.name || symbol || 'Token';
-    var mint = payload.mint || '';
-    title.textContent = name + (symbol ? ' · $' + symbol : '');
-    subtitle.textContent = [mint, payload.provider].filter(Boolean).join(' · ');
     if (payload.mode === 'iframe' && payload.embedUrl) {
       body.innerHTML = [
         '<iframe class="chart-frame" src="' + escapeHtml(payload.embedUrl) + '" title="' + escapeHtml(name) + ' full chart" loading="lazy" referrerpolicy="no-referrer"></iframe>'
@@ -610,6 +765,7 @@
         '<div class="chart-fallback-panel">',
         '<strong>' + escapeHtml(payload.provider || 'External chart') + ' chart opens externally</strong>',
         '<p>Embedded chart unavailable for this provider.</p>',
+        '<a class="chart-open-link" href="' + escapeHtml(payload.externalUrl) + '" target="_blank" rel="noopener noreferrer">Open full chart</a>',
         '</div>'
       ].join('');
     } else {
@@ -620,6 +776,41 @@
         '<div class="chart-spark-large">' + (payload.sparkSvg || '') + '</div>',
         '</div>'
       ].join('');
+    }
+  }
+
+  function openChartModal(payload) {
+    var modal = ensureChartModal();
+    var title = document.getElementById('chart-modal-title');
+    var subtitle = document.getElementById('chart-modal-subtitle');
+    var body = document.getElementById('chart-modal-body');
+    var symbol = String(payload.symbol || '').replace(/^\$/, '').toUpperCase();
+    var name = payload.name || symbol || 'Token';
+    var mint = payload.mint || '';
+    var key = chartCacheKey(payload) || String(Date.now());
+    modal.setAttribute('data-chart-key', key);
+    title.textContent = name + (symbol ? ' · $' + symbol : '');
+    subtitle.textContent = [mint, payload.provider].filter(Boolean).join(' · ');
+    if (payload.mode === 'fallback' && payload.lookupPending) {
+      body.innerHTML = [
+        '<div class="chart-fallback-panel chart-loading-panel">',
+        '<strong>Loading real chart</strong>',
+        '<p>Resolving the token source provider.</p>',
+        '</div>'
+      ].join('');
+      resolveChartProvider(payload).then(function (source) {
+        if (modal.hidden || modal.getAttribute('data-chart-key') !== key) return;
+        if (source) {
+          payload.provider = source.provider;
+          payload.mode = source.mode;
+          payload.embedUrl = source.embedUrl || '';
+          payload.externalUrl = source.externalUrl || '';
+          subtitle.textContent = [payload.mint || mint, payload.provider].filter(Boolean).join(' · ');
+        }
+        renderChartModalBody(body, payload);
+      });
+    } else {
+      renderChartModalBody(body, payload);
     }
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
