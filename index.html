@@ -82,8 +82,8 @@
             <strong id="wallet-details-balance" class="wallet-balance-value">—</strong>
             <span id="wallet-details-usd" class="wallet-balance-usd"></span>
           </div>
-          <svg class="wallet-mini-chart" viewBox="0 0 120 38" aria-label="SOL 24 hour price chart" role="img">
-            <path id="wallet-sol-chart-path" />
+          <svg class="wallet-mini-chart" viewBox="0 0 120 38" aria-hidden="true">
+            <path d="M2 29 C 16 24, 23 31, 35 20 S 55 22, 64 13 S 82 6, 92 14 S 105 23, 118 7" />
           </svg>
         </section>
 
@@ -426,7 +426,7 @@
   </footer>
 
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js" defer></script>
-  <script src="wallet.js?v=live-sol-chart" defer></script>
+  <script src="wallet.js?v=wallet-holdings-all" defer></script>
   <script src="trade.js" defer></script>
   <script src="app.js?v=chart-source-resolution" defer></script>
 </body>
