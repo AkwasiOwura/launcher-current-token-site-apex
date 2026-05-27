@@ -1267,6 +1267,19 @@
     }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
 
     items.forEach(function (node) { observer.observe(node); });
+    // Mobile safety net: if IntersectionObserver never fires for an item
+    // (Safari/iOS edge cases when the page restores from BFCache, when an
+    // element is briefly off-DOM during reveal, or when threshold maths
+    // round against a small viewport), force-reveal everything after 1.5s
+    // so token cards / sections never stay invisible.
+    setTimeout(function () {
+      items.forEach(function (node) {
+        if (!node.classList.contains('is-revealed')) {
+          node.classList.add('is-revealed');
+          try { observer.unobserve(node); } catch (_e) {}
+        }
+      });
+    }, 1500);
   }
 
   function setupComingSoon() {

@@ -502,9 +502,7 @@ h2{
   justify-content:space-between;
   padding:18px;
   overflow:hidden;
-  transform:translateY(16px);
-  opacity:0;
-  animation:cardIn .42s var(--ease) forwards;
+  animation:cardIn .42s var(--ease) both;
   transition:transform .24s var(--ease),border-color .24s var(--ease),background .24s var(--ease),box-shadow .24s var(--ease);
 }
 .token-card:hover,.coin-card:hover{
@@ -1593,7 +1591,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 @keyframes pulse{50%{box-shadow:0 0 0 12px rgba(22,242,139,.04)}}
 @keyframes pulseText{50%{opacity:.48}}
 @keyframes ticker{to{transform:translateX(-50%)}}
-@keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 @media (max-width:840px){
   .topbar{position:relative;align-items:flex-start}
@@ -1661,7 +1659,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}
-  [data-reveal],.token-card{opacity:1;transform:none}
+  [data-reveal],.token-card,.coin-card{opacity:1;transform:none}
 }
 
 /* ────── v3: square edges + sparklines + hero balance ────── */
