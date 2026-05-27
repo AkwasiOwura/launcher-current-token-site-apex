@@ -1105,6 +1105,56 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   text-align:center;
 }
 .about p:not(.eyebrow){color:var(--muted);font-size:18px}
+.about-page-shell{padding-bottom:34px}
+.about-hero{
+  max-width:980px;
+  padding:74px 0 38px;
+}
+.about-hero .lead{
+  max-width:860px;
+  margin-top:20px;
+}
+.about-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  padding-top:18px;
+}
+.about-panel{
+  position:relative;
+  min-height:230px;
+  padding:24px;
+  overflow:hidden;
+}
+.about-panel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,rgba(22,242,139,.10),transparent 46%,rgba(255,255,255,.025));
+  pointer-events:none;
+}
+.about-panel > *{position:relative;z-index:1}
+.about-panel-index{
+  display:inline-flex;
+  margin-bottom:20px;
+  color:var(--mint);
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.16em;
+}
+.about-panel h2{
+  margin:0 0 14px;
+  font-size:24px;
+  line-height:1.08;
+}
+.about-panel p{
+  margin:0;
+  color:var(--muted);
+  font-size:16px;
+  line-height:1.7;
+}
+.about-panel-wide{grid-column:1 / -1}
 .footer{
   width:100%;
   margin:34px 0 0;
@@ -2228,6 +2278,12 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .footer-main{grid-template-columns:1fr;gap:28px}
   .footer-disclaimer,.footer-bottom{align-items:flex-start;flex-direction:column}
   .footer-powered{justify-items:start}
+  .about-hero{padding:46px 0 24px}
+  .about-grid{grid-template-columns:1fr;gap:12px;padding-top:8px}
+  .about-panel,.about-panel-wide{grid-column:auto}
+  .about-panel{min-height:auto;padding:18px}
+  .about-panel h2{font-size:22px}
+  .about-panel p{font-size:15px}
 }
 
 @media (max-width:380px){
