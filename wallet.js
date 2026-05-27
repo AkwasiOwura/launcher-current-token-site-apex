@@ -29,22 +29,40 @@
   var JUP_QUOTE_URL = 'https://lite-api.jup.ag/swap/v1/quote';
   var JUP_SWAP_URL = 'https://lite-api.jup.ag/swap/v1/swap';
   var WALLET_PORTFOLIO_ENDPOINT = 'https://solmemehub-kolscan-proxy.solmemehub.workers.dev/api/wallet/portfolio/';
-  var SOL_CHART_URL = 'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=1';
-  var SOL_CHART_CACHE_KEY = 'smh:sol-chart:24h';
-  var SOL_CHART_TTL_MS = 5 * 60 * 1000;
-  var SOL_CHART_MAX_CACHE_MS = 60 * 60 * 1000;
   var SOL_MINT = 'So11111111111111111111111111111111111111112';
   var TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
   var TOKEN_2022_PROGRAM_ID = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+  var SITE_URL = 'https://solmemehub.tech/';
   var metadataCache = null;
   var lastRpcUrl = null;
   var previousTokenValues = Object.create(null);
+
+  function appUrl() {
+    try { return window.location.href.split('#')[0] || SITE_URL; } catch (_e) { return SITE_URL; }
+  }
+  function appRef() {
+    try { return window.location.origin || SITE_URL; } catch (_e) { return SITE_URL; }
+  }
+  function browseDeepLink(base) {
+    return base + encodeURIComponent(appUrl()) + '?ref=' + encodeURIComponent(appRef());
+  }
+  function phantomBrowseLink() { return browseDeepLink('https://phantom.app/ul/browse/'); }
+  function solflareBrowseLink() { return browseDeepLink('https://solflare.com/ul/v1/browse/'); }
+  function backpackBrowseLink() { return browseDeepLink('https://backpack.app/ul/v1/browse/'); }
+  function isMobileLike() {
+    try {
+      var ua = (navigator && navigator.userAgent || '').toLowerCase();
+      var touch = navigator && (navigator.maxTouchPoints || 0) > 1;
+      return /android|iphone|ipad|ipod|mobile/.test(ua) || touch || window.innerWidth <= 1024;
+    } catch (_e) { return false; }
+  }
 
   var ADAPTERS = [
     {
       id: 'phantom',
       name: 'Phantom',
       installUrl: 'https://phantom.app/download',
+      mobileUrl: phantomBrowseLink,
       detect: function () {
         var p = window.phantom && window.phantom.solana;
         if (p) return p;
@@ -56,6 +74,7 @@
       id: 'solflare',
       name: 'Solflare',
       installUrl: 'https://solflare.com/download',
+      mobileUrl: solflareBrowseLink,
       detect: function () {
         if (window.solflare) return window.solflare;
         var s = window.solana;
@@ -66,10 +85,22 @@
       id: 'backpack',
       name: 'Backpack',
       installUrl: 'https://backpack.app/download',
+      mobileUrl: backpackBrowseLink,
       detect: function () {
         if (window.backpack && window.backpack.isBackpack) return window.backpack;
         var x = window.xnft && window.xnft.solana;
         if (x) return x;
+        return null;
+      }
+    },
+    {
+      id: 'solana',
+      name: 'Solana Wallet',
+      installUrl: 'https://solana.com/ecosystem/explore?categories=wallet',
+      detect: function () {
+        var s = window.solana;
+        if (s && !s.isPhantom && !s.isSolflare) return s;
+        if (window.okxwallet && window.okxwallet.solana) return window.okxwallet.solana;
         return null;
       }
     }
@@ -443,11 +474,11 @@
       };
     }
     try {
-      var meme = await fetch('./meme-coins.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; });
+      var meme = await fetch('./meme-coins.json').then(function (r) { return r.ok ? r.json() : null; });
       [].concat(meme && meme.dailyRadar || [], meme && meme.trending || [], meme && meme.highCap || [], meme && meme.highcap || [], meme && meme.lowCap || [], meme && meme.lowcap || [], meme && meme.coins || [], Array.isArray(meme) ? meme : []).forEach(ingest);
     } catch (_e) {}
     try {
-      var tokens = await fetch('./tokens.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; });
+      var tokens = await fetch('./tokens.json').then(function (r) { return r.ok ? r.json() : null; });
       [].concat(tokens && tokens.tokens || [], tokens && tokens.pages || [], Array.isArray(tokens) ? tokens : []).forEach(ingest);
     } catch (_e2) {}
     return metadataCache;
@@ -779,6 +810,7 @@
     var btn = document.getElementById('wallet-connect-btn');
     var modal = document.getElementById('wallet-modal');
     var list = document.getElementById('wallet-list');
+    var modalNote = modal ? modal.querySelector('.modal-foot-note') : null;
     if (!btn || !modal || !list) return;
 
     function paint(snap) {
@@ -807,28 +839,41 @@
     api.on(paint);
     paint(api.getState());
 
-    function openModal() {
+    function openModal(trigger) {
+      var mobile = isMobileLike();
+      var entries = api.list();
+      var hasInjected = entries.some(function (e) { return !!e.provider; });
       list.innerHTML = api.list().map(function (e) {
         var installed = !!e.provider;
+        var mobileUrl = e.adapter.mobileUrl ? e.adapter.mobileUrl() : '';
+        var canOpenMobile = mobile && !installed && !!mobileUrl;
+        var tag = installed ? 'Detected' : (canOpenMobile ? 'Open app' : '<a href="' + e.adapter.installUrl + '" target="_blank" rel="noopener noreferrer">Install</a>');
         return '<li><button class="wallet-option" type="button" data-wallet="' + e.adapter.id + '">'
           + '<span class="wallet-option-name">' + e.adapter.name + '</span>'
-          + '<span class="wallet-option-tag">' + (installed ? 'Detected' : '<a href="' + e.adapter.installUrl + '" target="_blank" rel="noopener noreferrer">Install</a>') + '</span>'
+          + '<span class="wallet-option-tag">' + tag + '</span>'
           + '</button></li>';
       }).join('');
+      if (modalNote) {
+        modalNote.textContent = mobile && !hasInjected
+          ? 'Open this site inside your Solana wallet browser or install a supported wallet.'
+          : "Don't have a wallet? Install one from its official site — never paste a seed phrase here.";
+      }
       modal.hidden = false;
       modal.setAttribute('aria-hidden', 'false');
+      if (window.SMHModal) window.SMHModal.activate(modal, trigger || btn);
     }
     function closeModal() {
+      if (window.SMHModal) window.SMHModal.deactivate(modal);
       modal.hidden = true;
       modal.setAttribute('aria-hidden', 'true');
     }
 
     btn.addEventListener('click', function () {
       if (api.getState().connected) {
-        openDetails();
+        openDetails(btn);
         return;
       }
-      openModal();
+      openModal(btn);
     });
 
     modal.addEventListener('click', function (event) {
@@ -837,17 +882,18 @@
       var opt = t && t.closest && t.closest('[data-wallet]');
       if (!opt) return;
       var id = opt.getAttribute('data-wallet');
+      var entry = api.list().find(function (e) { return e.adapter.id === id; });
+      if (entry && !entry.provider && isMobileLike() && entry.adapter.mobileUrl) {
+        var mobileLink = entry.adapter.mobileUrl();
+        if (window.SMHToast) window.SMHToast('Opening ' + entry.adapter.name + '. If it does not open, use a supported wallet browser.', { kind: 'info', duration: 6500 });
+        try { window.location.href = mobileLink; } catch (_e) { window.open(mobileLink, '_blank', 'noopener'); }
+        return;
+      }
       api.connect(id).then(function () {
         closeModal();
         var snap = api.getState();
         if (snap.connected && !snap.consentSigned && !snap.consentPending) {
-          try {
-            var hint = document.createElement('div');
-            hint.textContent = 'Wallet connected. Click Authenticate before trading.';
-            hint.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:200;padding:10px 16px;border:1px solid rgba(255,200,77,.55);background:rgba(255,200,77,.08);color:#ffcf5a;font-size:13px;font-weight:800;max-width:560px;text-align:center';
-            document.body.appendChild(hint);
-            setTimeout(function () { hint.remove(); }, 6000);
-          } catch (_e) {}
+          if (window.SMHToast) window.SMHToast('Wallet connected. Click Authenticate before trading.', { kind: 'warn', duration: 6000 });
         }
       }).catch(function (err) {
         if (err && err.code === 'NOT_INSTALLED') {
@@ -855,7 +901,8 @@
         } else if (err && err.code === 'USER_REJECTED') {
           // silent — user cancelled the wallet popup
         } else {
-          alert('Wallet connect failed: ' + (err && err.message ? err.message : err));
+          if (window.SMHToast) window.SMHToast('Wallet connect failed: ' + (err && err.message ? err.message : err), { kind: 'error' });
+          else alert('Wallet connect failed: ' + (err && err.message ? err.message : err));
         }
       });
     });
@@ -877,110 +924,10 @@
     var solscanLink = document.getElementById('wallet-solscan-link');
     var consentBtn  = document.getElementById('wallet-consent-btn');
     var disconBtn   = document.getElementById('wallet-disconnect-btn');
-    var solChartPath = document.getElementById('wallet-sol-chart-path');
     var currentPortfolioTokens = [];
     var sellAllBusy = false;
     var sellAllModal = null;
     var sellAllEls = null;
-    var solChartFetchInFlight = null;
-    var solChartLastFetchAt = 0;
-
-    function readCachedSolChart(maxAge) {
-      try {
-        var raw = localStorage.getItem(SOL_CHART_CACHE_KEY);
-        if (!raw) return null;
-        var cached = JSON.parse(raw);
-        if (!cached || !Array.isArray(cached.prices) || cached.prices.length < 2) return null;
-        if (maxAge && Date.now() - Number(cached.ts || 0) > maxAge) return null;
-        return cached;
-      } catch (_e) { return null; }
-    }
-
-    function writeCachedSolChart(prices) {
-      try {
-        localStorage.setItem(SOL_CHART_CACHE_KEY, JSON.stringify({ ts: Date.now(), prices: prices }));
-      } catch (_e) {}
-    }
-
-    function smoothChartPath(points) {
-      if (!Array.isArray(points) || points.length < 2) return '';
-      var width = 120;
-      var height = 38;
-      var pad = 3;
-      var sourcePoints = points;
-      if (points.length > 64) {
-        var stride = (points.length - 1) / 63;
-        sourcePoints = [];
-        for (var s = 0; s < 64; s += 1) sourcePoints.push(points[Math.round(s * stride)]);
-      }
-      var values = sourcePoints.map(function (point) { return Number(point[1]); }).filter(function (value) { return Number.isFinite(value) && value > 0; });
-      if (values.length < 2) return '';
-      var min = Math.min.apply(Math, values);
-      var max = Math.max.apply(Math, values);
-      var span = max - min || max * 0.01 || 1;
-      var step = (width - pad * 2) / (values.length - 1);
-      var coords = values.map(function (value, index) {
-        return {
-          x: pad + step * index,
-          y: pad + (height - pad * 2) * (1 - (value - min) / span)
-        };
-      });
-      var d = 'M' + coords[0].x.toFixed(2) + ' ' + coords[0].y.toFixed(2);
-      for (var i = 0; i < coords.length - 1; i += 1) {
-        var current = coords[i];
-        var next = coords[i + 1];
-        var midX = (current.x + next.x) / 2;
-        d += ' C' + midX.toFixed(2) + ' ' + current.y.toFixed(2) + ' ' + midX.toFixed(2) + ' ' + next.y.toFixed(2) + ' ' + next.x.toFixed(2) + ' ' + next.y.toFixed(2);
-      }
-      return d;
-    }
-
-    function renderSolChart(prices) {
-      if (!solChartPath) return false;
-      var d = smoothChartPath(prices);
-      if (!d) return false;
-      solChartPath.setAttribute('d', d);
-      solChartPath.setAttribute('data-source', 'coingecko');
-      solChartPath.setAttribute('data-updated-at', String(Date.now()));
-      return true;
-    }
-
-    function refreshSolChart(opts) {
-      if (!solChartPath) return Promise.resolve(null);
-      var cached = readCachedSolChart(SOL_CHART_MAX_CACHE_MS);
-      if (cached) renderSolChart(cached.prices);
-      var now = Date.now();
-      if (!opts || !opts.force) {
-        if (cached && now - Number(cached.ts || 0) < SOL_CHART_TTL_MS) return Promise.resolve(cached);
-        if (now - solChartLastFetchAt < SOL_CHART_TTL_MS) return Promise.resolve(cached);
-      }
-      if (solChartFetchInFlight) return solChartFetchInFlight;
-      solChartLastFetchAt = now;
-      solChartFetchInFlight = fetch(SOL_CHART_URL, { cache: 'no-store', credentials: 'omit', headers: { accept: 'application/json' } })
-        .then(function (response) {
-          if (!response.ok) throw new Error('SOL chart HTTP ' + response.status);
-          return response.json();
-        })
-        .then(function (data) {
-          var prices = Array.isArray(data && data.prices) ? data.prices.filter(function (point) {
-            return Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]));
-          }) : [];
-          if (prices.length < 2) throw new Error('SOL chart data unavailable');
-          writeCachedSolChart(prices);
-          renderSolChart(prices);
-          return { ts: Date.now(), prices: prices };
-        })
-        .catch(function () {
-          var fallback = readCachedSolChart(SOL_CHART_MAX_CACHE_MS);
-          if (fallback) renderSolChart(fallback.prices);
-          return fallback;
-        })
-        .then(function (result) {
-          solChartFetchInFlight = null;
-          return result;
-        });
-      return solChartFetchInFlight;
-    }
 
     function paintDetails(snap) {
       if (!detailsModal) return;
@@ -1168,17 +1115,18 @@
       return p;
     }
 
-    function openDetails() {
+    function openDetails(trigger) {
       if (!detailsModal) return;
       paintDetails(api.getState());
       detailsModal.hidden = false;
       detailsModal.setAttribute('aria-hidden', 'false');
-      refreshSolChart();
+      if (window.SMHModal) window.SMHModal.activate(detailsModal, trigger || btn);
       hydrateFromCache();
       refreshPortfolio();
     }
     function closeDetails() {
       if (!detailsModal) return;
+      if (window.SMHModal) window.SMHModal.deactivate(detailsModal);
       detailsModal.hidden = true;
       detailsModal.setAttribute('aria-hidden', 'true');
     }
@@ -1217,6 +1165,9 @@
         var t = event.target;
         if (t && t.matches && t.matches('[data-sell-all-close]') && !sellAllBusy) closeSellAllModal();
       });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && sellAllModal && !sellAllModal.hidden && !sellAllBusy) closeSellAllModal();
+      });
     }
 
     function setSellAllStatus(kind, text, link) {
@@ -1229,6 +1180,7 @@
 
     function closeSellAllModal() {
       if (!sellAllModal) return;
+      if (window.SMHModal) window.SMHModal.deactivate(sellAllModal);
       sellAllModal.hidden = true;
       sellAllModal.setAttribute('aria-hidden', 'true');
     }
@@ -1303,16 +1255,22 @@
       });
     }
 
-    async function openSellAllModal(token) {
+    async function openSellAllModal(token, trigger) {
       ensureSellAllModal();
       var snap = api.getState();
-      if (!snap.connected) { alert('Connect wallet before selling.'); return; }
+      if (!snap.connected) {
+        if (window.SMHToast) window.SMHToast('Connect wallet before selling.', { kind: 'warn' });
+        else alert('Connect wallet before selling.');
+        return;
+      }
       if (!token || !token.mint || !isValidMint(token.mint)) {
-        alert('Sell All blocked: token mint is invalid.');
+        if (window.SMHToast) window.SMHToast('Sell All blocked: token mint is invalid.', { kind: 'error' });
+        else alert('Sell All blocked: token mint is invalid.');
         return;
       }
       sellAllModal.hidden = false;
       sellAllModal.setAttribute('aria-hidden', 'false');
+      if (window.SMHModal) window.SMHModal.activate(sellAllModal, trigger);
       sellAllEls.token.textContent = token.name || token.symbol || shortAddr(token.mint);
       sellAllEls.amount.textContent = 'Amount: resolving…';
       sellAllEls.receive.textContent = 'Estimated receive: —';
@@ -1392,7 +1350,10 @@
       }).catch(function (err) {
         consentBtn.textContent = 'Authenticate';
         consentBtn.disabled = false;
-        if (err && err.code !== 'USER_REJECTED') alert('Consent failed: ' + (err && err.message ? err.message : err));
+        if (err && err.code !== 'USER_REJECTED') {
+          if (window.SMHToast) window.SMHToast('Consent failed: ' + (err && err.message ? err.message : err), { kind: 'error' });
+          else alert('Consent failed: ' + (err && err.message ? err.message : err));
+        }
       });
     });
     if (disconBtn)  disconBtn.addEventListener('click', function () {
@@ -1424,7 +1385,7 @@
         var sellBtn = e.target.closest('.wallet-token-sell-all');
         var index = Number(sellBtn.getAttribute('data-token-index'));
         var token = currentPortfolioTokens[index];
-        if (token) openSellAllModal(token);
+        if (token) openSellAllModal(token, sellBtn);
         return;
       }
       var btn = e.target && e.target.closest && e.target.closest('.wallet-token-mint');
@@ -1471,17 +1432,13 @@
     setInterval(function () {
       if (api.getState().connected) refreshPortfolio();
     }, 25000);
-    refreshSolChart();
-    setInterval(function () {
-      if (api.getState().connected || (detailsModal && !detailsModal.hidden)) refreshSolChart();
-    }, SOL_CHART_TTL_MS);
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && detailsModal && !detailsModal.hidden) closeDetails();
     });
 
     // attempt silent reconnect after providers have time to inject
-    setTimeout(function () { api.autoReconnect ? api.autoReconnect() : autoReconnect(); }, 400);
+    setTimeout(autoReconnect, 400);
   }
   api.autoReconnect = autoReconnect;
 
