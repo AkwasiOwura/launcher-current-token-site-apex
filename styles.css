@@ -2172,6 +2172,10 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .search input{width:100%}
   .coin-card{padding:10px}
   .coin-media{height:112px}
+  .coin-card{overflow:hidden}
+  .coin-sparkline{height:40px;margin:6px 0 4px}
+  .coin-spark-wrap{margin:5px -2px 0;padding:5px 2px 2px}
+  .coin-footer{flex-wrap:wrap;margin-top:12px;padding-top:10px}
   .coin-trade{gap:6px}
   .trade-btn{min-height:38px;padding:0 8px;font-size:11px}
   .daily-radar{padding:14px}
@@ -2229,6 +2233,13 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 @media (max-width:380px){
   main,.topbar,.footer-inner{width:min(100% - 18px,1180px)}
   .nav a,.nav .wallet-btn{font-size:10px}
+  .hero{padding-top:28px}
+  .coin-media{height:96px}
+  .coin-card h3.coin-title{font-size:15px}
+  .coin-sparkline{height:36px}
+  .coin-spark-wrap .spark-meta{font-size:10px}
+  .coin-trade{gap:5px}
+  .trade-btn{min-height:36px;font-size:10px;letter-spacing:.12em}
   .radar-row{grid-template-columns:18px 30px minmax(0,1fr) 52px 38px;gap:5px;padding:8px 6px}
   .daily-radar .radar-trade-btn{font-size:8px}
   .wallet-token-row{grid-template-columns:32px minmax(0,1fr) minmax(72px,auto);gap:6px}
