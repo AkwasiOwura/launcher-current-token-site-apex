@@ -1777,14 +1777,37 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   width:100%;
   height:100%;
   object-fit:cover;
-  transform:scale(1.01);
-  transition:transform .5s var(--ease),filter .5s var(--ease);
+  /* Continuous cinematic drift (slow Ken-Burns camera move) to recreate
+     the reference MP4's premium slow-orbit feel from a single still. */
+  transform-origin:52% 46%;
+  animation:projectDrift 18s ease-in-out infinite alternate;
+  transition:filter .5s var(--ease);
   will-change:transform;
+  backface-visibility:hidden;
 }
-/* Soft scale + saturation on hover (desktop). */
+/* Soft depth + ambient vignette on top of the artwork. */
+.project-media.is-animated .project-media-glow{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% 38%,transparent 52%,rgba(0,0,0,.42) 100%),
+    radial-gradient(60% 50% at 50% 42%,rgba(22,242,139,.10),transparent 70%);
+  animation:projectBreathe 7.5s ease-in-out infinite;
+}
+/* Soft scale + saturation lift on hover (desktop). */
 .project-card:hover .project-media img{
-  transform:scale(1.06);
-  filter:saturate(1.12) contrast(1.03);
+  filter:saturate(1.14) contrast(1.04);
+}
+@keyframes projectDrift{
+  0%{transform:scale(1.05) translate3d(-1.4%,-1.0%,0)}
+  50%{transform:scale(1.09) translate3d(1.2%,0.4%,0)}
+  100%{transform:scale(1.06) translate3d(0.6%,1.2%,0)}
+}
+@keyframes projectBreathe{
+  0%,100%{opacity:.85}
+  50%{opacity:1}
 }
 .project-card:hover .project-media::before{
   box-shadow:inset 0 0 0 1px rgba(22,242,139,.45),inset 0 0 22px rgba(22,242,139,.16);
@@ -1949,10 +1972,13 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-trade{flex:1 1 100%}
   .project-trade .trade-btn{flex:1 1 0}
   .modal-card.project-modal-card{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
-  /* Lightweight on phones: keep a static neon edge, drop the moving
-     light sweep and the looping glow pulse to save battery/GPU. */
+  /* Lightweight on phones: keep a static neon edge + a much gentler,
+     slower drift; drop the moving light sweep, looping edge pulse, and
+     the ambient breathe to save battery/GPU. */
   .project-media::after{display:none}
   .project-media::before{animation:none;box-shadow:inset 0 0 0 1px rgba(22,242,139,.22)}
+  .project-media-glow{animation:none}
+  .project-media img{animation-duration:26s}
 }
 @media (max-width:380px){
   .project-media{height:112px}
