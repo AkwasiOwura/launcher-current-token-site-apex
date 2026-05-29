@@ -220,6 +220,7 @@ h2{
   line-height:1;
   letter-spacing:0;
 }
+.listed-tokens-title{font-size:clamp(26px,3.4vw,46px)}
 .lead{
   max-width:720px;
   margin:26px 0 0;
