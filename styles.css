@@ -1923,10 +1923,10 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   overscroll-behavior:contain;
 }
 /* Tighter header + smaller title; pull the hero image up to the top. */
-.project-modal-card .modal-head{margin-bottom:6px}
-.project-modal-card .modal-head h3{font-size:16px}
-.project-modal-card .modal-head p:empty{display:none}
-.project-modal-body{display:flex;flex-direction:column;gap:12px;margin-top:0}
+.project-modal-card{padding-top:12px}
+.project-modal-card .modal-head{margin-bottom:3px}
+.project-modal-card .modal-head h3{font-size:15px}
+.project-modal-body{display:flex;flex-direction:column;gap:11px;margin-top:0}
 .project-modal-hero{
   position:relative;
   height:300px;

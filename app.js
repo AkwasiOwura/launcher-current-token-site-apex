@@ -1094,7 +1094,7 @@
       '<div class="modal-card project-modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
       '<span class="cyber-corner-br" aria-hidden="true"></span>',
-      '<header class="modal-head"><div><h3 id="project-modal-title">Project</h3><p id="project-modal-subtitle"></p></div>',
+      '<header class="modal-head"><h3 id="project-modal-title">Project</h3>',
       '<button class="modal-close" type="button" data-project-close aria-label="Close">×</button></header>',
       '<div id="project-modal-body" class="project-modal-body"></div>',
       '</div>'
@@ -1120,10 +1120,43 @@
     if (body) body.innerHTML = '';
   }
 
+  // Live stats for the project modal. Market cap / liquidity / 24h volume
+  // come from DexScreener; holders (best-effort) from GeckoTerminal token
+  // info. Nothing is fabricated — unresolved fields fall back to "—".
+  function setProjectStat(mint, key, value) {
+    var modal = document.getElementById('project-reveal-modal');
+    if (!modal || modal.hidden || modal.getAttribute('data-project-mint') !== mint) return;
+    var cell = modal.querySelector('.project-stat-value[data-stat="' + key + '"]');
+    if (cell) cell.textContent = value || '—';
+  }
+  function hydrateProjectStats(mint) {
+    fetch('https://api.dexscreener.com/latest/dex/tokens/' + encodeURIComponent(mint), { credentials: 'omit' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        var pair = bestDexScreenerPair(data && data.pairs);
+        setProjectStat(mint, 'marketCap', pair && compactNumber(pair.marketCap != null ? pair.marketCap : pair.fdv, '$'));
+        setProjectStat(mint, 'liquidity', pair && compactNumber(pair.liquidity && pair.liquidity.usd, '$'));
+        setProjectStat(mint, 'volume', pair && compactNumber(pair.volume && pair.volume.h24, '$'));
+      })
+      .catch(function () {
+        setProjectStat(mint, 'marketCap', '');
+        setProjectStat(mint, 'liquidity', '');
+        setProjectStat(mint, 'volume', '');
+      });
+    fetch('https://api.geckoterminal.com/api/v2/networks/solana/tokens/' + encodeURIComponent(mint) + '/info', { headers: { accept: 'application/json' }, credentials: 'omit' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        var attr = data && data.data && data.data.attributes;
+        var count = attr && (attr.holders && (attr.holders.count != null ? attr.holders.count : attr.holders)) ;
+        var n = Number(count);
+        setProjectStat(mint, 'holders', Number.isFinite(n) && n > 0 ? compactNumber(n, '') : '');
+      })
+      .catch(function () { setProjectStat(mint, 'holders', ''); });
+  }
+
   function openProjectModal(token, trigger) {
     var modal = ensureProjectModal();
     var title = document.getElementById('project-modal-title');
-    var subtitle = document.getElementById('project-modal-subtitle');
     var body = document.getElementById('project-modal-body');
     var name = escapeHtml(token.name || token.symbol || 'Project');
     var symbol = escapeHtml(String(token.symbol || '').replace(/^\$/, '').toUpperCase());
@@ -1133,41 +1166,30 @@
     var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
 
     title.textContent = (token.name || symbol || 'Project') + (symbol ? ' · $' + symbol : '');
-    subtitle.textContent = '';
-    subtitle.hidden = true;
-
-    var chartPayload = {
-      mint: mint,
-      symbol: token.symbol || '',
-      name: token.name || symbol || 'Token',
-      provider: 'GeckoTerminal',
-      mode: 'fallback',
-      lookupPending: isSolanaAddress(mint),
-      radarChartRequired: true,
-      sparkSvg: ''
-    };
-    var chartBtn = isSolanaAddress(mint)
-      ? '<button type="button" class="project-modal-chart" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">View Chart</button>'
-      : '';
+    modal.setAttribute('data-project-mint', mint);
 
     var mintRow = mint
       ? '<button type="button" class="project-modal-mint" data-copy-mint="' + escapeHtml(mint) + '" title="Copy contract address"><code>' + escapeHtml(mint) + '</code> <span aria-hidden="true">⧉</span></button>'
       : '';
 
-    // Stats row — real values from token data only; missing → "—".
+    // Stats row — seed from any static token fields, then hydrate with live
+    // DexScreener / GeckoTerminal data below. Never fabricated: anything
+    // unresolved stays "—".
     var marketCap = compactNumber(token.marketCapUsd != null ? token.marketCapUsd : token.marketCap, '$');
     var holdersNum = Number(token.holders != null ? token.holders : token.holderCount);
     var holders = Number.isFinite(holdersNum) && holdersNum > 0 ? compactNumber(holdersNum, '') : '';
     var liquidity = compactNumber(token.liquidityUsd != null ? token.liquidityUsd : token.liquidity, '$');
     var volume = compactNumber(token.volume24hUsd != null ? token.volume24hUsd : token.volume24h, '$');
-    function statCell(label, value) {
-      return '<div class="project-stat"><span class="project-stat-label">' + label + '</span><strong class="project-stat-value">' + (value || '—') + '</strong></div>';
+    var pending = isSolanaAddress(mint);
+    function statCell(key, label, value) {
+      var shown = value || (pending ? '…' : '—');
+      return '<div class="project-stat"><span class="project-stat-label">' + label + '</span><strong class="project-stat-value" data-stat="' + key + '">' + shown + '</strong></div>';
     }
     var statsRow = '<div class="project-modal-stats">'
-      + statCell('Market Cap', marketCap)
-      + statCell('Holders', holders)
-      + statCell('Liquidity', liquidity)
-      + statCell('24H Volume', volume)
+      + statCell('marketCap', 'Market Cap', marketCap)
+      + statCell('holders', 'Holders', holders)
+      + statCell('liquidity', 'Liquidity', liquidity)
+      + statCell('volume', '24H Volume', volume)
       + '</div>';
 
     body.innerHTML = [
@@ -1177,9 +1199,10 @@
       '</div>',
       '<p class="project-modal-desc">' + description + '</p>',
       statsRow,
-      mintRow ? '<div class="project-modal-section"><span class="project-modal-label">Contract address</span>' + mintRow + '</div>' : '',
-      chartBtn ? '<div class="project-modal-section"><div class="project-modal-links">' + chartBtn + '</div></div>' : ''
+      mintRow ? '<div class="project-modal-section"><span class="project-modal-label">Contract address</span>' + mintRow + '</div>' : ''
     ].join('');
+
+    if (pending) hydrateProjectStats(mint);
 
     var copyBtn = body.querySelector('[data-copy-mint]');
     if (copyBtn) {
