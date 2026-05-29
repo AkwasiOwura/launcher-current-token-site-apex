@@ -1017,6 +1017,198 @@
     }
   }
 
+  // ── AISI-style project card + detail modal (prototype: LEGEND) ──────
+  function projectTags(token) {
+    var tags = Array.isArray(token.tags) ? token.tags.slice(0, 3) : [];
+    return tags.map(function (tag) {
+      return '<span class="project-tag">' + escapeHtml(String(tag)) + '</span>';
+    }).join('');
+  }
+
+  function projectTradePayload(token) {
+    var mint = String(token.mint || token.contract || token.address || '').trim();
+    var slim = {
+      name: token.name || token.symbol || '',
+      symbol: String(token.symbol || '').replace(/^\$/, ''),
+      imageUrl: safeAssetUrl(token.imageUrl || token.image || '')
+    };
+    if (isSolanaAddress(mint)) slim.mint = mint;
+    return slim;
+  }
+
+  function projectCard(token, index) {
+    var name = escapeHtml(token.name || token.symbol || 'Project');
+    var symbol = escapeHtml(String(token.symbol || '').replace(/^\$/, '').toUpperCase());
+    var status = escapeHtml(token.status || token.phase || 'Listed');
+    var description = escapeHtml(tokenDescription(token));
+    var image = safeAssetUrl(token.imageUrl || token.image || '');
+    var website = safeUrl(token.website || token.url || '', '');
+    var twitter = safeUrl(token.twitter || '', '');
+    var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
+    var delay = Math.min(index * 70, 560);
+    var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
+    var projectAttr = ' data-project="' + escapeHtml(JSON.stringify(token)) + '"';
+
+    var linkRow = [
+      website ? '<a class="project-link" href="' + website + '" target="_blank" rel="noopener noreferrer" title="Open website">Website ↗</a>' : '',
+      twitter ? '<a class="project-link" href="' + twitter + '" target="_blank" rel="noopener noreferrer" title="Open X profile">𝕏</a>' : ''
+    ].filter(Boolean).join('');
+
+    return [
+      '<article class="project-card" style="animation-delay:' + delay + 'ms"' + coinAttr + '>',
+      '<span class="cyber-corner-tl" aria-hidden="true"></span>',
+      '<span class="cyber-corner-br" aria-hidden="true"></span>',
+      '<div class="project-media">',
+      image ? '<img src="' + image + '" alt="' + name + ' artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();" />' : '',
+      '<span class="project-media-fallback">' + initials + '</span>',
+      '<span class="project-status">' + status + '</span>',
+      '</div>',
+      '<div class="project-body">',
+      '<div class="project-titlerow"><h3 class="project-name">' + name + '</h3>' + (symbol ? '<span class="project-symbol">$' + symbol + '</span>' : '') + '</div>',
+      '<div class="project-tags">' + projectTags(token) + '</div>',
+      '<p class="project-desc">' + description + '</p>',
+      '<div class="project-links">' + linkRow + '</div>',
+      '</div>',
+      '<div class="project-foot">',
+      '<button type="button" class="project-viewmore"' + projectAttr + '>View More</button>',
+      '<div class="project-trade">',
+      '<button type="button" class="trade-btn trade-buy" data-trade="buy" aria-label="Buy ' + (symbol || name) + '">BUY</button>',
+      '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '">SELL</button>',
+      '</div>',
+      '</div>',
+      '</article>'
+    ].join('');
+  }
+
+  function ensureProjectModal() {
+    var modal = document.getElementById('project-reveal-modal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'project-reveal-modal';
+    modal.className = 'modal-root project-modal-root';
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = [
+      '<div class="modal-backdrop" data-project-close></div>',
+      '<div class="modal-card project-modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">',
+      '<span class="cyber-corner-tl" aria-hidden="true"></span>',
+      '<span class="cyber-corner-br" aria-hidden="true"></span>',
+      '<header class="modal-head"><div><h3 id="project-modal-title">Project</h3><p id="project-modal-subtitle"></p></div>',
+      '<button class="modal-close" type="button" data-project-close aria-label="Close">×</button></header>',
+      '<div id="project-modal-body" class="project-modal-body"></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function (event) {
+      var close = event.target && event.target.closest && event.target.closest('[data-project-close]');
+      if (close) closeProjectModal();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !modal.hidden) closeProjectModal();
+    });
+    return modal;
+  }
+
+  function closeProjectModal() {
+    var modal = document.getElementById('project-reveal-modal');
+    if (!modal) return;
+    if (window.SMHModal) window.SMHModal.deactivate(modal);
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    var body = document.getElementById('project-modal-body');
+    if (body) body.innerHTML = '';
+  }
+
+  function openProjectModal(token, trigger) {
+    var modal = ensureProjectModal();
+    var title = document.getElementById('project-modal-title');
+    var subtitle = document.getElementById('project-modal-subtitle');
+    var body = document.getElementById('project-modal-body');
+    var name = escapeHtml(token.name || token.symbol || 'Project');
+    var symbol = escapeHtml(String(token.symbol || '').replace(/^\$/, '').toUpperCase());
+    var mint = String(token.mint || token.contract || token.address || '').trim();
+    var image = safeAssetUrl(token.imageUrl || token.image || '');
+    var description = escapeHtml(tokenDescription(token));
+    var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
+
+    title.textContent = (token.name || symbol || 'Project') + (symbol ? ' · $' + symbol : '');
+    subtitle.textContent = token.status || token.phase || '';
+
+    var links = [];
+    (Array.isArray(token.links) ? token.links : []).forEach(function (link) {
+      var url = safeUrl(link && link.url, '');
+      if (url) links.push({ label: link.label || 'Link', url: url });
+    });
+    if (isSolanaAddress(mint)) links.push({ label: 'Solscan', url: 'https://solscan.io/token/' + encodeURIComponent(mint) });
+
+    var linkHtml = links.map(function (link) {
+      return '<a class="project-modal-link" href="' + link.url + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(link.label) + ' ↗</a>';
+    }).join('');
+
+    var chartPayload = {
+      mint: mint,
+      symbol: token.symbol || '',
+      name: token.name || symbol || 'Token',
+      provider: 'GeckoTerminal',
+      mode: 'fallback',
+      lookupPending: isSolanaAddress(mint),
+      radarChartRequired: true,
+      sparkSvg: ''
+    };
+    var chartBtn = isSolanaAddress(mint)
+      ? '<button type="button" class="project-modal-chart" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">View Chart</button>'
+      : '';
+
+    var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
+    var mintRow = mint
+      ? '<button type="button" class="project-modal-mint" data-copy-mint="' + escapeHtml(mint) + '" title="Copy contract address"><code>' + escapeHtml(mint) + '</code> <span aria-hidden="true">⧉</span></button>'
+      : '';
+
+    body.innerHTML = [
+      '<div class="project-modal-hero">',
+      image ? '<img src="' + image + '" alt="' + name + ' artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();" />' : '',
+      '<span class="project-modal-fallback">' + initials + '</span>',
+      '</div>',
+      '<p class="project-modal-desc">' + description + '</p>',
+      mintRow ? '<div class="project-modal-section"><span class="project-modal-label">Contract address</span>' + mintRow + '</div>' : '',
+      linkHtml ? '<div class="project-modal-section"><span class="project-modal-label">Links</span><div class="project-modal-links">' + linkHtml + (chartBtn || '') + '</div></div>' : (chartBtn ? '<div class="project-modal-section"><div class="project-modal-links">' + chartBtn + '</div></div>' : ''),
+      '<div class="project-modal-trade"' + coinAttr + '>',
+      '<button type="button" class="trade-btn trade-buy" data-trade="buy" aria-label="Buy ' + (symbol || name) + '">BUY</button>',
+      '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '">SELL</button>',
+      '</div>'
+    ].join('');
+
+    var copyBtn = body.querySelector('[data-copy-mint]');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var addr = copyBtn.getAttribute('data-copy-mint') || '';
+        var original = copyBtn.innerHTML;
+        function copied() {
+          copyBtn.innerHTML = '<code>Copied</code> <span aria-hidden="true">⧉</span>';
+          setTimeout(function () { copyBtn.innerHTML = original; }, 1200);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(copied).catch(copied);
+        else copied();
+      });
+    }
+
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    if (window.SMHModal) window.SMHModal.activate(modal, trigger);
+  }
+
+  function setupProjectModal() {
+    if (setupProjectModal.bound) return;
+    setupProjectModal.bound = true;
+    document.addEventListener('click', function (event) {
+      var trigger = event.target && event.target.closest && event.target.closest('[data-project]');
+      if (!trigger) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { openProjectModal(JSON.parse(trigger.getAttribute('data-project') || '{}'), trigger); } catch (_err) {}
+    });
+  }
+
   function renderTokenPages(tokens) {
     var grid = document.getElementById('token-grid');
     if (!grid) return;
@@ -1040,6 +1232,13 @@
         var description = escapeHtml(tokenDescription(token));
         var href = './' + slug + '/';
         var delay = Math.min(index * 70, 560);
+
+        // AISI-style project card (prototype). Only used for entries that
+        // explicitly opt in via "style":"project"; every other token keeps
+        // the existing token-card layout untouched.
+        if (String(token.style || '').toLowerCase() === 'project') {
+          return projectCard(token, index);
+        }
 
         return [
           '<a class="token-card" style="animation-delay:' + delay + 'ms" href="' + href + '">',
@@ -1298,6 +1497,7 @@
     setupControls();
     setupRugcheck();
     setupComingSoon();
+    setupProjectModal();
     loadData();
   }
 
