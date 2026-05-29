@@ -1133,7 +1133,8 @@
     var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
 
     title.textContent = (token.name || symbol || 'Project') + (symbol ? ' · $' + symbol : '');
-    subtitle.textContent = token.status || token.phase || '';
+    subtitle.textContent = '';
+    subtitle.hidden = true;
 
     var links = [];
     (Array.isArray(token.links) ? token.links : []).forEach(function (link) {
