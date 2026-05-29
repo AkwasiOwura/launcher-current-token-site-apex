@@ -486,6 +486,12 @@ h2{
   grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
   gap:14px;
 }
+/* Planned & Live: fixed 3-up grid so a single card stays one-third width
+   instead of stretching across the row (auto-fit collapses empty tracks). */
+.token-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:start;
+}
 .compact-section{padding-top:30px}
 .compact-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .token-card,.coin-card,.empty-card{
