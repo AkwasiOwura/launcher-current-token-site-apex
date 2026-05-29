@@ -1740,7 +1740,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 .project-media{
   position:relative;
-  height:148px;
+  height:210px;
   display:grid;
   place-items:center;
   border-bottom:1px solid rgba(255,255,255,.08);
@@ -1777,9 +1777,11 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   width:100%;
   height:100%;
   object-fit:cover;
+  /* Bias the crop toward the top so the lizard's full head stays visible. */
+  object-position:50% 22%;
   /* Continuous cinematic drift (slow Ken-Burns camera move) to recreate
      the reference MP4's premium slow-orbit feel from a single still. */
-  transform-origin:52% 46%;
+  transform-origin:50% 30%;
   animation:projectDrift 18s ease-in-out infinite alternate;
   transition:filter .5s var(--ease);
   will-change:transform;
@@ -1965,8 +1967,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 .project-modal-trade .trade-btn{flex:1 1 0;min-height:42px}
 
 @media (max-width:640px){
-  .project-media{height:128px}
-  .project-modal-hero{height:160px}
+  .project-media{height:180px}
+  .project-modal-hero{height:200px}
   .project-foot{flex-wrap:wrap}
   .project-viewmore{flex:1 1 100%}
   .project-trade{flex:1 1 100%}
@@ -1981,7 +1983,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-media img{animation-duration:26s}
 }
 @media (max-width:380px){
-  .project-media{height:112px}
+  .project-media{height:160px}
   .project-name{font-size:15px}
 }
 
