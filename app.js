@@ -1136,17 +1136,6 @@
     subtitle.textContent = '';
     subtitle.hidden = true;
 
-    var links = [];
-    (Array.isArray(token.links) ? token.links : []).forEach(function (link) {
-      var url = safeUrl(link && link.url, '');
-      if (url) links.push({ label: link.label || 'Link', url: url });
-    });
-    if (isSolanaAddress(mint)) links.push({ label: 'Solscan', url: 'https://solscan.io/token/' + encodeURIComponent(mint) });
-
-    var linkHtml = links.map(function (link) {
-      return '<a class="project-modal-link" href="' + link.url + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(link.label) + ' ↗</a>';
-    }).join('');
-
     var chartPayload = {
       mint: mint,
       symbol: token.symbol || '',
@@ -1161,10 +1150,25 @@
       ? '<button type="button" class="project-modal-chart" data-chart="' + escapeHtml(JSON.stringify(chartPayload)) + '">View Chart</button>'
       : '';
 
-    var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
     var mintRow = mint
       ? '<button type="button" class="project-modal-mint" data-copy-mint="' + escapeHtml(mint) + '" title="Copy contract address"><code>' + escapeHtml(mint) + '</code> <span aria-hidden="true">⧉</span></button>'
       : '';
+
+    // Stats row — real values from token data only; missing → "—".
+    var marketCap = compactNumber(token.marketCapUsd != null ? token.marketCapUsd : token.marketCap, '$');
+    var holdersNum = Number(token.holders != null ? token.holders : token.holderCount);
+    var holders = Number.isFinite(holdersNum) && holdersNum > 0 ? compactNumber(holdersNum, '') : '';
+    var liquidity = compactNumber(token.liquidityUsd != null ? token.liquidityUsd : token.liquidity, '$');
+    var volume = compactNumber(token.volume24hUsd != null ? token.volume24hUsd : token.volume24h, '$');
+    function statCell(label, value) {
+      return '<div class="project-stat"><span class="project-stat-label">' + label + '</span><strong class="project-stat-value">' + (value || '—') + '</strong></div>';
+    }
+    var statsRow = '<div class="project-modal-stats">'
+      + statCell('Market Cap', marketCap)
+      + statCell('Holders', holders)
+      + statCell('Liquidity', liquidity)
+      + statCell('24H Volume', volume)
+      + '</div>';
 
     body.innerHTML = [
       '<div class="project-modal-hero">',
@@ -1172,12 +1176,9 @@
       '<span class="project-modal-fallback">' + initials + '</span>',
       '</div>',
       '<p class="project-modal-desc">' + description + '</p>',
+      statsRow,
       mintRow ? '<div class="project-modal-section"><span class="project-modal-label">Contract address</span>' + mintRow + '</div>' : '',
-      linkHtml ? '<div class="project-modal-section"><span class="project-modal-label">Links</span><div class="project-modal-links">' + linkHtml + (chartBtn || '') + '</div></div>' : (chartBtn ? '<div class="project-modal-section"><div class="project-modal-links">' + chartBtn + '</div></div>' : ''),
-      '<div class="project-modal-trade"' + coinAttr + '>',
-      '<button type="button" class="trade-btn trade-buy" data-trade="buy" aria-label="Buy ' + (symbol || name) + '">BUY</button>',
-      '<button type="button" class="trade-btn trade-sell" data-trade="sell" aria-label="Sell ' + (symbol || name) + '">SELL</button>',
-      '</div>'
+      chartBtn ? '<div class="project-modal-section"><div class="project-modal-links">' + chartBtn + '</div></div>' : ''
     ].join('');
 
     var copyBtn = body.querySelector('[data-copy-mint]');
