@@ -1953,7 +1953,20 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 /* Bias the crop toward the top so the lizard's full head shows, matching
    the main card. */
-.project-modal-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 0%}
+/* The source artwork has a dark empty band ABOVE the head; object-position
+   0% pinned that band to the top. Pan the crop window DOWN the source
+   (higher %) + a slight zoom so the head rises toward the top edge and more
+   body/hands show. */
+.project-modal-hero img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:50% 42%;
+  transform:scale(1.06);
+  transform-origin:50% 30%;
+}
 .project-modal-fallback{
   display:grid;place-items:center;width:76px;height:76px;
   color:var(--mint);font-family:var(--mono);font-weight:900;font-size:26px;
