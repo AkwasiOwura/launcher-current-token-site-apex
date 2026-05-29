@@ -1925,14 +1925,16 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 .project-modal-body{display:flex;flex-direction:column;gap:14px;margin-top:4px}
 .project-modal-hero{
   position:relative;
-  height:200px;
+  height:300px;
   display:grid;
   place-items:center;
   border:1px solid rgba(255,255,255,.1);
   background:rgba(0,0,0,.4);
   overflow:hidden;
 }
-.project-modal-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* Bias the crop toward the top so the lizard's full head shows, matching
+   the main card. */
+.project-modal-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
 .project-modal-fallback{
   display:grid;place-items:center;width:76px;height:76px;
   color:var(--mint);font-family:var(--mono);font-weight:900;font-size:26px;
@@ -1968,7 +1970,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 
 @media (max-width:640px){
   .project-media{height:180px}
-  .project-modal-hero{height:200px}
+  .project-modal-hero{height:240px}
   .project-foot{flex-wrap:wrap}
   .project-viewmore{flex:1 1 100%}
   .project-trade{flex:1 1 100%}
