@@ -914,8 +914,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 
 .verify{
   display:grid;
-  grid-template-columns:minmax(0,.86fr) minmax(300px,1fr);
-  gap:28px;
+  grid-template-columns:1fr;
+  gap:20px;
   align-items:start;
 }
 .verify-copy p{max-width:580px;color:var(--muted)}
@@ -947,12 +947,12 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 .verify-field input{
   width:100%;
-  min-height:48px;
+  min-height:44px;
   border:1px solid rgba(255,255,255,.16);
   border-radius:0;
   background:rgba(0,0,0,.34);
   color:var(--text);
-  padding:0 14px;
+  padding:0 12px;
   outline:none;
 }
 .verify-field input:focus{
@@ -960,12 +960,13 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   box-shadow:0 0 0 3px rgba(22,242,139,.12);
 }
 .verify-field button{
-  min-height:48px;
+  min-height:44px;
   border:1px solid rgba(22,242,139,.64);
   border-radius:0;
   background:rgba(22,242,139,.12);
   color:var(--text);
-  padding:0 18px;
+  padding:0 14px;
+  font-size:13px;
   font-weight:900;
   cursor:pointer;
 }
