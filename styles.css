@@ -1747,12 +1747,56 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   background:rgba(0,0,0,.4);
   overflow:hidden;
 }
+/* Gentle neon edge highlight + slow glow pulse around the artwork. */
+.project-media::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(22,242,139,.18);
+  animation:projectGlow 4.6s var(--ease) infinite;
+}
+/* Subtle diagonal light sweep across the image. */
+.project-media::after{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-60%;
+  z-index:3;
+  width:55%;
+  height:100%;
+  pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.10) 45%,rgba(22,242,139,.14) 52%,transparent);
+  transform:skewX(-18deg);
+  animation:projectSheen 6.5s var(--ease) infinite;
+}
 .project-media img{
   position:absolute;
   inset:0;
   width:100%;
   height:100%;
   object-fit:cover;
+  transform:scale(1.01);
+  transition:transform .5s var(--ease),filter .5s var(--ease);
+  will-change:transform;
+}
+/* Soft scale + saturation on hover (desktop). */
+.project-card:hover .project-media img{
+  transform:scale(1.06);
+  filter:saturate(1.12) contrast(1.03);
+}
+.project-card:hover .project-media::before{
+  box-shadow:inset 0 0 0 1px rgba(22,242,139,.45),inset 0 0 22px rgba(22,242,139,.16);
+}
+@keyframes projectGlow{
+  0%,100%{box-shadow:inset 0 0 0 1px rgba(22,242,139,.16),inset 0 0 14px rgba(22,242,139,.05)}
+  50%{box-shadow:inset 0 0 0 1px rgba(22,242,139,.34),inset 0 0 20px rgba(22,242,139,.14)}
+}
+@keyframes projectSheen{
+  0%{left:-60%}
+  /* sweep once, then long rest before repeating */
+  18%,100%{left:130%}
 }
 .project-media-fallback{
   display:grid;
@@ -1905,6 +1949,10 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-trade{flex:1 1 100%}
   .project-trade .trade-btn{flex:1 1 0}
   .modal-card.project-modal-card{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+  /* Lightweight on phones: keep a static neon edge, drop the moving
+     light sweep and the looping glow pulse to save battery/GPU. */
+  .project-media::after{display:none}
+  .project-media::before{animation:none;box-shadow:inset 0 0 0 1px rgba(22,242,139,.22)}
 }
 @media (max-width:380px){
   .project-media{height:112px}
