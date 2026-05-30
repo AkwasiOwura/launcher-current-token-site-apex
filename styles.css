@@ -367,8 +367,8 @@ h2{
   background:rgba(5,17,10,.7);
   overflow:hidden;
 }
-/* Ticker pinned directly under the Market Radar header. */
-.ticker--radar-top{margin-top:0;margin-bottom:18px}
+/* Ticker pinned directly under the top navigation/header. */
+.ticker--top{margin-top:0;margin-bottom:18px}
 .ticker-track{
   display:flex;
   width:max-content;
