@@ -1176,7 +1176,8 @@
     var symbol = escapeHtml(String(token.symbol || '').replace(/^\$/, '').toUpperCase());
     var mint = String(token.mint || token.contract || token.address || '').trim();
     var image = safeAssetUrl(token.imageUrl || token.image || '');
-    var description = escapeHtml(tokenDescription(token));
+    // Modal prefers the fuller longDescription; card teaser stays on token.description.
+    var description = escapeHtml(token.longDescription || token.modalDescription || tokenDescription(token));
     var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
 
     title.textContent = (token.name || symbol || 'Project') + (symbol ? ' · $' + symbol : '');
