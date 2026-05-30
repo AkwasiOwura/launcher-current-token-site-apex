@@ -1187,6 +1187,13 @@
     title.textContent = (token.name || symbol || 'Project') + (symbol ? ' · $' + symbol : '');
     modal.setAttribute('data-project-mint', mint);
 
+    // Mirror each token's card idle motion onto the modal hero image.
+    var slug = normalizeSlug(token.slug || token.path || token.url);
+    var heroAnim = slug === 'legend' ? ' project-modal-hero--bob'
+      : slug === 'percolator' ? ' project-modal-hero--pan'
+      : slug === 'altseason' ? ' project-modal-hero--sway'
+      : '';
+
     var mintRow = mint
       ? '<button type="button" class="project-modal-mint" data-copy-mint="' + escapeHtml(mint) + '" title="Copy contract address"><code>' + escapeHtml(mint) + '</code> <span aria-hidden="true">⧉</span></button>'
       : '';
