@@ -491,8 +491,13 @@ h2{
    instead of stretching across the row (auto-fit collapses empty tracks). */
 .token-grid{
   grid-template-columns:repeat(3,minmax(0,1fr));
-  align-items:start;
+  align-items:stretch;
 }
+/* Equal-height project cards: stretch to the grid row, give the
+   description a stable 2-line min-height so stat/link/button rows align
+   across cards regardless of copy length. */
+.token-grid .project-card{height:100%}
+.project-desc{min-height:2.625rem}
 .compact-section{padding-top:30px}
 .compact-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .token-card,.coin-card,.empty-card{
