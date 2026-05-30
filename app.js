@@ -1048,7 +1048,8 @@
     var slug = normalizeSlug(token.slug || token.path || token.url);
     var mediaClass = 'project-media' + (image ? ' is-animated' : '')
       + (slug === 'legend' ? ' project-media--bob' : '')
-      + (slug === 'percolator' ? ' project-media--pan' : '');
+      + (slug === 'percolator' ? ' project-media--pan' : '')
+      + (slug === 'altseason' ? ' project-media--sway' : '');
     var delay = Math.min(index * 70, 560);
     var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
     var projectAttr = ' data-project="' + escapeHtml(JSON.stringify(token)) + '"';

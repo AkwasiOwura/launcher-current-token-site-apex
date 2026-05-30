@@ -1839,6 +1839,18 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   0%,100%{filter:saturate(1) contrast(1)}
   50%{filter:saturate(1.12) contrast(1.05) brightness(1.04)}
 }
+/* ALTSEASON: single still, so suggest hand sway + head nod with a gentle
+   layered sway (horizontal rock + tiny rotate for the nod). Replaces drift
+   so one img transform animation runs (no conflict); card hover uses the
+   card/media transform, so parallax is preserved. */
+.project-media--sway img{
+  transform-origin:50% 70%;
+  animation:projectSway 5.2s ease-in-out infinite;
+}
+@keyframes projectSway{
+  0%,100%{transform:scale(1.07) translate3d(-1.4%,0,0) rotate(-0.6deg)}
+  50%{transform:scale(1.07) translate3d(1.4%,0,0) rotate(0.6deg)}
+}
 @keyframes projectBreathe{
   0%,100%{opacity:.85}
   50%{opacity:1}
@@ -2150,6 +2162,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-media img{animation-duration:26s}
   .project-media--bob img{animation-duration:9s}
   .project-media--pan img{animation:projectPan 14s ease-in-out infinite alternate}
+  .project-media--sway img{animation-duration:8s}
 }
 @media (max-width:380px){
   .project-media{height:160px}
