@@ -1867,7 +1867,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   box-shadow:0 0 6px rgba(22,242,139,.8);
 }
 .project-body{padding:13px 13px 7px;display:flex;flex-direction:column;gap:9px;flex:1 1 auto}
-.project-titlerow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.project-titlerow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.project-titlemeta{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
 .project-name{margin:0;font-size:16px;font-weight:900;letter-spacing:-.01em;line-height:1.08}
 .project-symbol{color:var(--mint);font-family:var(--mono);font-size:11.5px;font-weight:900;letter-spacing:.02em}
 .project-tags{display:flex;flex-wrap:wrap;gap:5px}
@@ -1923,13 +1924,13 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   font-weight:900;
   color:var(--text);
 }
-.project-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:2px}
+.project-links{display:flex;gap:6px;flex:0 0 auto}
 .project-link{
   display:inline-flex;
   align-items:center;
-  min-height:30px;
-  padding:0 10px;
-  font-size:11.5px;
+  min-height:26px;
+  padding:0 9px;
+  font-size:11px;
   font-weight:800;
   color:var(--mint);
   text-decoration:none;
@@ -1937,7 +1938,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   background:rgba(22,242,139,.05);
   transition:background .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease);
 }
-.project-link--icon{padding:0 11px;font-size:13px}
+.project-link--icon{padding:0 9px;font-size:13px}
 .project-link:hover{background:rgba(22,242,139,.12);border-color:rgba(22,242,139,.6);transform:translateY(-1px)}
 .project-foot{
   display:flex;
