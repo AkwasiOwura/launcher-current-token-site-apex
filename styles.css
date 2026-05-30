@@ -1851,6 +1851,12 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   0%,100%{transform:scale(1.07) translate3d(-1.4%,0,0) rotate(-0.6deg)}
   50%{transform:scale(1.07) translate3d(1.4%,0,0) rotate(0.6deg)}
 }
+/* Modal hero: mirror each token's card motion. overflow:hidden on the
+   hero clips transforms so no scrollbars/layout shift. scale keeps edges
+   covered during translate/rotate. */
+.project-modal-hero--bob img{animation:projectBob 6s ease-in-out infinite}
+.project-modal-hero--pan img{animation:projectPan 9s ease-in-out infinite alternate,projectClawPulse 3.4s ease-in-out infinite}
+.project-modal-hero--sway img{transform-origin:50% 70%;animation:projectSway 5.2s ease-in-out infinite}
 @keyframes projectBreathe{
   0%,100%{opacity:.85}
   50%{opacity:1}
@@ -2163,6 +2169,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-media--bob img{animation-duration:9s}
   .project-media--pan img{animation:projectPan 14s ease-in-out infinite alternate}
   .project-media--sway img{animation-duration:8s}
+  .project-modal-hero--pan img{animation:projectPan 14s ease-in-out infinite alternate}
+  .project-modal-hero--bob img{animation-duration:9s}
+  .project-modal-hero--sway img{animation-duration:8s}
 }
 @media (max-width:380px){
   .project-media{height:160px}

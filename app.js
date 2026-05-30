@@ -1212,7 +1212,7 @@
       + '</div>';
 
     body.innerHTML = [
-      '<div class="project-modal-hero">',
+      '<div class="project-modal-hero' + heroAnim + '">',
       image ? '<img src="' + image + '" alt="' + name + ' artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();" />' : '',
       '<span class="project-modal-fallback">' + initials + '</span>',
       '</div>',
