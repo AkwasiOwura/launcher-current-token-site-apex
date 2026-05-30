@@ -497,7 +497,7 @@ h2{
    description a stable 2-line min-height so stat/link/button rows align
    across cards regardless of copy length. */
 .token-grid .project-card{height:100%}
-.project-desc{min-height:2.625rem}
+.project-desc{min-height:9rem}
 .compact-section{padding-top:30px}
 .compact-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .token-card,.coin-card,.empty-card{
@@ -1888,7 +1888,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   font-size:12.5px;
   line-height:1.5;
   display:-webkit-box;
-  -webkit-line-clamp:2;
+  -webkit-line-clamp:6;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
