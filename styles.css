@@ -1960,6 +1960,19 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 .project-trade{display:flex;gap:6px}
 .project-trade .trade-btn{min-height:36px;padding:0 13px}
 .project-card:hover .project-media img{filter:saturate(1.12) contrast(1.03)}
+/* Pointer-tracked spotlight (JS sets --spot-x/--spot-y on hover). */
+.project-media{transform-style:preserve-3d}
+.project-media .project-media-spot{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .25s var(--ease);
+  background:radial-gradient(220px circle at var(--spot-x,50%) var(--spot-y,40%),rgba(22,242,139,.18),rgba(255,255,255,.06) 30%,transparent 60%);
+  mix-blend-mode:screen;
+}
+.project-card:hover .project-media .project-media-spot{opacity:1}
 
 /* Project detail modal */
 .modal-card.project-modal-card{

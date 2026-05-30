@@ -1073,6 +1073,7 @@
       '<div class="project-media' + (image ? ' is-animated' : '') + '">',
       image ? '<img src="' + image + '" alt="' + name + ' artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest(\'.project-media\').classList.remove(\'is-animated\'); this.remove();" />' : '',
       image ? '<span class="project-media-glow" aria-hidden="true"></span>' : '',
+      '<span class="project-media-spot" aria-hidden="true"></span>',
       '<span class="project-media-fallback">' + initials + '</span>',
       '<span class="project-status">' + status + '</span>',
       '</div>',
@@ -1306,6 +1307,47 @@
 
     grid.innerHTML = cards.join('');
     hydrateProjectCards(grid);
+    setupProjectMotion(grid);
+  }
+
+  // Pointer-driven premium motion for project cards (desktop, fine pointer
+  // only): subtle parallax tilt + a spotlight that follows the cursor over
+  // the media — a calm, restrained take on the reference's pointer-tracked
+  // reveal. Transform/opacity only; disabled on touch and reduced-motion.
+  function setupProjectMotion(grid) {
+    if (reducedMotion) return;
+    var finePointer = true;
+    try { finePointer = !!(window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches); } catch (_e) {}
+    if (!finePointer) return;
+    var cards = grid.querySelectorAll('.project-card');
+    Array.prototype.forEach.call(cards, function (card) {
+      var media = card.querySelector('.project-media');
+      var frame = null;
+      function apply(px, py) {
+        frame = null;
+        var rx = (0.5 - py) * 5;   // deg, max ±2.5
+        var ry = (px - 0.5) * 6;   // deg, max ±3
+        card.style.transform = 'translateY(-4px) perspective(900px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)';
+        if (media) {
+          media.style.setProperty('--spot-x', (px * 100).toFixed(1) + '%');
+          media.style.setProperty('--spot-y', (py * 100).toFixed(1) + '%');
+        }
+      }
+      card.addEventListener('pointermove', function (e) {
+        if (e.pointerType && e.pointerType !== 'mouse') return;
+        var rect = card.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        var px = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+        var py = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+        if (frame) return;
+        frame = requestAnimationFrame(function () { apply(px, py); });
+      });
+      card.addEventListener('pointerleave', function () {
+        if (frame) { cancelAnimationFrame(frame); frame = null; }
+        card.style.transform = '';
+        if (media) { media.style.removeProperty('--spot-x'); media.style.removeProperty('--spot-y'); }
+      });
+    });
   }
 
   // Populate the compact MC/Liq/Vol strip on project cards from DexScreener
