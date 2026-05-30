@@ -1045,6 +1045,8 @@
     var website = safeUrl(token.website || token.url || '', '');
     var twitter = safeUrl(token.twitter || '', '');
     var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
+    var slug = normalizeSlug(token.slug || token.path || token.url);
+    var mediaClass = 'project-media' + (image ? ' is-animated' : '') + (slug === 'legend' ? ' project-media--bob' : '');
     var delay = Math.min(index * 70, 560);
     var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
     var projectAttr = ' data-project="' + escapeHtml(JSON.stringify(token)) + '"';
@@ -1070,7 +1072,7 @@
       '<article class="project-card" style="animation-delay:' + delay + 'ms"' + coinAttr + mintAttr + '>',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
       '<span class="cyber-corner-br" aria-hidden="true"></span>',
-      '<div class="project-media' + (image ? ' is-animated' : '') + '">',
+      '<div class="' + mediaClass + '">',
       image ? '<img src="' + image + '" alt="' + name + ' artwork" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest(\'.project-media\').classList.remove(\'is-animated\'); this.remove();" />' : '',
       image ? '<span class="project-media-glow" aria-hidden="true"></span>' : '',
       '<span class="project-media-spot" aria-hidden="true"></span>',

@@ -1814,6 +1814,16 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   50%{transform:scale(1.09) translate3d(1.2%,0.4%,0)}
   100%{transform:scale(1.06) translate3d(0.6%,1.2%,0)}
 }
+/* LEGEND idle bob: gentle vertical float. Replaces the drift on LEGEND so
+   only one transform animation runs (no conflict); card hover uses the
+   card/media transform, not the img transform, so parallax is preserved. */
+.project-media--bob img{
+  animation:projectBob 6s ease-in-out infinite;
+}
+@keyframes projectBob{
+  0%,100%{transform:scale(1.06) translate3d(0,-1.4%,0)}
+  50%{transform:scale(1.06) translate3d(0,1.4%,0)}
+}
 @keyframes projectBreathe{
   0%,100%{opacity:.85}
   50%{opacity:1}
@@ -2123,6 +2133,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-media::before{animation:none;box-shadow:inset 0 0 0 1px rgba(22,242,139,.22)}
   .project-media-glow{animation:none}
   .project-media img{animation-duration:26s}
+  .project-media--bob img{animation-duration:9s}
 }
 @media (max-width:380px){
   .project-media{height:160px}
