@@ -1048,14 +1048,26 @@
     var delay = Math.min(index * 70, 560);
     var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
     var projectAttr = ' data-project="' + escapeHtml(JSON.stringify(token)) + '"';
+    var cardMint = String(token.mint || token.contract || token.address || '').trim();
+    var mintAttr = isSolanaAddress(cardMint) ? ' data-card-mint="' + escapeHtml(cardMint) + '"' : '';
 
     var linkRow = [
-      website ? '<a class="project-link" href="' + website + '" target="_blank" rel="noopener noreferrer" title="Open website">Website ↗</a>' : '',
-      twitter ? '<a class="project-link" href="' + twitter + '" target="_blank" rel="noopener noreferrer" title="Open X profile">𝕏</a>' : ''
+      website ? '<a class="project-link" href="' + website + '" target="_blank" rel="noopener noreferrer" title="Open website" aria-label="Open ' + name + ' website">Website ↗</a>' : '',
+      twitter ? '<a class="project-link project-link--icon" href="' + twitter + '" target="_blank" rel="noopener noreferrer" title="Open X profile" aria-label="Open ' + name + ' on X">𝕏</a>' : ''
     ].filter(Boolean).join('');
 
+    // Compact live-stat strip (Market Cap / Liquidity), hydrated from the
+    // same source as the modal. Mono figures, tone-neutral, DexScreener-style.
+    var cardStats = isSolanaAddress(cardMint) ? [
+      '<dl class="project-cardstats">',
+      '<div class="project-cardstat"><dt>MC</dt><dd class="project-cardstat-value" data-cardstat="marketCap">…</dd></div>',
+      '<div class="project-cardstat"><dt>Liq</dt><dd class="project-cardstat-value" data-cardstat="liquidity">…</dd></div>',
+      '<div class="project-cardstat"><dt>Vol</dt><dd class="project-cardstat-value" data-cardstat="volume">…</dd></div>',
+      '</dl>'
+    ].join('') : '';
+
     return [
-      '<article class="project-card" style="animation-delay:' + delay + 'ms"' + coinAttr + '>',
+      '<article class="project-card" style="animation-delay:' + delay + 'ms"' + coinAttr + mintAttr + '>',
       '<span class="cyber-corner-tl" aria-hidden="true"></span>',
       '<span class="cyber-corner-br" aria-hidden="true"></span>',
       '<div class="project-media' + (image ? ' is-animated' : '') + '">',
@@ -1068,6 +1080,7 @@
       '<div class="project-titlerow"><h3 class="project-name">' + name + '</h3>' + (symbol ? '<span class="project-symbol">$' + symbol + '</span>' : '') + '</div>',
       '<div class="project-tags">' + projectTags(token) + '</div>',
       '<p class="project-desc">' + description + '</p>',
+      cardStats,
       '<div class="project-links">' + linkRow + '</div>',
       '</div>',
       '<div class="project-foot">',
@@ -1292,6 +1305,34 @@
     }
 
     grid.innerHTML = cards.join('');
+    hydrateProjectCards(grid);
+  }
+
+  // Populate the compact MC/Liq/Vol strip on project cards from DexScreener
+  // (same source as the modal). Unknown → "—". One fetch per card mint.
+  function hydrateProjectCards(grid) {
+    var cards = grid.querySelectorAll('.project-card[data-card-mint]');
+    Array.prototype.forEach.call(cards, function (card) {
+      var mint = card.getAttribute('data-card-mint') || '';
+      if (!isSolanaAddress(mint)) return;
+      fetch('https://api.dexscreener.com/latest/dex/tokens/' + encodeURIComponent(mint), { credentials: 'omit' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          var pair = bestDexScreenerPair(data && data.pairs);
+          function put(key, val) {
+            var cell = card.querySelector('.project-cardstat-value[data-cardstat="' + key + '"]');
+            if (cell) cell.textContent = val || '—';
+          }
+          put('marketCap', pair && compactNumber(pair.marketCap != null ? pair.marketCap : pair.fdv, '$'));
+          put('liquidity', pair && compactNumber(pair.liquidity && pair.liquidity.usd, '$'));
+          put('volume', pair && compactNumber(pair.volume && pair.volume.h24, '$'));
+        })
+        .catch(function () {
+          Array.prototype.forEach.call(card.querySelectorAll('.project-cardstat-value'), function (c) {
+            if (c.textContent === '…') c.textContent = '—';
+          });
+        });
+    });
   }
 
   function isSolanaAddress(value) {

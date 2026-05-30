@@ -1736,13 +1736,13 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   transition:transform .24s var(--ease),border-color .24s var(--ease),box-shadow .24s var(--ease);
 }
 .project-card:hover{
-  transform:translateY(-5px);
-  border-color:var(--border-strong);
-  box-shadow:0 18px 54px rgba(0,0,0,.32);
+  transform:translateY(-4px);
+  border-color:rgba(22,242,139,.32);
+  box-shadow:0 20px 56px rgba(0,0,0,.36),0 0 0 1px rgba(22,242,139,.12);
 }
 .project-media{
   position:relative;
-  height:210px;
+  height:188px;
   display:grid;
   place-items:center;
   border-bottom:1px solid rgba(255,255,255,.08);
@@ -1839,64 +1839,107 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 .project-status{
   position:absolute;
-  top:8px;
-  right:8px;
-  padding:3px 9px;
+  top:9px;
+  right:9px;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:3px 9px 3px 8px;
   font-family:var(--mono);
-  font-size:10px;
+  font-size:9.5px;
   font-weight:900;
-  letter-spacing:.1em;
+  letter-spacing:.12em;
   text-transform:uppercase;
   color:var(--mint);
-  background:rgba(6,12,9,.78);
-  border:1px solid rgba(22,242,139,.45);
+  background:rgba(4,8,6,.82);
+  border:1px solid rgba(22,242,139,.4);
+  backdrop-filter:blur(4px);
 }
-.project-body{padding:12px 12px 6px;display:flex;flex-direction:column;gap:8px}
+.project-status::before{
+  content:"";
+  width:5px;height:5px;border-radius:50%;
+  background:var(--mint);
+  box-shadow:0 0 6px rgba(22,242,139,.8);
+}
+.project-body{padding:13px 13px 7px;display:flex;flex-direction:column;gap:9px;flex:1 1 auto}
 .project-titlerow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-.project-name{margin:0;font-size:17px;font-weight:900;letter-spacing:0;line-height:1.1}
-.project-symbol{color:var(--mint);font-family:var(--mono);font-size:12px;font-weight:900}
-.project-tags{display:flex;flex-wrap:wrap;gap:6px}
+.project-name{margin:0;font-size:16px;font-weight:900;letter-spacing:-.01em;line-height:1.08}
+.project-symbol{color:var(--mint);font-family:var(--mono);font-size:11.5px;font-weight:900;letter-spacing:.02em}
+.project-tags{display:flex;flex-wrap:wrap;gap:5px}
 .project-tag{
-  padding:2px 8px;
+  padding:2px 7px;
   font-family:var(--mono);
-  font-size:10px;
+  font-size:9.5px;
   font-weight:800;
-  letter-spacing:.06em;
+  letter-spacing:.07em;
   text-transform:uppercase;
-  color:rgba(244,255,249,.78);
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(255,255,255,.04);
+  color:rgba(244,255,249,.66);
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.025);
 }
 .project-desc{
   margin:0;
-  color:rgba(244,255,249,.74);
-  font-size:13px;
+  color:rgba(244,255,249,.72);
+  font-size:12.5px;
   line-height:1.5;
   display:-webkit-box;
-  -webkit-line-clamp:3;
+  -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
-.project-links{display:flex;gap:8px;flex-wrap:wrap}
+/* DexScreener-style compact stat strip */
+.project-cardstats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  margin:1px 0 0;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.08);
+}
+.project-cardstat{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  padding:6px 8px;
+  background:rgba(8,14,10,.6);
+}
+.project-cardstat dt{
+  font-family:var(--mono);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:rgba(244,255,249,.5);
+}
+.project-cardstat-value{
+  margin:0;
+  font-family:var(--mono);
+  font-size:12.5px;
+  font-weight:900;
+  color:var(--text);
+}
+.project-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:2px}
 .project-link{
   display:inline-flex;
   align-items:center;
-  padding:5px 10px;
-  font-size:12px;
+  min-height:30px;
+  padding:0 10px;
+  font-size:11.5px;
   font-weight:800;
   color:var(--mint);
   text-decoration:none;
-  border:1px solid rgba(22,242,139,.4);
-  background:rgba(22,242,139,.06);
-  transition:background .2s var(--ease),border-color .2s var(--ease);
+  border:1px solid rgba(22,242,139,.32);
+  background:rgba(22,242,139,.05);
+  transition:background .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease);
 }
-.project-link:hover{background:rgba(22,242,139,.12);border-color:rgba(22,242,139,.7)}
+.project-link--icon{padding:0 11px;font-size:13px}
+.project-link:hover{background:rgba(22,242,139,.12);border-color:rgba(22,242,139,.6);transform:translateY(-1px)}
 .project-foot{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
-  padding:10px 12px 12px;
+  gap:8px;
+  padding:9px 13px 13px;
   margin-top:auto;
 }
 .project-viewmore{
@@ -1915,7 +1958,8 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 .project-viewmore:hover{background:rgba(22,242,139,.1);border-color:rgba(22,242,139,.5);color:var(--mint)}
 .project-trade{display:flex;gap:6px}
-.project-trade .trade-btn{min-height:36px;padding:0 12px}
+.project-trade .trade-btn{min-height:36px;padding:0 13px}
+.project-card:hover .project-media img{filter:saturate(1.12) contrast(1.03)}
 
 /* Project detail modal */
 .modal-card.project-modal-card{
@@ -2042,8 +2086,10 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 
 @media (max-width:640px){
-  .project-media{height:180px}
+  .project-media{height:172px}
   .project-modal-hero{height:240px}
+  .project-cardstat{padding:5px 7px}
+  .project-cardstat-value{font-size:12px}
   .project-foot{flex-wrap:wrap}
   .project-viewmore{flex:1 1 100%}
   .project-trade{flex:1 1 100%}
