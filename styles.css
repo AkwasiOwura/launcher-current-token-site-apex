@@ -1824,6 +1824,21 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   0%,100%{transform:scale(1.06) translate3d(0,-1.4%,0)}
   50%{transform:scale(1.06) translate3d(0,1.4%,0)}
 }
+/* Percolator: slow right-to-left pan of the artwork + a subtle "claw"
+   pulse (scale/opacity sheen focused on the image) since the source is a
+   single still — no faked frame swap. Replaces drift so one img transform
+   animation runs (no conflict); card hover uses card/media transform. */
+.project-media--pan img{
+  animation:projectPan 9s ease-in-out infinite alternate,projectClawPulse 3.4s ease-in-out infinite;
+}
+@keyframes projectPan{
+  0%{transform:scale(1.08) translate3d(2.2%,0,0)}
+  100%{transform:scale(1.08) translate3d(-2.2%,0,0)}
+}
+@keyframes projectClawPulse{
+  0%,100%{filter:saturate(1) contrast(1)}
+  50%{filter:saturate(1.12) contrast(1.05) brightness(1.04)}
+}
 @keyframes projectBreathe{
   0%,100%{opacity:.85}
   50%{opacity:1}
@@ -2134,6 +2149,7 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
   .project-media-glow{animation:none}
   .project-media img{animation-duration:26s}
   .project-media--bob img{animation-duration:9s}
+  .project-media--pan img{animation:projectPan 14s ease-in-out infinite alternate}
 }
 @media (max-width:380px){
   .project-media{height:160px}

@@ -1046,7 +1046,9 @@
     var twitter = safeUrl(token.twitter || '', '');
     var initials = escapeHtml((symbol || name).replace(/[^a-z0-9]/gi, '').slice(0, 2) || 'SM');
     var slug = normalizeSlug(token.slug || token.path || token.url);
-    var mediaClass = 'project-media' + (image ? ' is-animated' : '') + (slug === 'legend' ? ' project-media--bob' : '');
+    var mediaClass = 'project-media' + (image ? ' is-animated' : '')
+      + (slug === 'legend' ? ' project-media--bob' : '')
+      + (slug === 'percolator' ? ' project-media--pan' : '');
     var delay = Math.min(index * 70, 560);
     var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
     var projectAttr = ' data-project="' + escapeHtml(JSON.stringify(token)) + '"';
