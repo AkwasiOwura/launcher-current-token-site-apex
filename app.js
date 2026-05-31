@@ -1083,6 +1083,8 @@
       '<div class="project-cardstat"><dt>MC</dt><dd class="project-cardstat-value" data-cardstat="marketCap">…</dd></div>',
       '<div class="project-cardstat"><dt>Liq</dt><dd class="project-cardstat-value" data-cardstat="liquidity">…</dd></div>',
       '<div class="project-cardstat"><dt>Vol</dt><dd class="project-cardstat-value" data-cardstat="volume">…</dd></div>',
+      '<div class="project-cardstat"><dt>Holders</dt><dd class="project-cardstat-value" data-cardstat="holders">…</dd></div>',
+      '<div class="project-cardstat"><dt>Age</dt><dd class="project-cardstat-value" data-cardstat="age">…</dd></div>',
       '</dl>'
     ].join('') : '';
 
@@ -1386,13 +1388,45 @@
           put('marketCap', pair && compactNumber(pair.marketCap != null ? pair.marketCap : pair.fdv, '$'));
           put('liquidity', pair && compactNumber(pair.liquidity && pair.liquidity.usd, '$'));
           put('volume', pair && compactNumber(pair.volume && pair.volume.h24, '$'));
+          put('age', pair && compactAge(pair.pairCreatedAt));
         })
+        .then(function () { hydrateCardHolders(card, mint); })
         .catch(function () {
           Array.prototype.forEach.call(card.querySelectorAll('.project-cardstat-value'), function (c) {
             if (c.textContent === '…') c.textContent = '—';
           });
         });
     });
+  }
+
+  // Holders (best-effort) from GeckoTerminal token info; unresolved -> "—".
+  function hydrateCardHolders(card, mint) {
+    function put(val) {
+      var cell = card.querySelector('.project-cardstat-value[data-cardstat="holders"]');
+      if (cell) cell.textContent = val || '—';
+    }
+    fetch('https://api.geckoterminal.com/api/v2/networks/solana/tokens/' + encodeURIComponent(mint) + '/info', { headers: { accept: 'application/json' }, credentials: 'omit' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        var attr = data && data.data && data.data.attributes;
+        var count = attr && attr.holders && (attr.holders.count != null ? attr.holders.count : attr.holders);
+        var n = Number(count);
+        put(Number.isFinite(n) && n > 0 ? compactNumber(n, '') : '');
+      })
+      .catch(function () { put(''); });
+  }
+
+  // Compact token age from a created-at ms timestamp (e.g. 5h, 3d, 5w, 2mo, 1y).
+  function compactAge(createdAtMs) {
+    var t = Number(createdAtMs);
+    if (!Number.isFinite(t) || t <= 0) return '';
+    var days = (Date.now() - t) / 86400000;
+    if (!(days >= 0)) return '';
+    if (days < 1) { var h = Math.max(1, Math.round(days * 24)); return h + 'h'; }
+    if (days < 14) return Math.round(days) + 'd';
+    if (days < 60) return Math.round(days / 7) + 'w';
+    if (days < 365) return Math.round(days / 30) + 'mo';
+    return (days / 365).toFixed(days < 730 ? 1 : 0) + 'y';
   }
 
   function isSolanaAddress(value) {
