@@ -2183,8 +2183,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 @media (max-width:640px){
   .project-media{height:172px}
   .project-modal-hero{height:240px}
-  .project-cardstat{padding:5px 7px}
-  .project-cardstat-value{font-size:12px}
+  .project-cardstat{padding:5px 2px}
+  .project-cardstat-value{font-size:10px}
+  .project-cardstat dt{font-size:7.5px}
   .project-titlerow{gap:8px}
   .project-link{min-height:28px}
   .project-foot{flex-wrap:wrap}

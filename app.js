@@ -1294,16 +1294,6 @@
       .sort(function (a, b) { return tokenDate(b) - tokenDate(a); })
       .map(function (token, index) {
         var slug = normalizeSlug(token.slug || token.path || token.url);
-        var name = escapeHtml(token.name || token.title || token.symbol || slug);
-        var symbol = escapeHtml(String(token.symbol || '').replace(/^\$/, '').toUpperCase());
-        var status = escapeHtml(token.status || token.phase || 'Token page');
-        var description = escapeHtml(tokenDescription(token));
-        var href = './' + slug + '/';
-        var delay = Math.min(index * 70, 560);
-
-        // AISI-style project card (prototype). Only used for entries that
-        // explicitly opt in via "style":"project"; every other token keeps
-        // the existing token-card layout untouched.
         if (String(token.style || '').toLowerCase() === 'project') {
           return projectCard(token, index);
         }
