@@ -71,7 +71,7 @@ button,input,textarea,select{font:inherit}
   gap:20px;
   width:min(1180px,calc(100% - 32px));
   margin:0 auto;
-  padding:18px 0;
+  padding:6px 0 18px;
   backdrop-filter:blur(18px);
 }
 .brand,.nav{
@@ -364,7 +364,7 @@ h2{
   overflow:hidden;
 }
 /* Ticker pinned directly under the top navigation/header. */
-.ticker--top{margin-top:0;margin-bottom:18px}
+.ticker--top{margin-top:0;margin-bottom:0}
 .ticker-track{
   display:flex;
   width:max-content;
