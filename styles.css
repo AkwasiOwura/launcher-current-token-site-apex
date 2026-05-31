@@ -1626,7 +1626,9 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 
 @keyframes pulse{50%{box-shadow:0 0 0 12px rgba(22,242,139,.04)}}
 @keyframes pulseText{50%{opacity:.48}}
-@keyframes ticker{to{transform:translateX(-50%)}}
+/* Left-to-right: start the doubled track shifted -50% and slide to 0 so
+   content moves rightward with a seamless, gap-free loop. */
+@keyframes ticker{from{transform:translate3d(-50%,0,0)}to{transform:translate3d(0,0,0)}}
 @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 @media (max-width:840px){
