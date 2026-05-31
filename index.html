@@ -23,7 +23,7 @@
   <meta name="twitter:image" content="https://solmemehub.tech/og-image.png" />
   <title>SolMemeHub | Solana Meme Launch Hub</title>
   <link rel="icon" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='15' fill='%23050712'/&gt;&lt;path d='M14 39h36l-8-18-8 11-7-8-13 15Z' fill='%2300e6a8'/&gt;&lt;circle cx='44' cy='18' r='5' fill='%23ffcf5a'/&gt;&lt;/svg&gt;" />
-  <link rel="stylesheet" href="styles.css?v=responsive-mobile-v2" />
+  <link rel="stylesheet" href="styles.css?v=how-it-works-v1" />
 </head>
 <body>
   <div class="scene" aria-hidden="true">
@@ -170,6 +170,28 @@
     </div>
   </div>
 
+  <!-- Beginner help modal -->
+  <div id="how-it-works-modal" class="modal-root" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-help-close></div>
+    <div class="modal-card how-modal-card cyber-card" role="dialog" aria-modal="true" aria-labelledby="how-it-works-title">
+      <span class="cyber-corner-tl" aria-hidden="true"></span>
+      <span class="cyber-corner-br" aria-hidden="true"></span>
+      <header class="modal-head">
+        <h3 id="how-it-works-title">How It Works</h3>
+        <button class="modal-close" type="button" data-help-close aria-label="Close">×</button>
+      </header>
+      <ol class="how-steps">
+        <li><strong>Find a token</strong><span>Look through Market Radar, KOL Scanner, or Listed Tokens to find a token you are interested in.</span></li>
+        <li><strong>Connect your wallet</strong><span>Click Wallet and connect your Solana wallet.</span></li>
+        <li><strong>Approve the connection</strong><span>Your wallet will ask you to approve the connection. Check it, then approve if you are happy.</span></li>
+        <li><strong>Buy</strong><span>Click Buy on the token you want. Enter the amount and confirm the transaction in your wallet.</span></li>
+        <li><strong>Watch your position</strong><span>After buying, keep an eye on the token and your wallet.</span></li>
+        <li><strong>Sell</strong><span>When you are ready, click Sell and confirm the transaction in your wallet.</span></li>
+        <li><strong>Stay careful</strong><span>Only trade what you are prepared to risk. Token prices can move very quickly.</span></li>
+      </ol>
+    </div>
+  </div>
+
   <main>
     <section class="hero" data-reveal>
       <div class="hero-copy hero-animated">
@@ -209,6 +231,15 @@
               <p>Get the signals that matter, first.</p>
             </div>
           </div>
+          <button class="feature-item feature-item-button" type="button" role="listitem" data-how-it-works aria-haspopup="dialog" aria-controls="how-it-works-modal">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h11"/><path d="M8 12h11"/><path d="M8 18h11"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/></svg>
+            </span>
+            <span class="feature-copy">
+              <strong>How It Works</strong>
+              <p>Simple steps to buy and sell tokens on SolMemeHub.</p>
+            </span>
+          </button>
         </div>
       </div>
 
@@ -431,6 +462,6 @@
   <script src="vendor/web3.iife.min.js?v=1.95.3" integrity="sha384-xo1g+ODR6i1cxIVZeALc/apXFHeaJHO1j1whMO3dhtdBChWeaihnDs7UnXs9ch78" crossorigin="anonymous" defer></script>
   <script src="wallet.js?v=mobile-wallet-connect-v2" defer></script>
   <script src="trade.js" defer></script>
-  <script src="app.js?v=chart-source-resolution" defer></script>
+  <script src="app.js?v=how-it-works-v1" defer></script>
 </body>
 </html>

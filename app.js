@@ -1653,11 +1653,47 @@
     });
   }
 
+  function setupHowItWorks() {
+    var modal = document.getElementById('how-it-works-modal');
+    if (!modal) return;
+
+    function open(trigger) {
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+      if (window.SMHModal) window.SMHModal.activate(modal, trigger);
+    }
+
+    function close() {
+      if (window.SMHModal) window.SMHModal.deactivate(modal);
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.addEventListener('click', function (event) {
+      var opener = event.target && event.target.closest && event.target.closest('[data-how-it-works]');
+      if (opener) {
+        event.preventDefault();
+        open(opener);
+        return;
+      }
+      var closer = event.target && event.target.closest && event.target.closest('[data-help-close]');
+      if (closer) {
+        event.preventDefault();
+        close();
+      }
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !modal.hidden) close();
+    });
+  }
+
   function boot() {
     setupReveal();
     setupControls();
     setupRugcheck();
     setupComingSoon();
+    setupHowItWorks();
     setupProjectModal();
     loadData();
   }

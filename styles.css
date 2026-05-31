@@ -229,7 +229,7 @@ h2{
 /* ────── Feature strip (replaces hero CTA buttons) ────── */
 .feature-strip{
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
   align-items:center;
   gap:0;
   margin-top:34px;
@@ -246,6 +246,24 @@ h2{
   gap:14px;
   padding:6px 22px;
   min-width:0;
+}
+.feature-item-button{
+  width:100%;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.feature-item-button:hover .feature-icon,
+.feature-item-button:focus-visible .feature-icon{
+  filter:drop-shadow(0 0 14px rgba(22,242,139,.55));
+}
+.feature-item-button:focus-visible{
+  outline:1px solid rgba(22,242,139,.75);
+  outline-offset:4px;
 }
 .feature-item + .feature-item::before{
   content:"";
@@ -276,6 +294,10 @@ h2{
   font-size:13.5px;
   line-height:1.4;
 }
+@media (max-width:1120px){
+  .feature-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .feature-item:nth-child(3)::before{display:none}
+}
 @media (max-width:840px){
   .feature-strip{
     grid-template-columns:1fr;
@@ -284,6 +306,7 @@ h2{
   }
   .feature-item{padding:10px 4px}
   .feature-item + .feature-item::before{
+    display:block;
     left:8%;right:8%;top:0;bottom:auto;
     width:auto;height:1px;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
@@ -2351,6 +2374,10 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 }
 #wallet-details-modal .modal-card{width:min(470px,calc(100% - 24px));padding:13px 11px 12px}
 .modal-card.trade-card{width:min(480px,calc(100% - 24px))}
+.modal-card.how-modal-card{
+  width:min(560px,calc(100% - 24px));
+  padding:20px;
+}
 .modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 .modal-head h3{margin:0;font-size:18px;font-weight:900;letter-spacing:.005em}
 .modal-close{
@@ -2360,6 +2387,47 @@ body.kolscan-page .kolscan-subtitle{font-size:16px;color:rgba(244,255,249,.7)}
 .modal-close:hover{color:var(--text);border-color:var(--mint)}
 .modal-sub{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
 .modal-foot-note{margin:14px 0 0;color:var(--soft);font-size:11.5px;letter-spacing:.04em}
+.how-steps{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:grid;
+  gap:10px;
+  counter-reset:howSteps;
+}
+.how-steps li{
+  counter-increment:howSteps;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  column-gap:12px;
+  row-gap:3px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.1);
+  background:linear-gradient(180deg,rgba(11,24,16,.7),rgba(4,8,6,.56));
+}
+.how-steps li::before{
+  content:counter(howSteps);
+  grid-row:1 / span 2;
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(22,242,139,.42);
+  color:var(--mint);
+  font-size:12px;
+  font-weight:900;
+  background:rgba(22,242,139,.08);
+}
+.how-steps strong{
+  color:var(--text);
+  font-size:14px;
+  line-height:1.2;
+}
+.how-steps span{
+  color:rgba(246,248,255,.76);
+  font-size:13px;
+  line-height:1.45;
+}
 
 .wallet-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .wallet-option{
