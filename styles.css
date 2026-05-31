@@ -374,6 +374,8 @@ h2{
   gap:0;
   padding:7px 0;
   animation:ticker 72s linear infinite;
+  will-change:transform;
+  backface-visibility:hidden;
 }
 .ticker-track:hover{animation-play-state:paused}
 /* Slim inline ticker items — no pill background, no separators. */
