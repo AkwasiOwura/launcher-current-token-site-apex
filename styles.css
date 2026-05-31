@@ -363,8 +363,7 @@ h2{
 .ticker{
   width:100vw;
   margin-left:calc(50% - 50vw);
-  border-block:1px solid rgba(255,255,255,.1);
-  background:rgba(5,17,10,.7);
+  background:#000;
   overflow:hidden;
 }
 /* Ticker pinned directly under the top navigation/header. */
@@ -372,32 +371,52 @@ h2{
 .ticker-track{
   display:flex;
   width:max-content;
-  gap:18px;
-  padding:13px 0;
+  gap:0;
+  padding:7px 0;
   animation:ticker 72s linear infinite;
 }
 .ticker-track:hover{animation-play-state:paused}
-.ticker a{
+/* Slim inline ticker items — no pill background, no separators. */
+.ticker a,
+.ticker .ticker-item{
   display:inline-flex;
   align-items:center;
-  gap:8px;
-  min-height:32px;
-  padding:0 14px;
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:999px;
-  background:rgba(255,255,255,.035);
-  color:rgba(246,248,255,.72);
+  gap:7px;
+  padding:0 16px;
+  border:0;
+  background:transparent;
+  color:rgba(246,248,255,.74);
   font-family:var(--mono);
   font-size:12px;
-  font-weight:900;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  transition:color .2s var(--ease),border-color .2s var(--ease),background .2s var(--ease);
+  font-weight:800;
+  letter-spacing:.01em;
+  text-transform:none;
+  white-space:nowrap;
+  transition:color .2s var(--ease);
 }
-.ticker a:hover{color:var(--text);border-color:rgba(22,242,139,.4);background:rgba(22,242,139,.08)}
-.ticker a::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--mint)}
-.ticker .ticker-up{color:var(--mint)}
-.ticker .ticker-down{color:var(--rose)}
+.ticker .ticker-item:hover{color:var(--text)}
+.ticker-avatar{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  overflow:hidden;
+  background:rgba(255,255,255,.08);
+}
+.ticker-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.ticker-avatar--fallback{
+  font-size:8px;
+  font-weight:900;
+  color:var(--mint);
+  background:rgba(22,242,139,.14);
+}
+.ticker-name{color:rgba(246,248,255,.92);font-weight:800}
+.ticker-stat{color:rgba(246,248,255,.6)}
+.ticker-change{color:var(--mint);font-weight:900}
+.ticker .ticker-up .ticker-change{color:var(--mint)}
+.ticker .ticker-down .ticker-change{color:var(--rose,#ff6464)}
 
 .market-strip{
   display:grid;

@@ -662,7 +662,21 @@
       var href = safeUrl(coin.pumpFunUrl || coin.url || coin.fallbackUrl, '#');
       var change = Number(coin.priceChange24h || coin.change24h || coin.priceChange);
       var trendClass = Number.isFinite(change) && change !== 0 ? (change > 0 ? ' ticker-up' : ' ticker-down') : '';
-      return '<a class="' + trendClass.trim() + '" href="' + href + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(tickerText(coin)) + '</a>';
+      var name = String(coin.name || coin.symbol || 'MEME').replace(/^\$/, '').trim().slice(0, 18);
+      var image = safeAssetUrl(coin.imageUrl || coin.image || coin.icon || coin.logo || '');
+      var initials = (name || 'M').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase() || 'M';
+      var stat = compactNumber(coin.marketCapUsd, '$') || compactPrice(coin.priceUsd || coin.price) || '';
+      var changeText = Number.isFinite(change) && change !== 0
+        ? (change > 0 ? '▲' : '▼') + ' ' + Math.abs(change).toFixed(1) + '%' : '';
+      var avatar = image
+        ? '<span class="ticker-avatar"><img src="' + image + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();"></span>'
+        : '<span class="ticker-avatar ticker-avatar--fallback">' + escapeHtml(initials) + '</span>';
+      return '<a class="ticker-item' + trendClass + '" href="' + href + '" target="_blank" rel="noopener noreferrer">'
+        + avatar
+        + '<span class="ticker-name">' + escapeHtml(name) + '</span>'
+        + (stat ? '<span class="ticker-stat">' + escapeHtml(stat) + '</span>' : '')
+        + (changeText ? '<span class="ticker-change">' + escapeHtml(changeText) + '</span>' : '')
+        + '</a>';
     });
     track.innerHTML = items.concat(items).join('');
   }
