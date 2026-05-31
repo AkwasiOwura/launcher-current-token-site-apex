@@ -1063,7 +1063,8 @@
     var mediaClass = 'project-media' + (image ? ' is-animated' : '')
       + (slug === 'legend' ? ' project-media--bob' : '')
       + (slug === 'percolator' ? ' project-media--pan' : '')
-      + (slug === 'altseason' ? ' project-media--sway' : '');
+      + (slug === 'altseason' ? ' project-media--sway' : '')
+      + (slug === 'payai' ? ' project-media--float' : '');
     var delay = Math.min(index * 70, 560);
     var coinAttr = ' data-coin="' + escapeHtml(JSON.stringify(projectTradePayload(token))) + '"';
     var projectAttr = ' data-project="' + escapeHtml(JSON.stringify(token)) + '"';
@@ -1206,6 +1207,7 @@
     var heroAnim = slug === 'legend' ? ' project-modal-hero--bob'
       : slug === 'percolator' ? ' project-modal-hero--pan'
       : slug === 'altseason' ? ' project-modal-hero--sway'
+      : slug === 'payai' ? ' project-modal-hero--float'
       : '';
 
     var mintRow = mint
